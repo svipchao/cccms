@@ -2,7 +2,7 @@
 declare (strict_types=1);
 
 use think\facade\Route;
-use cccms\model\SysRoute;
+use app\admin\model\SysRoute;
 
 $routes = SysRoute::mk()->where('status', 1)->_list();
 foreach ($routes as $v) {

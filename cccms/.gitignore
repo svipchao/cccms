@@ -2,3 +2,5 @@
 /.vscode
 *.log
 vendor
+/.git
+.DS_Store
