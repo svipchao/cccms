@@ -7,6 +7,15 @@ CCCMS是基于 [ThinkPHP6](https://gitee.com/liu21st/thinkphp)
 和 [Arco Design Vue](https://github.com/arco-design/arco-design-vue)
 开发的一套CMS管理系统，非常适用快速二次开发，内置系统权限管理、系统操作日志等基本功能。满足绝大多数企业日常需求。
 
+## 代码仓库
+
+本项目 为 MIT 协议开源项目，安装使用或二次开发不受约束，欢迎 fork 项目。
+
+部分代码来自互联网，若有异议可以联系作者进行删除。
+
+* Gitee 仓库地址：https://gitee.com/svipchao/cccms
+* Github 仓库地址：https://github.com/svipchao/cccms
+
 ### 官方网站
 
 [CCCMS](http://www.cccms.cc) | [使用手册(完善中...)](http://doc.cccms.cc)
