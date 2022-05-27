@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 108 108" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>CCCMS</title>
+    <desc>Created with Sketch.</desc>
+    <g>
+        <path fill="#fff" stroke="#999999" stroke-width="2" stroke-miterlimit="10" d="M54,1.7L12.8,23.8c0,31.9,10.4,61.8,38,80.6l3.2,2l3.2-2c20.5-13.6,38-38.4,38-80.6L54,1.7z" />
+        <g>
+            <path fill="#E73134" d="M61.2,12.2l28.1,15.1l0,0.2c0,7.6-0.8,15-2.4,21.9c-14.2,0.4-33.6,5.1-41.6,9.6 C47.5,51.9,53.5,23.6,61.2,12.2z" />
+        </g>
+        <g>
+            <path fill="#00174B" d="M54,99.2c-7-4.4-13.2-10.4-18.5-17.5c14.5-5.8,27.2-8.2,42.7-9.1C72.1,83.9,63.8,93.1,54,99.2z" />
+        </g>
+        <g>
+            <path fill="#005EA6" d="M25.9,64.4c-4.6-11-7.2-23.6-7.2-36.9l0-0.2l16.5-8.8C33.3,33.2,29.5,50.4,25.9,64.4z" />
+        </g>
+    </g>
+</svg>

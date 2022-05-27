@@ -1,0 +1,142 @@
+<template>
+  <a-modal
+    :mask-closable="false"
+    :visible="visible"
+    :title="isUpdate ? '修改组织' : '添加组织'"
+    @cancel="cancelModal"
+    @ok="okModal"
+  >
+    <a-form :model="form" layout="vertical">
+      <a-form-item field="group_id">
+        <a-select
+          allow-clear
+          v-model="form.group_id"
+          placeholder="选择父级组织..."
+          :fallback-option="
+            () => {
+              return {
+                value: undefined,
+                label: '',
+              };
+            }
+          "
+        >
+          <template #prefix>父级组织</template>
+          <a-option v-for="group in props.groups" :value="group.id" :label="group.group_name">
+            {{ group.mark }}{{ group.group_name }}
+          </a-option>
+        </a-select>
+      </a-form-item>
+      <a-form-item field="group_name">
+        <a-input v-model="form.group_name" placeholder="名称...">
+          <template #prefix>组织名称</template>
+        </a-input>
+      </a-form-item>
+      <a-form-item field="group_desc">
+        <a-input v-model="form.group_desc" placeholder="备注...">
+          <template #prefix>组织备注</template>
+        </a-input>
+      </a-form-item>
+      <a-form-item field="roles">
+        <a-select
+          allow-clear
+          v-model="form.roles"
+          placeholder="选择角色..."
+          :fallback-option="
+            () => {
+              return {
+                value: undefined,
+                label: '',
+              };
+            }
+          "
+          multiple
+        >
+          <template #prefix>选择角色</template>
+          <a-option v-for="role in props.roles" :value="role.id" :label="role.role_name">
+            {{ role.mark }}{{ role.role_name }}
+          </a-option>
+        </a-select>
+      </a-form-item>
+    </a-form>
+  </a-modal>
+</template>
+<script setup>
+import { ref, reactive, watch } from "vue";
+import { Message } from "@arco-design/web-vue";
+import { groupCreate, groupUpdate } from "@/api/admin/group";
+import { assignObject } from "@/utils/utils.js";
+
+const props = defineProps({
+  visible: false,
+  data: undefined,
+  roles: undefined,
+  groups: undefined,
+});
+
+const getFormInit = () => {
+  return {
+    id: undefined,
+    roles: undefined,
+    group_id: undefined,
+    group_name: "",
+    group_desc: "",
+  };
+};
+const form = reactive(getFormInit());
+const resetForm = () => {
+  Object.assign(form, getFormInit());
+};
+
+const emit = defineEmits(["update:visible", "done"]);
+
+const isUpdate = ref(true);
+
+const nodes = ref();
+
+const cancelModal = () => {
+  emit("update:visible", false);
+};
+
+const okModal = async () => {
+  if (isUpdate.value) {
+    await groupUpdate(form).then((res) => {
+      Message.success("修改成功");
+    });
+  } else {
+    await groupCreate(form).then((res) => {
+      Message.success("添加成功");
+    });
+  }
+  emit("done");
+  emit("update:visible");
+};
+
+// select下拉状态
+const onSelect = (visible) => {
+  if (visible) {
+    getNodes();
+  }
+};
+
+const getNodes = async () => {
+  const { data } = await authQuery({ group_id: form.group_id });
+  nodes.value = data;
+};
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      if (props.data) {
+        assignObject(form, props.data);
+        isUpdate.value = true;
+      } else {
+        isUpdate.value = false;
+      }
+    } else {
+      resetForm();
+    }
+  }
+);
+</script>
