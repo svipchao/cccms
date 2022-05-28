@@ -240,19 +240,11 @@ CREATE TABLE `sys_config`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '配置表';
 INSERT INTO `sys_config` (`type_id`, `name`, `value`, `configure`)
-VALUES (200, 'siteName', '诗无尽头i',
-        '{"name":"siteName","label":"网站名称","type":"input","placeholder":"请输入网站名称","default":"默认站点","description":"请输入网站名称"}'),
-       (200, 'siteIcp', '豫ICP备93093369号',
-        '{"name":"siteIcp","label":"备案号","type":"input","placeholder":"请输入网站备案号","default":"豫ICP备93093369号","description":"请输入网站备案号"}'),
-       (201, 'logClose', 1,
-        '{"name":"logClose","label":"日志状态","type":"switch","default":1,"description":"日志状态","options":{"checked":1,"unchecked":0}}'),
-       (201, 'logMethods', 'put,post,delete',
-        '{"name":"logMethods","label":"监控类型","type":"multiple-select","placeholder":"请选择需要监控的类型","default":["POST","PUT","DELETE"],"description":"参考：https://www.runoob.com/http/http-methods.html","options":[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"},{"value":"PUT","label":"PUT"},{"value":"DELETE","label":"DELETE"},{"value":"HEAD","label":"HEAD"},{"value":"CONNECT","label":"CONNECT"},{"value":"OPTIONS","label":"OPTIONS"},{"value":"TRACE","label":"TRACE"},{"value":"PATCH","label":"PATCH"}]}'),
-       (201, 'logNoParams', 'v,page,limit,field,order,encode',
-        '{"name":"logNoParams","label":"不记录的参数","type":"textarea","placeholder":"请输入不需要记录的参数名","default":"page,limit","description":"每个参数使用英文逗号隔开，例如：page,limit"}'),
-       (202, 'uploadExt', 'jpg,png,gif',
-        '{"name":"uploadExt","label":"上传文件类型","type":"textarea","placeholder":"请输入上传文件支持的后缀名","default":"page,limit","description":"每个后缀名使用英文逗号隔开，例如：jpg,png,gif"}'),
-       (202, 'uploadSize', 20,
-        '{"name":"uploadSize","label":"上传文件大小限制","type":"input-number","placeholder":"请输入上传文件大小限制","default":20,"description":"请输入上传文件限制(MB)"}'),
-       (202, 'diskType', 'local',
-        '{"name":"diskType","label":"磁盘类型","type":"select","placeholder":"请选择磁盘类型","default":"local","description":"请选择磁盘类型","options":[{"value":"local","label":"本地存储"},{"value":"alioss","label":"阿里云"},{"value":"qiniu","label":"七牛云"},{"value":"txoss","label":"腾讯云"},{"value":"uposs","label":"又拍云"}]}');
+VALUES (200, 'siteName', '诗无尽头i', '{"name":"siteName","label":"网站名称","type":"input","placeholder":"请输入网站名称","default":"默认站点","description":"请输入网站名称"}'),
+       (200, 'siteIcp', '豫ICP备93093369号', '{"name":"siteIcp","label":"备案号","type":"input","placeholder":"请输入网站备案号","default":"豫ICP备93093369号","description":"请输入网站备案号"}'),
+       (201, 'logClose', 1, '{"name":"logClose","label":"日志状态","type":"switch","default":1,"description":"日志状态","options":{"checked":1,"unchecked":0}}'),
+       (201, 'logMethods', 'put,post,delete', '{"name":"logMethods","label":"监控类型","type":"multiple-select","placeholder":"请选择需要监控的类型","default":["POST","PUT","DELETE"],"description":"参考：https://www.runoob.com/http/http-methods.html","options":[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"},{"value":"PUT","label":"PUT"},{"value":"DELETE","label":"DELETE"},{"value":"HEAD","label":"HEAD"},{"value":"CONNECT","label":"CONNECT"},{"value":"OPTIONS","label":"OPTIONS"},{"value":"TRACE","label":"TRACE"},{"value":"PATCH","label":"PATCH"}]}'),
+       (201, 'logNoParams', 'v,page,limit,field,order,encode', '{"name":"logNoParams","label":"不记录的参数","type":"textarea","placeholder":"请输入不需要记录的参数名","default":"page,limit","description":"每个参数使用英文逗号隔开，例如：page,limit"}'),
+       (202, 'uploadExt', 'jpg,png,gif', '{"name":"uploadExt","label":"上传文件类型","type":"textarea","placeholder":"请输入上传文件支持的后缀名","default":"page,limit","description":"每个后缀名使用英文逗号隔开，例如：jpg,png,gif"}'),
+       (202, 'uploadSize', 20, '{"name":"uploadSize","label":"上传文件大小限制","type":"input-number","placeholder":"请输入上传文件大小限制","default":20,"description":"请输入上传文件限制(MB)"}'),
+       (202, 'diskType', 'local', '{"name":"diskType","label":"磁盘类型","type":"select","placeholder":"请选择磁盘类型","default":"local","description":"请选择磁盘类型","options":[{"value":"local","label":"本地存储"},{"value":"alioss","label":"阿里云"},{"value":"qiniu","label":"七牛云"},{"value":"txoss","label":"腾讯云"},{"value":"uposs","label":"又拍云"}]}');
