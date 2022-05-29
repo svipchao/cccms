@@ -7,12 +7,12 @@
     @ok="okModal"
   >
     <a-form :model="form" layout="vertical">
-      <a-form-item field="groupIds">
+      <a-form-item field="group_ids">
         <a-select
           allow-clear
           multiple
           :maxTagCount="2"
-          v-model="form.groupIds"
+          v-model="form.group_ids"
           placeholder="选择当前组织..."
           :fallback-option="
             () => {
@@ -82,7 +82,7 @@ const getFormInit = () => {
   return {
     id: undefined,
     type: undefined, // 用户类型
-    groupIds: undefined,
+    group_ids: undefined,
     nickname: undefined,
     username: undefined,
     password: undefined,
