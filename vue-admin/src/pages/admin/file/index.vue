@@ -28,27 +28,7 @@
     >
       <template #userFilter>
         <a-card :style="{ width: '200px' }">
-          <a-select
-            placeholder="选择用户..."
-            allow-clear
-            v-model="tableInfo.form.user_id"
-            :fallback-option="
-              () => {
-                return {
-                  value: undefined,
-                  label: '',
-                };
-              }
-            "
-            allow-search
-            @search="searchUsers"
-            :filter-option="false"
-            :show-extra-options="false"
-          >
-            <a-option v-for="user in tableInfo.users" :value="user.id">
-              {{ user.nickname }}({{ user.username }})
-            </a-option>
-          </a-select>
+          <a-input v-model="tableInfo.form.user" placeholder="请输入用户账号或昵称" />
           <template #actions>
             <a-button size="mini" type="primary" @click="getFiles">确定</a-button>
           </template>
@@ -146,7 +126,7 @@ onMounted(() => {
 const tableInfo = reactive({
   form: {
     type_id: 0,
-    user_id: 0,
+    user: undefined,
     page: 1,
     limit: 10,
     total: 0,
@@ -225,15 +205,6 @@ const delFile = (row) => {
     Message.success("删除成功");
     getFiles();
   });
-};
-
-const searchUsers = async (value) => {
-  if (value) {
-    const { data } = await fileQuery({ like_user_str: value });
-    tableInfo.users = data;
-  } else {
-    tableInfo.users = [];
-  }
 };
 
 const addFile = (option) => {

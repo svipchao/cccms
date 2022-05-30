@@ -129,7 +129,7 @@ CREATE TABLE `sys_log`
 CREATE TABLE `sys_types`
 (
     `id`          int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
-    `type`        int unsigned NOT NULL DEFAULT 0 COMMENT '分类(between:1,4|length:1)【1:菜单,2:配置,3:路由,4:附件】',
+    `type`        int unsigned NOT NULL DEFAULT 0 COMMENT '分类(between:1,4|length:1)',
     `name`        varchar(32)  NOT NULL DEFAULT '' COMMENT '类别名称',
     `alias`       varchar(32)  NOT NULL DEFAULT '' COMMENT '类别别名',
     `sort`        int          NOT NULL DEFAULT 0 COMMENT '排序',

@@ -3,7 +3,9 @@
     <table-header v-model:columns="tableInfo.tableColumns" @reload="getLogs">
       <template #left>
         <a-popconfirm content="是否清空30天前的日志？" @ok="delLog()" type="warning">
-          <a-button type="primary" status="danger" v-permission="'admin/log/delete'">清空30天前日志</a-button>
+          <a-button type="primary" status="danger" v-permission="'admin/log/delete'">
+            清空30天前日志
+          </a-button>
         </a-popconfirm>
       </template>
     </table-header>
@@ -23,27 +25,7 @@
     >
       <template #userFilter>
         <a-card :style="{ width: '200px' }">
-          <a-select
-            placeholder="选择用户..."
-            allow-clear
-            v-model="tableInfo.form.user_id"
-            :fallback-option="
-              () => {
-                return {
-                  value: undefined,
-                  label: '',
-                };
-              }
-            "
-            allow-search
-            @search="searchUsers"
-            :filter-option="false"
-            :show-extra-options="false"
-          >
-            <a-option v-for="user in tableInfo.users" :value="user.id">
-              {{ user.nickname }}({{ user.username }})
-            </a-option>
-          </a-select>
+          <a-input v-model="tableInfo.form.user" placeholder="请输入用户账号或昵称" />
           <template #actions>
             <a-button size="mini" type="primary" @click="getLogs">确定</a-button>
           </template>
@@ -61,15 +43,9 @@
         </a-typography-paragraph>
       </template>
       <template #reqParam="{ record }">
-        <a-typography-paragraph
-          copyable
-          :ellipsis="{
-            rows: 1,
-            showTooltip: true,
-          }"
-        >
-          <span>{{ record.req_param }}</span>
-        </a-typography-paragraph>
+        <a-button type="primary" size="mini" @click="showParamModal(record.req_param)">
+          查看
+        </a-button>
       </template>
       <template #reqUa="{ record }">
         <a-typography-paragraph
@@ -83,6 +59,11 @@
         </a-typography-paragraph>
       </template>
     </a-table>
+    <a-modal :visible="paramVisible" @cancel="cancelParamModal" :closable="false" :footer="false">
+      <a-typography-paragraph>
+        <pre>{{ JSON.parse(paramData) }}</pre>
+      </a-typography-paragraph>
+    </a-modal>
   </a-card>
 </template>
 
@@ -101,7 +82,7 @@ onMounted(() => {
 const tableInfo = reactive({
   total: 0,
   form: {
-    user_id: 0,
+    user: undefined,
     page: 1,
     limit: 10,
   },
@@ -121,19 +102,15 @@ const tableInfo = reactive({
     { dataIndex: "req_method", title: "请求类型", width: 90 },
     { dataIndex: "name", title: "行为名称", width: 180 },
     { dataIndex: "node", title: "操作节点", width: 180 },
-    { dataIndex: "req_param", title: "请求参数", width: 230, slotName: "reqParam" },
+    { dataIndex: "req_param", title: "请求参数", width: 100, slotName: "reqParam" },
     { dataIndex: "req_ip", title: "请求IP", width: 130 },
     { dataIndex: "req_ua", title: "User-Agent", width: 230, slotName: "reqUa" },
     { dataIndex: "create_time", title: "创建时间", width: 180 },
   ],
 });
 
-// 是否打开弹窗
-const showEdit = ref(false);
-
 const handlePageChange = (page) => {
   tableInfo.form.page = page;
-  // tableInfo.form.limit = pageSize;
   getLogs();
 };
 
@@ -160,12 +137,15 @@ const delLog = (row) => {
   });
 };
 
-const searchUsers = async (value) => {
-  if (value) {
-    const { data } = await logQuery({ like_user_str: value });
-    tableInfo.users = data;
-  } else {
-    tableInfo.users = [];
-  }
+// 查看参数弹窗
+const paramVisible = ref(false);
+const paramData = ref(null);
+
+const showParamModal = (param) => {
+  paramData.value = param;
+  paramVisible.value = true;
+};
+const cancelParamModal = () => {
+  paramVisible.value = false;
 };
 </script>

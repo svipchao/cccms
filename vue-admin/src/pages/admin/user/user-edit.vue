@@ -81,7 +81,7 @@ const props = defineProps({
 const getFormInit = () => {
   return {
     id: undefined,
-    type: undefined, // 用户类型
+    type: 0, // 用户类型
     group_ids: undefined,
     nickname: undefined,
     username: undefined,
