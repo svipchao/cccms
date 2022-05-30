@@ -460,11 +460,11 @@
         },
         {
             "name": "svipchao/cccms-app",
-            "version": "v1.0.1",
+            "version": "v1.0.2",
             "source": {
                 "type": "git",
                 "url": "https://gitee.com/svipchao/cccms-app.git",
-                "reference": "85433fa839dfe87db3aa6c9eed59fc5c44c72e1b"
+                "reference": "0b07982518460115161309d81b58999028fa258d"
             },
             "require": {
                 "php": ">=7.4",
@@ -487,15 +487,15 @@
                 }
             ],
             "description": "CCCMS 应用包扩展",
-            "time": "2022-05-27T09:39:18+00:00"
+            "time": "2022-05-30T07:11:49+00:00"
         },
         {
             "name": "svipchao/cccms-library",
-            "version": "v1.0.1",
+            "version": "v1.0.2",
             "source": {
                 "type": "git",
                 "url": "https://gitee.com/svipchao/cccms-library.git",
-                "reference": "74f2f8af78fabd2fbe095a5e281d4af15f016da7"
+                "reference": "b9e0991a6a3b88010080c688fa548162bc0ad48e"
             },
             "require": {
                 "ext-curl": "*",
@@ -538,7 +538,7 @@
                 }
             ],
             "description": "ThinkPHP6.* Library 扩展包",
-            "time": "2022-05-27T10:07:33+00:00"
+            "time": "2022-05-30T07:11:32+00:00"
         },
         {
             "name": "topthink/framework",
