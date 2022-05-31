@@ -1,11 +1,11 @@
 <template>
   <a-layout>
     <a-layout-sider v-show="siderStore.siderState">
-      <Sider />
+      <sider />
     </a-layout-sider>
     <a-layout>
       <a-layout-header>
-        <Header />
+        <header />
       </a-layout-header>
       <a-layout-content>
         <router-view />

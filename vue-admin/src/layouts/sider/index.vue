@@ -1,8 +1,14 @@
 <template>
   <div>
     <div class="arco-layout-sider-system">
-      <a-select placeholder="选择应用..." :model-value="menuStore.getCurrentAppId" @change="changeAppFun">
-        <a-option v-for="app in menuStore.menus" :key="app.id" :value="app.id">{{ app.name }}</a-option>
+      <a-select
+        placeholder="选择应用..."
+        :model-value="menuStore.getCurrentAppId"
+        @change="changeAppFun"
+      >
+        <a-option v-for="app in menuStore.menus" :key="app.id" :value="app.id">
+          {{ app.name }}
+        </a-option>
       </a-select>
       <a-divider />
     </div>
@@ -16,7 +22,10 @@
         :default-open-keys="[menuStore.getOpenKeys]"
         :default-selected-keys="[menuStore.getSelectedKeys]"
       >
-        <Menu :menus="menuStore.getCurrentMenu" v-if="menuStore.getCurrentMenu !== undefined" />
+        <sider-menu
+          :menus="menuStore.getCurrentMenu"
+          v-if="menuStore.getCurrentMenu !== undefined"
+        />
         <a-empty v-else />
       </a-menu>
     </div>
@@ -29,7 +38,7 @@
 
 <script setup>
 import { ref } from "vue";
-import Menu from "./menu.vue";
+import SiderMenu from "./sider-menu.vue";
 import config from "@/config";
 import { useUser } from "@/store/user.js";
 import { useMenu } from "@/store/menu.js";

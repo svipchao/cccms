@@ -5,7 +5,7 @@
         <i class="iconfont" :class="menu.icon"></i>
         {{ menu.name }}
       </template>
-      <Menu :menus="menu.children" />
+      <sider-menu :menus="menu.children" />
     </a-sub-menu>
     <template v-else>
       <a v-if="isLink(menu.url)" :href="menu.url" :target="'_blank'">

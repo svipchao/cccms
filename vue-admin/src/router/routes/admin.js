@@ -2,11 +2,11 @@ export default [
   {
     path: "/",
     redirect: "/index",
-    component: () => import("@/layouts/base.vue"),
+    component: () => import("@/layouts/layout.vue"),
     children: [
       {
         path: "/index",
-        component: () => import("@/pages/index/index.vue"),
+        component: () => import("@/pages/admin/index/index.vue"),
         meta: {
           title: "控制台",
           auth: false, // 是否需要授权
