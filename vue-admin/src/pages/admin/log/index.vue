@@ -60,9 +60,11 @@
       </template>
     </a-table>
     <a-modal :visible="paramVisible" @cancel="cancelParamModal" :closable="false" :footer="false">
-      <a-typography-paragraph>
-        <pre>{{ JSON.parse(paramData) }}</pre>
-      </a-typography-paragraph>
+      <a-typography>
+        <a-typography-paragraph blockquote>
+          <pre>{{ JSON.parse(paramData) }}</pre>
+        </a-typography-paragraph>
+      </a-typography>
     </a-modal>
   </a-card>
 </template>
@@ -142,6 +144,14 @@ const paramVisible = ref(false);
 const paramData = ref(null);
 
 const showParamModal = (param) => {
+  console.log(JSON.stringify(JSON.parse(param)));
+  JSON.stringify(
+    JSON.parse(param),
+    (item) => {
+      console.log(item);
+    },
+    4
+  );
   paramData.value = param;
   paramVisible.value = true;
 };
