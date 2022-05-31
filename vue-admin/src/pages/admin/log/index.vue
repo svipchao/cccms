@@ -103,7 +103,7 @@ const tableInfo = reactive({
     },
     { dataIndex: "req_method", title: "请求类型", width: 90 },
     { dataIndex: "name", title: "行为名称", width: 180 },
-    { dataIndex: "node", title: "操作节点", width: 180 },
+    { dataIndex: "node", title: "操作节点", width: 250 },
     { dataIndex: "req_param", title: "请求参数", width: 100, slotName: "reqParam" },
     { dataIndex: "req_ip", title: "请求IP", width: 130 },
     { dataIndex: "req_ua", title: "User-Agent", width: 230, slotName: "reqUa" },
