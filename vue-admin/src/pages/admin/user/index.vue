@@ -2,7 +2,9 @@
   <a-card>
     <table-header v-model:columns="tableInfo.tableColumns" @reload="getUsers">
       <template #left>
-        <a-button type="primary" @click="editUser()" v-permission="'admin/user/create'">新增</a-button>
+        <a-button type="primary" @click="editUser()" v-permission="'admin/user/create'">
+          新增
+        </a-button>
       </template>
     </table-header>
     <a-table
@@ -62,7 +64,11 @@
       </template>
       <template #nicknameFilter>
         <a-card :style="{ width: '200px' }">
-          <a-input placeholder="模糊查询用户昵称..." allow-clear v-model="tableInfo.form.nickname" />
+          <a-input
+            placeholder="模糊查询用户昵称(账号)..."
+            allow-clear
+            v-model="tableInfo.form.user"
+          />
           <template #actions>
             <a-button size="mini" type="primary" @click="getUsers">确定</a-button>
           </template>
@@ -70,7 +76,11 @@
       </template>
       <template #usernameFilter>
         <a-card :style="{ width: '200px' }">
-          <a-input placeholder="模糊查询用户账号..." allow-clear v-model="tableInfo.form.username" />
+          <a-input
+            placeholder="模糊查询用户昵称(账号)..."
+            allow-clear
+            v-model="tableInfo.form.user"
+          />
           <template #actions>
             <a-button size="mini" type="primary" @click="getUsers">确定</a-button>
           </template>
@@ -105,10 +115,18 @@
         />
       </template>
       <template #operation="{ record }">
-        <a-typography-text type="primary" @click="editUser(record)" v-permission="'admin/user/update'">
+        <a-typography-text
+          type="primary"
+          @click="editUser(record)"
+          v-permission="'admin/user/update'"
+        >
           编辑
         </a-typography-text>
-        <a-typography-text type="danger" @click="delUser(record)" v-permission="'admin/user/delete'">
+        <a-typography-text
+          type="danger"
+          @click="delUser(record)"
+          v-permission="'admin/user/delete'"
+        >
           删除
         </a-typography-text>
       </template>
@@ -141,8 +159,7 @@ const tableInfo = reactive({
   form: {
     type: undefined, // 用户类型
     group_id: undefined, // 组织ID
-    nickname: undefined, // 用户昵称
-    username: undefined, // 用户账号
+    user: undefined, // 用户昵称(账号)
     groups: [], // 组织ID集合
     page: 1, // 当前页码
     limit: 10, // 每页数据
@@ -217,7 +234,10 @@ const getUsers = async () => {
   const {
     data: { fields, total, data, groups, types },
   } = await userQuery(tableInfo.form);
-  tableInfo.tableColumns = tableField(tableInfo.tableColumns, Object.keys(fields), ["groups", "operation"]);
+  tableInfo.tableColumns = tableField(tableInfo.tableColumns, Object.keys(fields), [
+    "groups",
+    "operation",
+  ]);
   tableInfo.types = types;
   tableInfo.groups = groups;
   tableInfo.total = total;
