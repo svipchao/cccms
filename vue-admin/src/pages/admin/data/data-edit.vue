@@ -11,15 +11,8 @@
         <a-select
           allow-clear
           v-model="form.role_id"
-          placeholder="选择父级角色..."
-          :fallback-option="
-            () => {
-              return {
-                value: undefined,
-                label: '',
-              };
-            }
-          "
+          placeholder="选择角色..."
+          :fallback-option="false"
         >
           <template #prefix>角色</template>
           <a-option v-for="role in props.roles" :value="role.id" :label="role.role_name">
@@ -45,11 +38,7 @@
       <a-form-item field="field">
         <a-select allow-clear v-model:model-value="form.field" placeholder="选择表字段...">
           <template #prefix>表字段</template>
-          <a-option
-            v-for="(field, index) in fields"
-            :value="index"
-            :label="field"
-          />
+          <a-option v-for="(field, index) in fields" :value="index" :label="field" />
         </a-select>
       </a-form-item>
       <a-form-item field="where">
