@@ -17,6 +17,7 @@
           v-model="form.role_id"
           placeholder="选择角色..."
           :fallback-option="false"
+          @change="changeRoleId"
         >
           <template #prefix>父级角色</template>
           <a-option v-for="role in props.roles" :value="role.id" :label="role.role_name">
@@ -108,13 +109,17 @@ const getNodes = async () => {
   nodes.value = data;
 };
 
+const changeRoleId = () => {
+  getNodes();
+};
+
 watch(
   () => props.visible,
   (visible) => {
     if (visible) {
+      getNodes();
       if (props.data) {
         assignObject(form, props.data);
-        getNodes();
         isUpdate.value = true;
       } else {
         isUpdate.value = false;
