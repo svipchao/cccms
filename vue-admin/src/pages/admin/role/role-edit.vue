@@ -1,8 +1,12 @@
 <template>
-  <a-modal
+  <a-drawer
     :mask-closable="false"
     :visible="visible"
     :title="isUpdate ? '修改角色' : '添加角色'"
+    width="30vw"
+    :drawer-style="{
+      minWidth: '300px',
+    }"
     @cancel="cancelModal"
     @ok="okModal"
   >
@@ -12,14 +16,7 @@
           allow-clear
           v-model="form.role_id"
           placeholder="选择角色..."
-          :fallback-option="
-            () => {
-              return {
-                value: undefined,
-                label: '',
-              };
-            }
-          "
+          :fallback-option="false"
         >
           <template #prefix>父级角色</template>
           <a-option v-for="role in props.roles" :value="role.id" :label="role.role_name">
@@ -37,28 +34,24 @@
           <template #prefix>角色备注</template>
         </a-input>
       </a-form-item>
+      <a-divider orientation="center">节点授权</a-divider>
       <a-form-item>
-        <a-tree-select
-          v-model="form.nodes"
-          :allow-clear="true"
-          :tree-checkable="true"
-          :max-tag-count="3"
+        <a-tree
+          v-if="nodes.length > 0"
+          :checkable="true"
+          v-model:checked-keys="form.nodes"
           :data="nodes"
-          placeholder="选择角色权限..."
           :fieldNames="{
             label: 'parentNode',
             key: 'currentNode',
             title: 'title',
             children: 'children',
           }"
-          @popupVisibleChange="onSelect"
-          :fallback-option="undefined"
-        >
-          <template #prefix>角色权限</template>
-        </a-tree-select>
+        />
+        <a-empty v-else />
       </a-form-item>
     </a-form>
-  </a-modal>
+  </a-drawer>
 </template>
 <script setup>
 import { ref, reactive, watch } from "vue";
@@ -90,8 +83,6 @@ const emit = defineEmits(["update:visible", "done"]);
 
 const isUpdate = ref(true);
 
-const nodes = ref();
-
 const cancelModal = () => {
   emit("update:visible", false);
 };
@@ -110,12 +101,7 @@ const okModal = async () => {
   emit("update:visible");
 };
 
-// select下拉状态
-const onSelect = (visible) => {
-  if (visible) {
-    getNodes();
-  }
-};
+const nodes = ref([]);
 
 const getNodes = async () => {
   const { data } = await authQuery({ role_id: form.role_id });

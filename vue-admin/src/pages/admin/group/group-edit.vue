@@ -12,14 +12,7 @@
           allow-clear
           v-model="form.group_id"
           placeholder="选择父级组织..."
-          :fallback-option="
-            () => {
-              return {
-                value: undefined,
-                label: '',
-              };
-            }
-          "
+          :fallback-option="false"
         >
           <template #prefix>父级组织</template>
           <a-option v-for="group in props.groups" :value="group.id" :label="group.group_name">
@@ -40,16 +33,9 @@
       <a-form-item field="roles">
         <a-select
           allow-clear
-          v-model="form.roles"
+          v-model="form.role_ids"
           placeholder="选择角色..."
-          :fallback-option="
-            () => {
-              return {
-                value: undefined,
-                label: '',
-              };
-            }
-          "
+          :fallback-option="false"
           multiple
         >
           <template #prefix>选择角色</template>
@@ -92,8 +78,6 @@ const emit = defineEmits(["update:visible", "done"]);
 
 const isUpdate = ref(true);
 
-const nodes = ref();
-
 const cancelModal = () => {
   emit("update:visible", false);
 };
@@ -110,18 +94,6 @@ const okModal = async () => {
   }
   emit("done");
   emit("update:visible");
-};
-
-// select下拉状态
-const onSelect = (visible) => {
-  if (visible) {
-    getNodes();
-  }
-};
-
-const getNodes = async () => {
-  const { data } = await authQuery({ group_id: form.group_id });
-  nodes.value = data;
 };
 
 watch(
