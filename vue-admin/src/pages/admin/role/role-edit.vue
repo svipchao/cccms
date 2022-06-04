@@ -117,13 +117,13 @@ watch(
   () => props.visible,
   (visible) => {
     if (visible) {
-      getNodes();
       if (props.data) {
         assignObject(form, props.data);
         isUpdate.value = true;
       } else {
         isUpdate.value = false;
       }
+      getNodes();
     } else {
       resetForm();
     }
