@@ -14,14 +14,7 @@
           :maxTagCount="2"
           v-model="form.group_ids"
           placeholder="选择当前组织..."
-          :fallback-option="
-            () => {
-              return {
-                value: undefined,
-                label: '',
-              };
-            }
-          "
+          :fallback-option="false"
         >
           <template #prefix>当前组织</template>
           <a-option v-for="group in props.groups" :value="group.id" :label="group.group_name">
@@ -34,14 +27,7 @@
           allow-clear
           v-model="form.type"
           placeholder="选择用户类型..."
-          :fallback-option="
-            () => {
-              return {
-                value: undefined,
-                label: '',
-              };
-            }
-          "
+          :fallback-option="false"
         >
           <template #prefix>用户类型</template>
           <a-option v-for="(type, index) in props.types" :value="index" :label="type" />

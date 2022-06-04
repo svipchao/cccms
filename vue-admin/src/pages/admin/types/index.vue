@@ -27,14 +27,7 @@
             placeholder="选择类别标识..."
             allow-clear
             v-model="tableInfo.form.type"
-            :fallback-option="
-              () => {
-                return {
-                  value: undefined,
-                  label: '',
-                };
-              }
-            "
+            :fallback-option="false"
           >
             <a-option v-for="(type, index) in tableInfo.type" :key="index" :value="index">
               {{ type }}

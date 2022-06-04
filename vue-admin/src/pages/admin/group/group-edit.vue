@@ -63,7 +63,7 @@ const props = defineProps({
 const getFormInit = () => {
   return {
     id: undefined,
-    roles: undefined,
+    role_ids: undefined,
     group_id: undefined,
     group_name: "",
     group_desc: "",

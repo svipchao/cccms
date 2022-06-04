@@ -2,8 +2,12 @@
   <a-card>
     <table-header v-model:columns="tableInfo.tableColumns" @reload="getDatas">
       <template #left>
-        <a-button type="primary" @click="editData()" v-permission="'admin/data/create'">新增</a-button>
-        <a-typography-text type="warning"> 注意：如果条件与值皆为空 则 该角色没有该表字段权限 </a-typography-text>
+        <a-button type="primary" @click="editData()" v-permission="'admin/data/create'"
+          >新增</a-button
+        >
+        <a-typography-text type="warning">
+          注意：如果条件与值皆为空 则 该角色没有该表字段权限
+        </a-typography-text>
       </template>
     </table-header>
     <a-table
@@ -15,20 +19,13 @@
       }"
       @page-change="handlePageChange"
     >
-      <template #roleNameFilter="{ filterValue, setFilterValue, handleFilterConfirm, handleFilterReset }">
+      <template #roleNameFilter>
         <a-card hoverable :style="{ width: '200px', marginBottom: '20px' }">
           <a-select
             allow-clear
             v-model="tableInfo.form.role_id"
             placeholder="选择父级角色..."
-            :fallback-option="
-              () => {
-                return {
-                  value: undefined,
-                  label: '',
-                };
-              }
-            "
+            :fallback-option="false"
           >
             <a-option v-for="role in tableInfo.roles" :value="role.id" :label="role.role_name">
               {{ role.mark }}{{ role.role_name }}
@@ -39,7 +36,7 @@
           </template>
         </a-card>
       </template>
-      <template #tableFilter="{ filterValue, setFilterValue, handleFilterConfirm, handleFilterReset }">
+      <template #tableFilter>
         <a-card hoverable :style="{ width: '200px', marginBottom: '20px' }">
           <a-select allow-clear v-model="tableInfo.form.table" placeholder="选择数据表...">
             <a-option
@@ -63,10 +60,18 @@
         {{ record.value == 0 ? "值为空" : record.value }}
       </template>
       <template #operation="{ record }">
-        <a-typography-text type="primary" @click="editData(record)" v-permission="'admin/data/update'">
+        <a-typography-text
+          type="primary"
+          @click="editData(record)"
+          v-permission="'admin/data/update'"
+        >
           编辑
         </a-typography-text>
-        <a-typography-text type="danger" @click="delData(record)" v-permission="'admin/data/delete'">
+        <a-typography-text
+          type="danger"
+          @click="delData(record)"
+          v-permission="'admin/data/delete'"
+        >
           删除
         </a-typography-text>
       </template>
@@ -138,7 +143,6 @@ const currentData = ref();
 
 const handlePageChange = (page) => {
   tableInfo.form.currentPage = page;
-  // tableInfo.form.pageSize = pageSize;
   getDatas();
 };
 

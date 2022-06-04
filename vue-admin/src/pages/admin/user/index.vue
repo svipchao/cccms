@@ -22,14 +22,7 @@
             allow-clear
             v-model="tableInfo.form.group_id"
             placeholder="选择父级组织..."
-            :fallback-option="
-              () => {
-                return {
-                  value: undefined,
-                  label: '',
-                };
-              }
-            "
+            :fallback-option="false"
           >
             <a-option v-for="group in tableInfo.groups" :value="group.id" :label="group.group_name">
               {{ group.mark }}{{ group.group_name }}
@@ -46,14 +39,7 @@
             allow-clear
             v-model="tableInfo.form.type"
             placeholder="选择用户类型..."
-            :fallback-option="
-              () => {
-                return {
-                  value: undefined,
-                  label: '',
-                };
-              }
-            "
+            :fallback-option="false"
           >
             <a-option v-for="(type, index) in tableInfo.types" :value="index" :label="type" />
           </a-select>

@@ -12,14 +12,7 @@
           allow-clear
           v-model="form.menu_id"
           placeholder="选择父级菜单..."
-          :fallback-option="
-            () => {
-              return {
-                value: undefined,
-                label: '',
-              };
-            }
-          "
+          :fallback-option="false"
         >
           <template #prefix>父级菜单</template>
           <a-option v-for="menu in props.menus" :value="menu.id" :label="menu.name">

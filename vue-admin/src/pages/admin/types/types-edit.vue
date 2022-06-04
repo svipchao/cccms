@@ -12,14 +12,7 @@
           allow-clear
           v-model="form.type"
           placeholder="选择类别标识..."
-          :fallback-option="
-            () => {
-              return {
-                value: undefined,
-                label: '',
-              };
-            }
-          "
+          :fallback-option="false"
         >
           <template #prefix>类别标识</template>
           <a-option v-for="(type, index) in props.type" :key="index" :value="index">
