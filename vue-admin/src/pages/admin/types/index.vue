@@ -77,7 +77,7 @@ onMounted(() => {
 // 数据
 const tableInfo = reactive({
   form: {
-    type: 0,
+    type: null,
     page: 1,
     limit: 10,
     total: 0,
