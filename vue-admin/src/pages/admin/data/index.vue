@@ -32,7 +32,7 @@
             </a-option>
           </a-select>
           <template #actions>
-            <a-button size="mini" type="primary">确定</a-button>
+            <a-button size="mini" type="primary" @click="getDatas()">确定</a-button>
           </template>
         </a-card>
       </template>
@@ -46,7 +46,7 @@
             />
           </a-select>
           <template #actions>
-            <a-button size="mini" type="primary">确定</a-button>
+            <a-button size="mini" type="primary" @click="getDatas()">确定</a-button>
           </template>
         </a-card>
       </template>
