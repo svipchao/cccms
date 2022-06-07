@@ -38,7 +38,9 @@
       <a-form-item field="field">
         <a-select allow-clear v-model:model-value="form.field" placeholder="选择表字段...">
           <template #prefix>表字段</template>
-          <a-option v-for="(field, index) in fields" :value="index" :label="field" />
+          <a-option v-for="(field, index) in fields" :value="index">
+            {{ field }}({{ index }})
+          </a-option>
         </a-select>
       </a-form-item>
       <a-form-item field="where">

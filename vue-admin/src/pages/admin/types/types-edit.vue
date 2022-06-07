@@ -15,9 +15,7 @@
           :fallback-option="false"
         >
           <template #prefix>类别标识</template>
-          <a-option v-for="(type, index) in props.type" :key="index" :value="index">
-            {{ type }}
-          </a-option>
+          <a-option v-for="(type, index) in props.type" :value="index" :label="type" />
         </a-select>
       </a-form-item>
       <a-form-item field="name">

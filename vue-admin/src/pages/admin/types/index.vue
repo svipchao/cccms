@@ -29,9 +29,7 @@
             v-model="tableInfo.form.type"
             :fallback-option="false"
           >
-            <a-option v-for="(type, index) in tableInfo.type" :key="index" :value="index">
-              {{ type }}
-            </a-option>
+            <a-option v-for="(type, index) in tableInfo.type" :value="index" :label="type" />
           </a-select>
           <template #actions>
             <a-button size="mini" type="primary" @click="getTypes">确定</a-button>
@@ -59,7 +57,12 @@
       </template>
     </a-table>
   </a-card>
-  <types-edit v-model:visible="showEdit" :data="currentData" @done="getTypes" />
+  <types-edit
+    v-model:visible="showEdit"
+    :data="currentData"
+    :type="tableInfo.type"
+    @done="getTypes"
+  />
 </template>
 
 <script setup>
@@ -112,7 +115,6 @@ const currentData = ref();
 
 const handlePageChange = (page) => {
   tableInfo.form.page = page;
-  // tableInfo.form.limit = pageSize;
   getTypes();
 };
 
