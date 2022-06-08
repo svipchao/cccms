@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, nextTick, onMounted } from "vue";
+import { reactive, ref, onMounted } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { dataQuery, dataDelete } from "@/api/admin/data";
 import TableHeader from "@/components/table/table-header.vue";

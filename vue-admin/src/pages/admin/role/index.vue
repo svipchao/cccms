@@ -2,7 +2,9 @@
   <a-card>
     <table-header v-model:columns="tableInfo.tableColumns" @reload="getRoles">
       <template #left>
-        <a-button type="primary" @click="editRole()" v-permission="'admin/role/create'">新增</a-button>
+        <a-button type="primary" @click="editRole()" v-permission="'admin/role/create'">
+          新增
+        </a-button>
       </template>
     </table-header>
     <a-table
@@ -26,20 +28,33 @@
         />
       </template>
       <template #operation="{ record }">
-        <a-typography-text type="primary" @click="editRole(record)" v-permission="'admin/role/update'">
+        <a-typography-text
+          type="primary"
+          @click="editRole(record)"
+          v-permission="'admin/role/update'"
+        >
           编辑
         </a-typography-text>
-        <a-typography-text type="danger" @click="delRole(record)" v-permission="'admin/role/delete'">
+        <a-typography-text
+          type="danger"
+          @click="delRole(record)"
+          v-permission="'admin/role/delete'"
+        >
           删除
         </a-typography-text>
       </template>
     </a-table>
   </a-card>
-  <role-edit v-model:visible="showEdit" :data="currentData" :roles="tableInfo.tableDatas" @done="getRoles" />
+  <role-edit
+    v-model:visible="showEdit"
+    :data="currentData"
+    :roles="tableInfo.tableDatas"
+    @done="getRoles"
+  />
 </template>
 
 <script setup>
-import { reactive, ref, nextTick, onMounted } from "vue";
+import { reactive, ref, onMounted } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { roleQuery, roleUpdate, roleDelete } from "@/api/admin/role";
 import TableHeader from "@/components/table/table-header.vue";

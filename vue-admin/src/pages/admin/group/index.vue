@@ -2,7 +2,9 @@
   <a-card>
     <table-header v-model:columns="tableInfo.tableColumns" @reload="getGroups">
       <template #left>
-        <a-button type="primary" @click="editGroup()" v-permission="'admin/group/create'">新增</a-button>
+        <a-button type="primary" @click="editGroup()" v-permission="'admin/group/create'">
+          新增
+        </a-button>
       </template>
     </table-header>
     <a-table
@@ -26,10 +28,18 @@
         />
       </template>
       <template #operation="{ record }">
-        <a-typography-text type="primary" @click="editGroup(record)" v-permission="'admin/group/update'">
+        <a-typography-text
+          type="primary"
+          @click="editGroup(record)"
+          v-permission="'admin/group/update'"
+        >
           编辑
         </a-typography-text>
-        <a-typography-text type="danger" @click="delGroup(record)" v-permission="'admin/group/delete'">
+        <a-typography-text
+          type="danger"
+          @click="delGroup(record)"
+          v-permission="'admin/group/delete'"
+        >
           删除
         </a-typography-text>
       </template>

@@ -4,7 +4,9 @@
     <table-header v-model:columns="tableInfo.tableColumns" @reload="getMenus">
       <template #left>
         <a-space>
-          <a-button type="primary" @click="editMenu()" v-permission="'admin/menu/create'">新增</a-button>
+          <a-button type="primary" @click="editMenu()" v-permission="'admin/menu/create'">
+            新增
+          </a-button>
         </a-space>
       </template>
     </table-header>
@@ -30,10 +32,18 @@
         />
       </template>
       <template #operation="{ record }">
-        <a-typography-text type="primary" @click="editMenu(record)" v-permission="'admin/menu/update'">
+        <a-typography-text
+          type="primary"
+          @click="editMenu(record)"
+          v-permission="'admin/menu/update'"
+        >
           编辑
         </a-typography-text>
-        <a-typography-text type="danger" @click="delMenu(record)" v-permission="'admin/menu/delete'">
+        <a-typography-text
+          type="danger"
+          @click="delMenu(record)"
+          v-permission="'admin/menu/delete'"
+        >
           删除
         </a-typography-text>
       </template>

@@ -4,7 +4,9 @@
     <table-header v-model:columns="tableInfo.tableColumns" @reload="getRoutes">
       <template #left>
         <a-space>
-          <a-button type="primary" @click="editRoute()" v-permission="'admin/route/create'">新增</a-button>
+          <a-button type="primary" @click="editRoute()" v-permission="'admin/route/create'">
+            新增
+          </a-button>
         </a-space>
       </template>
     </table-header>
@@ -31,16 +33,29 @@
         />
       </template>
       <template #operation="{ record }">
-        <a-typography-text type="primary" @click="editRoute(record)" v-permission="'admin/route/update'">
+        <a-typography-text
+          type="primary"
+          @click="editRoute(record)"
+          v-permission="'admin/route/update'"
+        >
           编辑
         </a-typography-text>
-        <a-typography-text type="danger" @click="delRoute(record)" v-permission="'admin/route/delete'">
+        <a-typography-text
+          type="danger"
+          @click="delRoute(record)"
+          v-permission="'admin/route/delete'"
+        >
           删除
         </a-typography-text>
       </template>
     </a-table>
   </a-card>
-  <route-edit v-model:visible="showEdit" :data="currentData" :type_id="tableInfo.form.type_id" @done="getRoutes" />
+  <route-edit
+    v-model:visible="showEdit"
+    :data="currentData"
+    :type_id="tableInfo.form.type_id"
+    @done="getRoutes"
+  />
 </template>
 
 <script setup>
