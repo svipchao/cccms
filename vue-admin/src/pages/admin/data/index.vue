@@ -2,9 +2,9 @@
   <a-card>
     <table-header v-model:columns="tableInfo.tableColumns" @reload="getDatas">
       <template #left>
-        <a-button type="primary" @click="editData()" v-permission="'admin/data/create'"
-          >新增</a-button
-        >
+        <a-button type="primary" @click="editData()" v-permission="'admin/data/create'">
+          新增
+        </a-button>
         <a-typography-text type="warning">
           注意：如果条件与值皆为空 则 该角色没有该表字段权限
         </a-typography-text>
@@ -103,8 +103,8 @@ const tableInfo = reactive({
   form: {
     role_id: undefined, // 角色ID
     table: undefined, // 数据表
-    currentPage: 1, // 当前页码
-    pageSize: 10, // 每页数据
+    page: 1, // 当前页码
+    limit: 10, // 每页数据
   },
   table: [], // 表名数据
   roles: [], // 角色数据
@@ -142,19 +142,14 @@ const showEdit = ref(false);
 const currentData = ref();
 
 const handlePageChange = (page) => {
-  tableInfo.form.currentPage = page;
+  tableInfo.form.page = page;
   getDatas();
 };
 
 const getDatas = async () => {
   const {
     data: { total, data, roles, table },
-  } = await dataQuery({
-    page: tableInfo.form.currentPage,
-    limit: tableInfo.form.pageSize,
-    role_id: tableInfo.form.role_id,
-    table: tableInfo.form.table,
-  });
+  } = await dataQuery(tableInfo.form);
   tableInfo.table = table;
   tableInfo.roles = roles;
   tableInfo.total = total;
