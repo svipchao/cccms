@@ -16,17 +16,17 @@ export const useMenu = defineStore({
   }),
   getters: {
     getOpenKeys() {
-      return Number(this.openKeys || localStorage.getItem("openKeys"));
+      return Number(this.openKeys);
     },
     getSelectedKeys() {
-      return Number(this.selectedKeys || localStorage.getItem("selectedKeys"));
+      return Number(this.selectedKeys);
     },
     getCurrentAppId() {
-      const currentAppId = Number(this.currentAppId || localStorage.getItem("currentAppId"));
+      const currentAppId = Number(this.currentAppId);
       return this.getCurrentMenu !== undefined ? currentAppId : undefined;
     },
     getCurrentMenu() {
-      const currentAppId = Number(this.currentAppId || localStorage.getItem("currentAppId"));
+      const currentAppId = Number(this.currentAppId);
       for (let index in this.menus) {
         let app = this.menus[index];
         if (currentAppId == app.id) {
@@ -43,21 +43,18 @@ export const useMenu = defineStore({
     },
     setCurrentApp(currentAppId) {
       this.currentAppId = currentAppId;
-      localStorage.setItem("currentAppId", currentAppId);
     },
     // 打开的菜单目录
     setOpenKeys(key, openKeys) {
       this.openKeys = openKeys;
-      localStorage.setItem("openKeys", openKeys);
     },
     // 选中的菜单
     setSetSelectedKeys(selectedKeys) {
       this.selectedKeys = selectedKeys;
-      localStorage.setItem("selectedKeys", selectedKeys);
     },
   },
   persist: {
-    key: "menu",
+    key: "cc_menu",
     storage: window.localStorage,
   },
 });

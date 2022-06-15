@@ -47,15 +47,12 @@ export const useUser = defineStore({
       this.$reset();
       const menuStore = useMenu();
       menuStore.$reset();
-      window.localStorage.setItem("currentAppId", undefined);
-      window.localStorage.setItem("selectedKeys", undefined);
-      window.localStorage.setItem("openKeys", undefined);
       // 清除accessToken
       router.push("/login");
     },
   },
   persist: {
-    key: "user",
+    key: "cc_user",
     storage: window.localStorage,
   },
 });

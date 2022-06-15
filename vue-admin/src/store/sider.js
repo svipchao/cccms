@@ -12,7 +12,7 @@ export const useSider = defineStore({
     },
   },
   persist: {
-    key: "sider",
+    key: "cc_sider",
     storage: window.localStorage,
   },
 });
