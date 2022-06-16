@@ -20,6 +20,18 @@
           </a-option>
         </a-select>
       </a-form-item>
+      <a-form-item field="admin_ids">
+        <a-select
+          allow-clear
+          v-model="form.admin_ids"
+          placeholder="添加组织管理员..."
+          :fallback-option="false"
+        >
+          <template #prefix>管理员</template>
+          <a-option :value="0" label="否" />
+          <a-option :value="1" label="是" />
+        </a-select>
+      </a-form-item>
       <a-form-item field="group_name">
         <a-input v-model="form.group_name" placeholder="名称...">
           <template #prefix>组织名称</template>
@@ -63,6 +75,7 @@ const props = defineProps({
 const getFormInit = () => {
   return {
     id: undefined,
+    admin_ids: undefined,
     role_ids: undefined,
     group_id: undefined,
     group_name: "",
