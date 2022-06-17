@@ -23,13 +23,17 @@
       <a-form-item field="admin_ids">
         <a-select
           allow-clear
+          allow-search
+          multiple
           v-model="form.admin_ids"
           placeholder="添加组织管理员..."
           :fallback-option="false"
+          @search="searchUser"
         >
           <template #prefix>管理员</template>
-          <a-option :value="0" label="否" />
-          <a-option :value="1" label="是" />
+          <a-option v-for="user in userList" :value="user.id">
+            {{ user.nickname }}({{ user.username }})
+          </a-option>
         </a-select>
       </a-form-item>
       <a-form-item field="group_name">
@@ -62,7 +66,7 @@
 <script setup>
 import { ref, reactive, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
-import { groupCreate, groupUpdate } from "@/api/admin/group";
+import { groupQuery, groupCreate, groupUpdate } from "@/api/admin/group";
 import { assignObject } from "@/utils/utils.js";
 
 const props = defineProps({
@@ -109,12 +113,21 @@ const okModal = async () => {
   emit("update:visible");
 };
 
+const userList = ref();
+
+const searchUser = async (value) => {
+  const { data } = await groupQuery({ user: value });
+  assignObject(data, userList.value);
+  userList.value = data;
+};
+
 watch(
   () => props.visible,
   (visible) => {
     if (visible) {
       if (props.data) {
         assignObject(form, props.data);
+        userList.value = props.data.adminUsers;
         isUpdate.value = true;
       } else {
         isUpdate.value = false;
