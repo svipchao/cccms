@@ -363,3 +363,19 @@ export const copyText = (text, success, error) => {
     document.body.removeChild(textArea);
   }
 };
+
+// 多次点击事件
+export const nClick = (callback, n = 2) => {
+  let timer;
+  if (timer) {
+    clearTimeout(timer);
+  }
+  callback =
+    callback ||
+    function () {
+      console.log("执行回调");
+    };
+  if (event.detail == n) {
+    callback();
+  }
+};
