@@ -14,6 +14,11 @@
       :scroll="{
         x: 900,
       }"
+      :pagination="{
+        total: tableInfo.form.total,
+        current: tableInfo.form.page,
+        pageSize: tableInfo.form.limit,
+      }"
       @page-change="handlePageChange"
     >
       <template #groupsFilter>
@@ -51,7 +56,7 @@
       <template #nicknameFilter>
         <a-card :style="{ width: '200px' }">
           <a-input
-            placeholder="模糊查询用户昵称(账号)..."
+            placeholder="模糊查询用户姓名(账号)..."
             allow-clear
             v-model="tableInfo.form.user"
           />
@@ -63,7 +68,7 @@
       <template #usernameFilter>
         <a-card :style="{ width: '200px' }">
           <a-input
-            placeholder="模糊查询用户昵称(账号)..."
+            placeholder="模糊查询用户姓名(账号)..."
             allow-clear
             v-model="tableInfo.form.user"
           />
@@ -141,7 +146,6 @@ onMounted(() => {
 
 // 数据
 const tableInfo = reactive({
-  total: 0, // 数据总条数
   form: {
     type: undefined, // 用户类型
     group_id: undefined, // 组织ID
@@ -149,6 +153,7 @@ const tableInfo = reactive({
     groups: [], // 组织ID集合
     page: 1, // 当前页码
     limit: 10, // 每页数据
+    total: 10, // 总数据
   },
   types: [], // 用户类别
   groups: [], // 组织数据
@@ -175,7 +180,7 @@ const tableInfo = reactive({
     },
     {
       dataIndex: "nickname",
-      title: "用户昵称",
+      title: "用户姓名",
       width: 200,
       filterable: {
         slotName: "nicknameFilter",
@@ -226,7 +231,7 @@ const getUsers = async () => {
   ]);
   tableInfo.types = types;
   tableInfo.groups = groups;
-  tableInfo.total = total;
+  tableInfo.form.total = total;
   tableInfo.tableDatas = data;
 };
 
