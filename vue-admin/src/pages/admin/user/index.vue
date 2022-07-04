@@ -56,7 +56,7 @@
       <template #nicknameFilter>
         <a-card :style="{ width: '200px' }">
           <a-input
-            placeholder="模糊查询用户姓名(账号)..."
+            placeholder="模糊查询用户昵称(账号)..."
             allow-clear
             v-model="tableInfo.form.user"
           />
@@ -68,7 +68,7 @@
       <template #usernameFilter>
         <a-card :style="{ width: '200px' }">
           <a-input
-            placeholder="模糊查询用户姓名(账号)..."
+            placeholder="模糊查询用户昵称(账号)..."
             allow-clear
             v-model="tableInfo.form.user"
           />
@@ -180,7 +180,7 @@ const tableInfo = reactive({
     },
     {
       dataIndex: "nickname",
-      title: "用户姓名",
+      title: "用户昵称",
       width: 200,
       filterable: {
         slotName: "nicknameFilter",
