@@ -1,0 +1,64 @@
+.ant-layout {
+  .ant-layout-sider {
+    height: 100vh;
+    box-shadow: 0 2px 5px 0 rgb(0 0 0 / 8%);
+    @media screen and (max-width: 930px) {
+      position: absolute;
+      z-index: 1000;
+    }
+    .ant-layout-space {
+      padding: 10px;
+      display: flex;
+      .ant-layout-sider-userinfo {
+        padding: 10px 10px 0px 10px;
+        .ant-avatar {
+          cursor: pointer;
+        }
+        .nickname {
+          margin: 1px 0;
+          font-size: 12px;
+        }
+        .username {
+          font-size: 14px;
+          margin: 5px 0 2px 0;
+        }
+      }
+      .ant-layout-sider-button {
+        align-items: center;
+        .ant-col {
+          text-align: center;
+        }
+      }
+      .ant-layout-sider-divider {
+        margin: 1px 0;
+      }
+      .ant-layout-sider-menu {
+        height: calc(100vh - 139px);
+        overflow: hidden;
+        overflow-y: auto;
+      }
+    }
+  }
+  .ant-layout {
+    .ant-layout-header {
+      height: 50px;
+      line-height: 50px;
+      padding-inline: 10px;
+      box-shadow: 0 2px 5px 0 rgb(0 0 0 / 8%);
+      .header-custom-right {
+        display: flex;
+        justify-content: flex-end;
+      }
+      .header-custom-box {
+        display: inline-block;
+        padding: 0 5px;
+      }
+    }
+    .ant-layout-content {
+      padding: 10px;
+      overflow: hidden;
+      overflow-y: auto;
+      height: calc(100vh - 50px);
+    }
+  }
+}
