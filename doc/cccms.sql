@@ -46,10 +46,10 @@ CREATE TABLE `sys_dept`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '部门表';
 INSERT INTO `sys_dept` (`id`, `dept_id`, `dept_ids`, `dept_name`, `dept_desc`, `status`)
-VALUES (1, 0, '0,', '部门1', '部门1描述', 1),
-       (2, 0, '0,', '部门2', '部门2描述', 0),
-       (3, 2, '0,2,', '部门2-1', '部门2-1描述', 1),
-       (4, 2, '0,2,', '部门2-2', '部门2-2描述', 1);
+VALUES (1, 0, '1', '部门1', '部门1描述', 1),
+       (2, 0, '2', '部门2', '部门2描述', 0),
+       (3, 2, '2,3', '部门2-1', '部门2-1描述', 1),
+       (4, 2, '2,4', '部门2-2', '部门2-2描述', 1);
 
 CREATE TABLE `sys_post`
 (
@@ -73,23 +73,23 @@ VALUES (1, 1, '岗位1', '岗位1', 2, 1),
 
 CREATE TABLE `sys_role`
 (
-    `id`          int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
-    `role_id`     int unsigned NOT NULL DEFAULT 0 COMMENT '父级ID',
+    `id`          int unsigned  NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `role_id`     int unsigned  NOT NULL DEFAULT 0 COMMENT '父级ID',
     `role_ids`    varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
-    `role_name`   varchar(32)  NOT NULL DEFAULT '' COMMENT '角色名称',
-    `role_desc`   varchar(255) NOT NULL DEFAULT '' COMMENT '角色备注',
-    `status`      tinyint      NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
-    `create_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    `role_name`   varchar(32)   NOT NULL DEFAULT '' COMMENT '角色名称',
+    `role_desc`   varchar(255)  NOT NULL DEFAULT '' COMMENT '角色备注',
+    `status`      tinyint       NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
+    `create_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '角色表';
 INSERT INTO `sys_role` (`id`, `role_id`, `role_ids`, `role_name`, `role_desc`, `status`)
-VALUES (1, 0, '0,', '角色1', '角色1', 1),
-       (2, 0, '0,', '角色2', '角色2', 0),
-       (3, 2, '0,2,', '角色2-1', '角色2-1', 1),
-       (4, 2, '0,2,', '角色2-2', '角色2-2', 1);
+VALUES (1, 0, '1', '角色1', '角色1', 1),
+       (2, 0, '2', '角色2', '角色2', 0),
+       (3, 2, '2,3', '角色2-1', '角色2-1', 1),
+       (4, 2, '2,4', '角色2-2', '角色2-2', 1);
 
 # 默认(字符串) 时间 时间戳 数字 IP Bool
 CREATE TABLE `sys_auth`

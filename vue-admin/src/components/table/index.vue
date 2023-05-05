@@ -15,7 +15,6 @@
       hide-expand-button-on-empty
       :loading="loading"
       :pagination="page"
-      :virtual-list-props="{ height: 'calc(100vh - 230px)', threshold: 50 }"
       @page-change="handlePageChange"
       @page-size-change="handleSizeChange"
       v-bind="$attrs"

@@ -63,9 +63,7 @@ const getDatas = async () => {
     ...table.form,
   });
   table.fields = fields;
-  setTimeout(() => {
-    table.datas = data;
-  }, 2000);
+  table.datas = data;
 };
 
 // 切换状态
@@ -117,15 +115,9 @@ const table = reactive({
       tooltip: true,
     },
     { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
-    { dataIndex: "create_time", title: "创建时间", width: 180 },
-    { dataIndex: "update_time", title: "更新时间", width: 180 },
-    {
-      dataIndex: "operation",
-      title: "操作",
-      width: 95,
-      fixed: "right",
-      slotName: "operation",
-    },
+    { dataIndex: "create_time", title: "创建时间", width: 180, ellipsis: true },
+    { dataIndex: "update_time", title: "更新时间", width: 180, ellipsis: true },
+    { dataIndex: "operation", title: "操作", width: 95, fixed: "right", slotName: "operation" },
   ],
 });
 </script>
