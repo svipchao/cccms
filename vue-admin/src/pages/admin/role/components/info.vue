@@ -124,6 +124,7 @@ watch(
 
 <style scoped lang="less">
 :deep(.arco-tree) {
+  width: 100%;
   height: calc(100vh - 386px);
   overflow-y: auto;
   &::-webkit-scrollbar {
