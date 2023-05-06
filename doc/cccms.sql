@@ -47,7 +47,7 @@ CREATE TABLE `sys_dept`
   COLLATE = utf8mb4_general_ci COMMENT = '部门表';
 INSERT INTO `sys_dept` (`id`, `dept_id`, `dept_ids`, `dept_name`, `dept_desc`, `status`)
 VALUES (1, 0, '1', '部门1', '部门1描述', 1),
-       (2, 0, '2', '部门2', '部门2描述', 0),
+       (2, 0, '2', '部门2', '部门2描述', 1),
        (3, 2, '2,3', '部门2-1', '部门2-1描述', 1),
        (4, 2, '2,4', '部门2-2', '部门2-2描述', 1);
 
@@ -67,7 +67,7 @@ CREATE TABLE `sys_post`
   COLLATE = utf8mb4_general_ci COMMENT = '岗位表';
 INSERT INTO `sys_post` (`id`, `dept_id`, `post_name`, `post_desc`, `range`, `status`)
 VALUES (1, 1, '岗位1', '岗位1', 2, 1),
-       (2, 2, '岗位2', '岗位2', 3, 0),
+       (2, 2, '岗位2', '岗位2', 3, 1),
        (3, 2, '岗位3', '岗位3', 0, 1),
        (4, 2, '岗位4', '岗位4', 0, 1);
 
@@ -87,7 +87,7 @@ CREATE TABLE `sys_role`
   COLLATE = utf8mb4_general_ci COMMENT = '角色表';
 INSERT INTO `sys_role` (`id`, `role_id`, `role_ids`, `role_name`, `role_desc`, `status`)
 VALUES (1, 0, '1', '角色1', '角色1', 1),
-       (2, 0, '2', '角色2', '角色2', 0),
+       (2, 0, '2', '角色2', '角色2', 1),
        (3, 2, '2,3', '角色2-1', '角色2-1', 1),
        (4, 2, '2,4', '角色2-2', '角色2-2', 1);
 
@@ -171,9 +171,9 @@ INSERT INTO `sys_menu` (`id`, `menu_id`, `name`, `icon`, `url`, `node`, `sort`, 
 VALUES (1, 0, '基础系统', 'ri-stack-line', '#', '#', 0, 1),
        (2, 1, '控制台', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
        (3, 1, '权限配置', 'ri-shield-check-line', '#', '#', 0, 1),
-       (4, 3, '用户管理', '', 'admin/user/index', 'admin/user/index', 0, 1),
+       (4, 3, '部门管理', '', 'admin/dept/index', 'admin/dept/index', 0, 1),
        (5, 3, '角色管理', '', 'admin/role/index', 'admin/role/index', 0, 1),
-       (6, 3, '数据权限', '', 'admin/data/index', 'admin/data/index', 0, 1),
+       (6, 3, '用户管理', '', 'admin/user/index', 'admin/user/index', 0, 1),
        (7, 1, '系统配置', 'ri-settings-line', '#', '#', 0, 1),
        (8, 8, '菜单管理', '', 'admin/menu/index', 'admin/menu/index', 0, 1),
        (9, 8, '配置管理', '', 'admin/config/index', 'admin/config/index', 0, 1),

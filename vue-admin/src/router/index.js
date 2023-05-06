@@ -3,6 +3,7 @@ import config from "@/config";
 import { useTabs } from "@/store/admin/tabs.js";
 import { useMenu } from "@/store/admin/menu.js";
 import { useUser } from "@/store/admin/user.js";
+import { useSystem } from "@/store/admin/system.js";
 import { expandArray } from "@/utils/array.js";
 
 const router = createRouter({
@@ -31,7 +32,6 @@ const router = createRouter({
 });
 
 // 路由守卫
-let registerRouteFresh = true;
 router.beforeEach((to, from, next) => {
   // 判断是否需要登录
   const userStore = useUser();
@@ -44,7 +44,8 @@ router.beforeEach((to, from, next) => {
     }
   } else {
     // 解决刷新页面路由不生效问题
-    if (registerRouteFresh) {
+    const systemStore = useSystem();
+    if (systemStore.isRegisterRouteFresh) {
       const menuStore = useMenu();
       const menus = expandArray(menuStore.menus || []);
       menus.forEach((item) => {
@@ -53,7 +54,6 @@ router.beforeEach((to, from, next) => {
             name: item.node,
             path: "/" + item.url,
             meta: { id: item.id, icon: item.icon, title: item.name },
-            // component: () => import("../pages/" + item.node + ".vue"),
             component: async () => {
               let cpn = await import(/* @vite-ignore */ "../pages/" + item.node + ".vue");
               cpn.default.name = item.node;
@@ -63,7 +63,7 @@ router.beforeEach((to, from, next) => {
         }
       });
       next({ ...to, replace: true });
-      registerRouteFresh = false;
+      systemStore.setRegisterRouteFresh();
     } else {
       // keep-alive 实现
       const tabsStore = useTabs();

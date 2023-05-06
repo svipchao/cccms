@@ -10,7 +10,7 @@
     <template #headerButton>
       <a-button type="primary" @click="editData()">添加</a-button>
     </template>
-    <template #roleName="{ record }"> {{ record.mark }}{{ record.role_name }} </template>
+    <template #deptName="{ record }"> {{ record.mark }}{{ record.dept_name }} </template>
     <template #status="{ record }">
       <a-switch
         v-model:model-value="record.status"
@@ -23,7 +23,7 @@
       <a-typography-text
         type="primary"
         @click="editData(record)"
-        v-permission="'admin/role/update'"
+        v-permission="'admin/dept/update'"
       >
         详情
       </a-typography-text>
@@ -34,13 +34,13 @@
         :ok-loading-time="500"
         @ok="delData(record)"
       >
-        <a-typography-text type="danger" v-permission="'admin/role/delete'">
+        <a-typography-text type="danger" v-permission="'admin/dept/delete'">
           删除
         </a-typography-text>
       </Popconfirm>
     </template>
   </Table>
-  <DataInfo v-model:visible="showData" :data="currentData" :roles="table.datas" @done="getDatas" />
+  <DataInfo v-model:visible="showData" :data="currentData" :depts="table.datas" @done="getDatas" />
 </template>
 
 <script setup>
@@ -49,7 +49,7 @@ import { Message } from "@arco-design/web-vue";
 import Table from "@/components/table/index.vue";
 import Popconfirm from "@/components/popconfirm/index.vue";
 import DataInfo from "./components/info.vue";
-import { roleQuery, roleUpdate, roleDelete } from "@/api/admin/role.js";
+import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
 import { useFormEdit } from "@/hooks/form.js";
 
 onMounted(() => {
@@ -59,7 +59,7 @@ onMounted(() => {
 const getDatas = async () => {
   const {
     data: { fields, data },
-  } = await roleQuery({
+  } = await deptQuery({
     ...table.form,
   });
   table.fields = fields;
@@ -68,7 +68,7 @@ const getDatas = async () => {
 
 // 切换状态
 const changeStatusFun = (record) => {
-  roleUpdate({ id: record.id, status: record.status }).then((res) => {
+  deptUpdate({ id: record.id, status: record.status }).then((res) => {
     Message.success("更新成功");
   });
 };
@@ -80,7 +80,7 @@ const editData = (row) => {
 };
 
 const delData = (row) => {
-  roleDelete(row).then((res) => {
+  deptDelete(row).then((res) => {
     Message.success("删除成功");
     getDatas();
   });
@@ -97,16 +97,16 @@ const table = reactive({
   ignoreFields: ["operation"],
   columns: [
     {
-      dataIndex: "role_name",
-      title: "角色名称",
+      dataIndex: "dept_name",
+      title: "部门名称",
       width: 150,
       ellipsis: true,
       tooltip: true,
-      slotName: "roleName",
+      slotName: "deptName",
     },
     {
-      dataIndex: "role_desc",
-      title: "角色备注",
+      dataIndex: "dept_desc",
+      title: "部门备注",
       width: 200,
       ellipsis: true,
       tooltip: true,
