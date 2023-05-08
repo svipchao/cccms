@@ -1,45 +1,88 @@
 <template>
-  <Table
-    :fields="table.fields"
-    :ignoreFields="table.ignoreFields"
-    v-model:columns="table.columns"
-    v-model:pagination="table.pagination"
-    :data="table.datas"
-    @reload="getDatas"
-  >
-    <template #headerButton>
-      <a-button type="primary" @click="editData()">添加</a-button>
-    </template>
-    <template #deptName="{ record }"> {{ record.mark }}{{ record.dept_name }} </template>
-    <template #status="{ record }">
-      <a-switch
-        v-model:model-value="record.status"
-        :checked-value="1"
-        :unchecked-value="0"
-        @change="changeStatusFun(record)"
-      />
-    </template>
-    <template #operation="{ record }">
-      <a-typography-text
-        type="primary"
-        @click="editData(record)"
-        v-permission="'admin/dept/update'"
+  <div class="box">
+    <div class="box-left">
+      <a-tree
+        v-if="table.datas?.length > 0"
+        blockNode
+        showLine
+        :data="table.datas"
+        :fieldNames="{
+          key: 'id',
+          title: 'dept_name',
+          children: 'children',
+        }"
+        :default-expand-all="false"
       >
-        详情
-      </a-typography-text>
-      <Popconfirm
-        content="确定要删除吗？"
-        type="warning"
-        position="left"
-        :ok-loading-time="500"
-        @ok="delData(record)"
+        <template #title="node">
+          <div>{{ node.dept_name }}</div>
+          <div style="font-size: 12px; color: #999">{{ node.dept_desc }}</div>
+        </template>
+        <template #extra="nodeData">
+          <a-button type="text" size="mini">
+            <template #icon>
+              <i class="ri-edit-line"></i>
+            </template>
+          </a-button>
+          <Popconfirm
+            content="确定要删除吗？"
+            type="warning"
+            position="left"
+            :ok-loading-time="500"
+            @ok="delData(nodeData)"
+          >
+            <a-button type="text" size="mini">
+              <template #icon>
+                <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
+              </template>
+            </a-button>
+          </Popconfirm>
+        </template>
+      </a-tree>
+    </div>
+    <div class="box-right">
+      <Table
+        :fields="table.fields"
+        :ignoreFields="table.ignoreFields"
+        v-model:columns="table.columns"
+        v-model:pagination="table.pagination"
+        :data="table.datas"
+        @reload="getDatas"
       >
-        <a-typography-text type="danger" v-permission="'admin/dept/delete'">
-          删除
-        </a-typography-text>
-      </Popconfirm>
-    </template>
-  </Table>
+        <template #headerButton>
+          <a-button type="primary" @click="editData()">添加</a-button>
+        </template>
+        <template #deptName="{ record }"> {{ record.mark }}{{ record.dept_name }} </template>
+        <template #status="{ record }">
+          <a-switch
+            v-model:model-value="record.status"
+            :checked-value="1"
+            :unchecked-value="0"
+            @change="changeStatusFun(record)"
+          />
+        </template>
+        <template #operation="{ record }">
+          <a-typography-text
+            type="primary"
+            @click="editData(record)"
+            v-permission="'admin/dept/update'"
+          >
+            详情
+          </a-typography-text>
+          <Popconfirm
+            content="确定要删除吗？"
+            type="warning"
+            position="left"
+            :ok-loading-time="500"
+            @ok="delData(record)"
+          >
+            <a-typography-text type="danger" v-permission="'admin/dept/delete'">
+              删除
+            </a-typography-text>
+          </Popconfirm>
+        </template>
+      </Table>
+    </div>
+  </div>
   <DataInfo v-model:visible="showData" :data="currentData" :depts="table.datas" @done="getDatas" />
 </template>
 
@@ -118,3 +161,34 @@ const table = reactive({
   ],
 });
 </script>
+<style lang="less">
+.box {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.box-left {
+  width: 230px;
+  max-height: calc(100vh - 110px);
+  overflow: hidden;
+  overflow-y: auto;
+  background: #fff;
+  padding: 10px;
+  border: 1px solid var(--color-neutral-3);
+  border-right: 0px;
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    border-radius: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    background: var(--color-neutral-3);
+  }
+}
+.box-right {
+  width: calc(100% - 230px);
+}
+</style>
