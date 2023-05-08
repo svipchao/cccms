@@ -30,6 +30,7 @@
 import { reactive, watch, useAttrs, onMounted, ref } from "vue";
 import Header from "./header.vue";
 const attrs = useAttrs();
+console.log(attrs);
 const emits = defineEmits(["reload", "update:pagination"]);
 
 const props = defineProps({

@@ -1,94 +1,201 @@
 <template>
-  <a-table
-    stripe
-    bordered
-    hoverable
-    column-resizable
-    hide-expand-button-on-empty
-    :scroll="{ x: 600 }"
-    :columns="columns"
-    :data="data"
-  />
-  <a-row>
-    <a-col flex="100px">
-      <div>100px</div>
-    </a-col>
-    <a-col flex="auto">
-      <div style="width: 100%">
-        <a-table
-          stripe
-          bordered
-          hoverable
-          column-resizable
-          hide-expand-button-on-empty
-          :scroll="{ x: 600 }"
-          :columns="columns"
-          :data="data"
-        />
-      </div>
-    </a-col>
-  </a-row>
+  <div class="box">
+    <div class="box-left">
+      <a-tree
+        v-if="table.datas?.length > 0"
+        blockNode
+        showLine
+        :data="table.datas"
+        :fieldNames="{
+          key: 'id',
+          title: 'dept_name',
+          children: 'children',
+        }"
+        :default-expand-all="false"
+      >
+        <template #title="node">
+          <div>{{ node.dept_name }}</div>
+          <div style="font-size: 12px; color: #999">{{ node.dept_desc }}</div>
+        </template>
+        <template #extra="nodeData">
+          <a-button type="text" size="mini">
+            <template #icon>
+              <i class="ri-edit-line"></i>
+            </template>
+          </a-button>
+          <Popconfirm
+            content="确定要删除吗？"
+            type="warning"
+            position="left"
+            :ok-loading-time="500"
+            @ok="delData(nodeData)"
+          >
+            <a-button type="text" size="mini">
+              <template #icon>
+                <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
+              </template>
+            </a-button>
+          </Popconfirm>
+        </template>
+      </a-tree>
+    </div>
+    <div class="box-right">
+      <a-table
+        stripe
+        bordered
+        hoverable
+        sticky-header
+        column-resizable
+        table-layout-fixed
+        hide-expand-button-on-empty
+        :loading="loading"
+        :pagination="page"
+        v-model:columns="table.columns"
+        v-model:pagination="table.pagination"
+        @page-change="handlePageChange"
+        @page-size-change="handleSizeChange"
+        :data="table.datas"
+        @reload="getDatas"
+      >
+        <template #headerButton>
+          <a-button type="primary" @click="editData()">添加</a-button>
+        </template>
+        <template #deptName="{ record }"> {{ record.mark }}{{ record.dept_name }} </template>
+        <template #status="{ record }">
+          <a-switch
+            v-model:model-value="record.status"
+            :checked-value="1"
+            :unchecked-value="0"
+            @change="changeStatusFun(record)"
+          />
+        </template>
+        <template #operation="{ record }">
+          <a-typography-text
+            type="primary"
+            @click="editData(record)"
+            v-permission="'admin/dept/update'"
+          >
+            详情
+          </a-typography-text>
+          <Popconfirm
+            content="确定要删除吗？"
+            type="warning"
+            position="left"
+            :ok-loading-time="500"
+            @ok="delData(record)"
+          >
+            <a-typography-text type="danger" v-permission="'admin/dept/delete'">
+              删除
+            </a-typography-text>
+          </Popconfirm>
+        </template>
+      </a-table>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { reactive } from "vue";
-const columns = [
-  {
-    title: "Name",
-    dataIndex: "name",
-    width: 150,
+import { ref, reactive, onMounted } from "vue";
+import { Message } from "@arco-design/web-vue";
+import Table from "@/components/table/index.vue";
+import Popconfirm from "@/components/popconfirm/index.vue";
+import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
+import { useFormEdit } from "@/hooks/form.js";
+
+onMounted(() => {
+  getDatas();
+});
+
+const getDatas = async () => {
+  const {
+    data: { fields, data },
+  } = await deptQuery({
+    ...table.form,
+  });
+  table.fields = fields;
+  table.datas = data;
+};
+
+// 切换状态
+const changeStatusFun = (record) => {
+  deptUpdate({ id: record.id, status: record.status }).then((res) => {
+    Message.success("更新成功");
+  });
+};
+
+const { showData, currentData, updateFormEditStatus } = useFormEdit();
+
+const editData = (row) => {
+  updateFormEditStatus(row);
+};
+
+const delData = (row) => {
+  deptDelete(row).then((res) => {
+    Message.success("删除成功");
+    getDatas();
+  });
+};
+
+// 数据
+const table = reactive({
+  form: {
+    user: undefined,
   },
-  {
-    title: "Salary",
-    dataIndex: "salary",
-    width: 150,
-  },
-  {
-    title: "Address",
-    dataIndex: "address",
-    width: 150,
-  },
-  {
-    title: "Email",
-    dataIndex: "email",
-    width: 150,
-  },
-];
-const data = reactive([
-  {
-    key: "1",
-    name: "Jane Doe",
-    salary: 23000,
-    address: "32 Park Road, London",
-    email: "jane.doe@example.com",
-  },
-  {
-    key: "2",
-    name: "Alisa Ross",
-    salary: 25000,
-    address: "35 Park Road, London",
-    email: "alisa.ross@example.com",
-  },
-  {
-    key: "3",
-    name: "Kevin Sandra",
-    salary: 22000,
-    address: "31 Park Road, London",
-    email: "kevin.sandra@example.com",
-  },
-  {
-    key: "4",
-    name: "Ed Hellen",
-    salary: 17000,
-    address: "42 Park Road, London",
-    email: "ed.hellen@example.com",
-  },
-  {
-    key: "5",
-    name: "William Smith",
-    salary: 27000,
-    address: "62 Park Road, London",
-    email: "william.smith@example.com",
-  },
-]);
+  pagination: false,
+  datas: [],
+  fields: [],
+  ignoreFields: ["operation"],
+  columns: [
+    {
+      dataIndex: "dept_name",
+      title: "部门名称",
+      width: 150,
+      ellipsis: true,
+      tooltip: true,
+      slotName: "deptName",
+    },
+    {
+      dataIndex: "dept_desc",
+      title: "部门备注",
+      width: 200,
+      ellipsis: true,
+      tooltip: true,
+    },
+    { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
+    { dataIndex: "create_time", title: "创建时间", width: 180, ellipsis: true },
+    { dataIndex: "update_time", title: "更新时间", width: 180, ellipsis: true },
+    { dataIndex: "operation", title: "操作", width: 95, fixed: "right", slotName: "operation" },
+  ],
+});
 </script>
+<style lang="less">
+.box {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.box-left {
+  width: 230px;
+  max-height: calc(100vh - 110px);
+  overflow: hidden;
+  overflow-y: auto;
+  background: #fff;
+  padding: 10px;
+  border: 1px solid var(--color-neutral-3);
+  border-right: 0px;
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    border-radius: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    background: var(--color-neutral-3);
+  }
+}
+.box-right {
+  width: calc(100% - 230px);
+}
+</style>
