@@ -1,6 +1,9 @@
 <template>
-  <div class="box">
-    <div class="box-left">
+  <a-row>
+    <a-col flex="300px" class="dept-box" :wrap="false">
+      <div class="dept-button">
+        <a-button type="primary" long @click="editData()">添加</a-button>
+      </div>
       <a-tree
         v-if="table.datas?.length > 0"
         blockNode
@@ -14,127 +17,55 @@
         :default-expand-all="false"
       >
         <template #title="node">
-          <div>{{ node.dept_name }}</div>
-          <div style="font-size: 12px; color: #999">{{ node.dept_desc }}</div>
+          <a-typography-paragraph
+            :ellipsis="{
+              rows: 1,
+              showTooltip: true,
+            }"
+          >
+            {{ node.dept_name }}
+          </a-typography-paragraph>
+          <a-typography-paragraph
+            :ellipsis="{
+              rows: 1,
+              showTooltip: true,
+            }"
+            style="font-size: 12px; color: #999"
+          >
+            {{ node.dept_desc }}
+          </a-typography-paragraph>
         </template>
         <template #extra="nodeData">
-          <a-button type="text" size="mini">
-            <template #icon>
-              <i class="ri-edit-line"></i>
-            </template>
-          </a-button>
-          <Popconfirm
-            content="确定要删除吗？"
-            type="warning"
-            position="left"
-            :ok-loading-time="500"
-            @ok="delData(nodeData)"
-          >
-            <a-button type="text" size="mini">
-              <template #icon>
-                <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
-              </template>
-            </a-button>
-          </Popconfirm>
-        </template>
-      </a-tree>
-    </div>
-    <div class="box-right">
-      <a-card>
-        <Header v-bind="$attrs">
-          <template #headerButton>
-            <a-button type="primary" @click="editData()">添加</a-button>
-          </template>
-        </Header>
-        <a-table
-          stripe
-          bordered
-          hoverable
-          sticky-header
-          column-resizable
-          table-layout-fixed
-          hide-expand-button-on-empty
-          :fields="table.fields"
-          :ignoreFields="table.ignoreFields"
-          v-model:columns="table.columns"
-          v-model:pagination="table.pagination"
-          :data="table.datas"
-          @reload="getDatas"
-        >
-          <template #deptName="{ record }"> {{ record.mark }}{{ record.dept_name }} </template>
-          <template #status="{ record }">
-            <a-switch
-              v-model:model-value="record.status"
-              :checked-value="1"
-              :unchecked-value="0"
-              @change="changeStatusFun(record)"
-            />
-          </template>
-          <template #operation="{ record }">
-            <a-typography-text
-              type="primary"
-              @click="editData(record)"
+          <a-button-group>
+            <a-button
+              type="text"
+              size="mini"
+              @click="editData(nodeData)"
               v-permission="'admin/dept/update'"
             >
-              详情
-            </a-typography-text>
+              <template #icon>
+                <i class="ri-edit-line"></i>
+              </template>
+            </a-button>
             <Popconfirm
               content="确定要删除吗？"
               type="warning"
               position="left"
               :ok-loading-time="500"
-              @ok="delData(record)"
+              @ok="delData(nodeData)"
             >
-              <a-typography-text type="danger" v-permission="'admin/dept/delete'">
-                删除
-              </a-typography-text>
+              <a-button type="text" size="mini" v-permission="'admin/dept/delete'">
+                <template #icon>
+                  <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
+                </template>
+              </a-button>
             </Popconfirm>
-          </template>
-        </a-table>
-      </a-card>
-    </div>
-  </div>
-  <div class="box">
-    <div class="box-left">
-      <a-tree
-        v-if="table.datas?.length > 0"
-        blockNode
-        showLine
-        :data="table.datas"
-        :fieldNames="{
-          key: 'id',
-          title: 'dept_name',
-          children: 'children',
-        }"
-        :default-expand-all="false"
-      >
-        <template #title="node">
-          <div>{{ node.dept_name }}</div>
-          <div style="font-size: 12px; color: #999">{{ node.dept_desc }}</div>
-        </template>
-        <template #extra="nodeData">
-          <a-button type="text" size="mini">
-            <template #icon>
-              <i class="ri-edit-line"></i>
-            </template>
-          </a-button>
-          <Popconfirm
-            content="确定要删除吗？"
-            type="warning"
-            position="left"
-            :ok-loading-time="500"
-            @ok="delData(nodeData)"
-          >
-            <a-button type="text" size="mini">
-              <template #icon>
-                <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
-              </template>
-            </a-button>
-          </Popconfirm>
+          </a-button-group>
         </template>
       </a-tree>
-    </div>
-    <div class="box-right">
+      <a-empty v-else />
+    </a-col>
+    <a-col flex="auto">
       <Table
         :fields="table.fields"
         :ignoreFields="table.ignoreFields"
@@ -176,8 +107,8 @@
           </Popconfirm>
         </template>
       </Table>
-    </div>
-  </div>
+    </a-col>
+  </a-row>
   <DataInfo v-model:visible="showData" :data="currentData" :depts="table.datas" @done="getDatas" />
 </template>
 
@@ -191,6 +122,7 @@ import DataInfo from "./components/info.vue";
 import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
 import { useFormEdit } from "@/hooks/form.js";
 
+// 这里布局有问题 等官方更新 https://github.com/arco-design/arco-design-vue/issues/2397
 onMounted(() => {
   getDatas();
 });
@@ -258,13 +190,17 @@ const table = reactive({
 });
 </script>
 <style lang="less">
-.box {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
+.arco-tree-node-selected .arco-typography {
+  color: rgb(var(--primary-6)) !important;
+  transition: color 0.2s cubic-bezier(0, 0, 1, 1);
 }
-.box-left {
-  width: 230px;
+.dept-button {
+  padding: 6px 0 10px 0;
+  border-bottom: 1px solid var(--color-neutral-3);
+}
+.dept-box {
+  display: inline-block;
+  width: 200px;
   max-height: calc(100vh - 110px);
   overflow: hidden;
   overflow-y: auto;
@@ -283,8 +219,8 @@ const table = reactive({
     border-radius: 8px;
     background: var(--color-neutral-3);
   }
-}
-.box-right {
-  width: calc(100% - 230px);
+  .arco-typography {
+    margin-bottom: 0;
+  }
 }
 </style>

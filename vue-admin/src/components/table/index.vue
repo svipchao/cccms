@@ -15,6 +15,7 @@
       hide-expand-button-on-empty
       :loading="loading"
       :pagination="page"
+      :scroll="{ x: 320 }"
       @page-change="handlePageChange"
       @page-size-change="handleSizeChange"
       v-bind="$attrs"
@@ -30,7 +31,6 @@
 import { reactive, watch, useAttrs, onMounted, ref } from "vue";
 import Header from "./header.vue";
 const attrs = useAttrs();
-console.log(attrs);
 const emits = defineEmits(["reload", "update:pagination"]);
 
 const props = defineProps({
