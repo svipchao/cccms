@@ -1,6 +1,6 @@
 <template>
   <a-row>
-    <a-col flex="300px" class="dept-box" :wrap="false">
+    <a-col flex="300px" :class="isShowDept ? 'dept-box dept-box-show' : 'dept-box'" :wrap="false">
       <div class="dept-button">
         <a-button type="primary" long @click="editData()">添加</a-button>
       </div>
@@ -75,7 +75,15 @@
         @reload="getDatas"
       >
         <template #headerButton>
-          <a-button type="primary" @click="editData()">添加</a-button>
+          <a-space>
+            <a-button @click="isShowDeptFun">
+              <template #icon>
+                <i class="ri-arrow-right-double-line" v-if="isShowDept"></i>
+                <i class="ri-arrow-left-double-line" v-else></i>
+              </template>
+            </a-button>
+            <a-button type="primary" @click="editData()">添加</a-button>
+          </a-space>
         </template>
         <template #deptName="{ record }"> {{ record.mark }}{{ record.dept_name }} </template>
         <template #status="{ record }">
@@ -107,6 +115,7 @@
           </Popconfirm>
         </template>
       </Table>
+      <div class="cccms-mark" @click="isShowDeptFun()" v-show="!isShowDept"></div>
     </a-col>
   </a-row>
   <DataInfo v-model:visible="showData" :data="currentData" :depts="table.datas" @done="getDatas" />
@@ -121,6 +130,7 @@ import Popconfirm from "@/components/popconfirm/index.vue";
 import DataInfo from "./components/info.vue";
 import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
 import { useFormEdit } from "@/hooks/form.js";
+import { detectDeviceType } from "@/utils/browser.js";
 
 // 这里布局有问题 等官方更新 https://github.com/arco-design/arco-design-vue/issues/2397
 onMounted(() => {
@@ -188,6 +198,11 @@ const table = reactive({
     { dataIndex: "operation", title: "操作", width: 95, fixed: "right", slotName: "operation" },
   ],
 });
+
+const isShowDept = ref(detectDeviceType() == "Desktop");
+const isShowDeptFun = () => {
+  isShowDept.value = !isShowDept.value;
+};
 </script>
 <style lang="less">
 .arco-tree-node-selected .arco-typography {
@@ -200,27 +215,43 @@ const table = reactive({
 }
 .dept-box {
   display: inline-block;
-  width: 200px;
-  max-height: calc(100vh - 110px);
-  overflow: hidden;
-  overflow-y: auto;
-  background: #fff;
+  height: calc(100vh - 110px);
   padding: 10px;
+  background: #fff;
   border: 1px solid var(--color-neutral-3);
   border-right: 0px;
-  &::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  &::-webkit-scrollbar-track {
-    border-radius: 8px;
-  }
-  &::-webkit-scrollbar-thumb {
-    border-radius: 8px;
-    background: var(--color-neutral-3);
+  box-shadow: 0 2px 5px 0 rgb(0 0 0 / 8%);
+  @media screen and (max-width: 1200px) {
+    width: 300px;
+    z-index: 997;
+    position: absolute;
+    border: 1px solid var(--color-neutral-3);
   }
   .arco-typography {
     margin-bottom: 0;
   }
+  .arco-tree {
+    height: calc(100% - 49px);
+    overflow: hidden;
+    overflow-y: auto;
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      border-radius: 8px;
+    }
+    &::-webkit-scrollbar-thumb {
+      border-radius: 8px;
+      background: var(--color-neutral-3);
+    }
+  }
+}
+.dept-box-show {
+  display: none;
+}
+.cccms-mark {
+  top: 90px !important;
+  z-index: 996 !important;
 }
 </style>
