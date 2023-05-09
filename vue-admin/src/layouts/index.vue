@@ -24,11 +24,7 @@
             </router-view>
           </div>
         </a-layout-content>
-        <div
-          class="cccms-mark"
-          @click="themeStore.switchShowSider()"
-          v-show="themeStore.showSider"
-        ></div>
+        <Mark @click="themeStore.switchShowSider()" v-show="themeStore.showSider" />
       </a-layout>
     </a-layout>
   </a-layout>
@@ -38,6 +34,7 @@
 import Header from "./header/index.vue";
 import Sider from "./sider/index.vue";
 import Tabs from "./content/tabs.vue";
+import Mark from "@/components/mark/index.vue";
 import { useTabs } from "@/store/admin/tabs.js";
 import { useTheme } from "@/store/admin/theme.js";
 

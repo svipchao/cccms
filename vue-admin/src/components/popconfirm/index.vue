@@ -13,10 +13,11 @@
 
 <script setup>
 import { ref, reactive, useAttrs, onMounted } from "vue";
+import config from "@/config";
 const attrs = useAttrs();
 
 const props = defineProps({
-  okLoadingTime: 0,
+  okLoadingTime: undefined,
 });
 
 const okButtonPropsObj = ref();
@@ -33,12 +34,18 @@ onMounted(() => {
 const okLoadingStatus = ref(false);
 
 const changePopconfirm = (visible) => {
+  let loadingTime = 0;
+  if (props.okLoadingTime === undefined) {
+    loadingTime = config.okLoadingTime;
+  } else {
+    loadingTime = props.okLoadingTime;
+  }
   if (props.okLoadingTime !== 0) {
     if (visible) {
       okLoadingStatus.value = true;
       setTimeout(() => {
         okLoadingStatus.value = false;
-      }, props.okLoadingTime);
+      }, loadingTime);
     } else {
       okLoadingStatus.value = true;
     }

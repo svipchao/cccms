@@ -9,4 +9,6 @@ export default {
   copyrightUrl: "https://www.cccms.cc/",
   // 接口URL
   baseUrl: "http://cms.qq.com",
+  // 全局确认框加载时间 ms
+  okLoadingTime: 1000,
 };

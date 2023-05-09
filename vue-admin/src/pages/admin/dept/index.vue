@@ -1,6 +1,6 @@
 <template>
   <a-row>
-    <a-col flex="300px" :class="isShowDept ? 'dept-box dept-box-show' : 'dept-box'" :wrap="false">
+    <a-col flex="300px" :class="isShowDept ? 'dept-box' : 'dept-box dept-box-show'" :wrap="false">
       <div class="dept-button">
         <a-button type="primary" long @click="editData()">添加</a-button>
       </div>
@@ -51,7 +51,6 @@
               content="确定要删除吗？"
               type="warning"
               position="left"
-              :ok-loading-time="500"
               @ok="delData(nodeData)"
             >
               <a-button type="text" size="mini" v-permission="'admin/dept/delete'">
@@ -76,10 +75,10 @@
       >
         <template #headerButton>
           <a-space>
-            <a-button @click="isShowDeptFun">
+            <a-button @click="isShowDept = !isShowDept">
               <template #icon>
-                <i class="ri-arrow-right-double-line" v-if="isShowDept"></i>
-                <i class="ri-arrow-left-double-line" v-else></i>
+                <i class="ri-arrow-left-double-line" v-if="isShowDept"></i>
+                <i class="ri-arrow-right-double-line" v-else></i>
               </template>
             </a-button>
             <a-button type="primary" @click="editData()">添加</a-button>
@@ -106,7 +105,6 @@
             content="确定要删除吗？"
             type="warning"
             position="left"
-            :ok-loading-time="500"
             @ok="delData(record)"
           >
             <a-typography-text type="danger" v-permission="'admin/dept/delete'">
@@ -115,7 +113,14 @@
           </Popconfirm>
         </template>
       </Table>
-      <div class="cccms-mark" @click="isShowDeptFun()" v-show="!isShowDept"></div>
+      <Mark
+        @click="isShowDept = !isShowDept"
+        v-show="isShowDept"
+        :style="{
+          top: '90px !important',
+          zIndex: '995 !important',
+        }"
+      />
     </a-col>
   </a-row>
   <DataInfo v-model:visible="showData" :data="currentData" :depts="table.datas" @done="getDatas" />
@@ -126,6 +131,7 @@ import Header from "@/components/table/header.vue";
 import { ref, reactive, onMounted } from "vue";
 import { Message } from "@arco-design/web-vue";
 import Table from "@/components/table/index.vue";
+import Mark from "@/components/mark/index.vue";
 import Popconfirm from "@/components/popconfirm/index.vue";
 import DataInfo from "./components/info.vue";
 import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
@@ -166,6 +172,8 @@ const delData = (row) => {
     getDatas();
   });
 };
+// 侧栏是否显示
+const isShowDept = ref(true);
 
 // 数据
 const table = reactive({
@@ -198,11 +206,6 @@ const table = reactive({
     { dataIndex: "operation", title: "操作", width: 95, fixed: "right", slotName: "operation" },
   ],
 });
-
-const isShowDept = ref(detectDeviceType() == "Desktop");
-const isShowDeptFun = () => {
-  isShowDept.value = !isShowDept.value;
-};
 </script>
 <style lang="less">
 .arco-tree-node-selected .arco-typography {
@@ -220,12 +223,15 @@ const isShowDeptFun = () => {
   background: #fff;
   border: 1px solid var(--color-neutral-3);
   border-right: 0px;
-  box-shadow: 0 2px 5px 0 rgb(0 0 0 / 8%);
+  box-shadow: 0 2px 5px 0 rgb(0 0 0 / 10%);
   @media screen and (max-width: 1200px) {
     width: 300px;
     z-index: 997;
     position: absolute;
     border: 1px solid var(--color-neutral-3);
+  }
+  .arco-tree-node-title {
+    display: block;
   }
   .arco-typography {
     margin-bottom: 0;
@@ -246,12 +252,12 @@ const isShowDeptFun = () => {
       background: var(--color-neutral-3);
     }
   }
+  .cccms-mark {
+    top: 90px !important;
+    z-index: 996 !important;
+  }
 }
 .dept-box-show {
   display: none;
-}
-.cccms-mark {
-  top: 90px !important;
-  z-index: 996 !important;
 }
 </style>

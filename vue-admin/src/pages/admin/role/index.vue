@@ -31,7 +31,6 @@
         content="确定要删除吗？"
         type="warning"
         position="left"
-        :ok-loading-time="500"
         @ok="delData(record)"
       >
         <a-typography-text type="danger" v-permission="'admin/role/delete'">
