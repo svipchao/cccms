@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace app\index\controller;
 
 use cccms\Base;
+use think\facade\Db;
 
 /**
  * 默认应用
@@ -20,6 +21,12 @@ class Index extends Base
      */
     public function index(): string
     {
+        $res = Db::table('sys_user')->alias('u')
+            ->where('u.id', '=', function ($query) {
+                $query->table('sys_auth')->where('user_id', '<', 1)->field('id');
+            })->join('sys_role r', 'u.id = r.id')
+            ->buildSql();
+        halt($res);
         return '<!DOCTYPE html> <html lang="zh-cn"> <head> <meta charset="UTF-8" /> <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0" /> <title>CCCMS</title> <style> * { padding: 0; margin: 0; background: #fff; font-family: "Microsoft Yahei", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #333; font-size: 16px; } .system-message { padding: 24px 48px; } .system-message h1 { font-size: 100px; font-weight: normal; line-height: 120px; margin-bottom: 12px; } .system-message .msg { line-height: 1.8em; font-size: 36px; } </style> </head> <body> <div class="system-message"> <h1>:)</h1> <p class="msg">CCCMS</p> </div> </body> </html>';
     }
 }
