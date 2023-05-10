@@ -12,19 +12,21 @@
           <div class="cccms-tabs">
             <Tabs />
           </div>
-          <div class="cccms-content">
-            <router-view v-slot="{ Component }">
-              <Transition duration="500" name="nested">
-                <div v-if="!tabsStore.isRefresh">
-                  <keep-alive :include="tabsStore.getCacheTabs">
-                    <component :is="Component" />
-                  </keep-alive>
-                </div>
-              </Transition>
-            </router-view>
-          </div>
+          <router-view v-slot="{ Component }">
+            <Transition duration="500" name="nested">
+              <div class="cccms-content" v-if="!tabsStore.isRefresh">
+                <keep-alive :include="tabsStore.getCacheTabs">
+                  <component :is="Component" />
+                </keep-alive>
+              </div>
+            </Transition>
+          </router-view>
         </a-layout-content>
-        <Mark @click="themeStore.switchShowSider()" v-show="themeStore.showSider" />
+        <div
+          class="cccms-mark"
+          @click="themeStore.switchShowSider()"
+          v-show="themeStore.showSider"
+        />
       </a-layout>
     </a-layout>
   </a-layout>
@@ -34,7 +36,6 @@
 import Header from "./header/index.vue";
 import Sider from "./sider/index.vue";
 import Tabs from "./content/tabs.vue";
-import Mark from "@/components/mark/index.vue";
 import { useTabs } from "@/store/admin/tabs.js";
 import { useTheme } from "@/store/admin/theme.js";
 
@@ -42,7 +43,19 @@ const tabsStore = useTabs();
 const themeStore = useTheme();
 </script>
 
-<style>
+<style lang="less">
+.cccms-mark {
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 998;
+  position: fixed;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.15);
+  @media screen and (min-width: 930px) {
+    display: none;
+  }
+}
 .nested-enter-active,
 .nested-leave-active {
   transition: all 0.3s ease-in-out;

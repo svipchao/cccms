@@ -10,13 +10,14 @@ body {
   cursor: pointer;
 }
 .cccms-layout {
+  box-sizing: border-box;
   height: 100vh !important;
   .arco-layout-sider {
     z-index: 999;
     width: 260px !important;
     @media screen and (max-width: 930px) {
-      position: absolute;
       z-index: 1000;
+      position: absolute;
     }
     .arco-layout-sider-system {
       padding: 20px 10px 0px 10px;

@@ -9,16 +9,9 @@
   >
     <template #headerButton>
       <a-space>
-        <a-button @click="isShowDeptFun">
-          <template #icon>
-            <i class="ri-arrow-left-double-line" v-if="props.isShowDept"></i>
-            <i class="ri-arrow-right-double-line" v-else></i>
-          </template>
-        </a-button>
         <a-button type="primary" @click="editData()">添加</a-button>
       </a-space>
     </template>
-    <template #deptName="{ record }"> {{ record.mark }}{{ record.dept_name }} </template>
     <template #status="{ record }">
       <a-switch
         v-model:model-value="record.status"
@@ -28,17 +21,22 @@
       />
     </template>
     <template #operation="{ record }">
-      <a-typography-text
-        type="primary"
+      <a-button
+        type="text"
+        size="mini"
         @click="editData(record)"
-        v-permission="'admin/dept/update'"
+        v-permission="'admin/user/update'"
       >
-        详情
-      </a-typography-text>
+        <template #icon>
+          <i class="ri-edit-line"></i>
+        </template>
+      </a-button>
       <Popconfirm content="确定要删除吗？" type="warning" position="left" @ok="delData(record)">
-        <a-typography-text type="danger" v-permission="'admin/dept/delete'">
-          删除
-        </a-typography-text>
+        <a-button type="text" size="mini" v-permission="'admin/user/delete'">
+          <template #icon>
+            <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
+          </template>
+        </a-button>
       </Popconfirm>
     </template>
   </Table>
@@ -49,7 +47,6 @@ import Header from "@/components/table/header.vue";
 import { ref, reactive, onMounted, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import Table from "@/components/table/index.vue";
-import Mark from "@/components/mark/index.vue";
 import Popconfirm from "@/components/popconfirm/index.vue";
 import { userQuery, userUpdate, userDelete } from "@/api/admin/user.js";
 import { useFormEdit } from "@/hooks/form.js";
@@ -61,7 +58,6 @@ onMounted(() => {
 });
 
 const props = defineProps({
-  isShowDept: true,
   dept: undefined,
   currentSelectDeptId: undefined,
 });
@@ -72,12 +68,6 @@ watch(
     console.log(props.currentSelectDeptId);
   }
 );
-
-const emits = defineEmits(["update:isShowDept"]);
-
-const isShowDeptFun = () => {
-  emits("update:isShowDept", !props.isShowDept);
-};
 
 const getDatas = async () => {
   const {
@@ -151,7 +141,14 @@ const table = reactive({
     { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
     { dataIndex: "create_time", title: "创建时间", width: 180, ellipsis: true, tooltip: true },
     { dataIndex: "update_time", title: "更新时间", width: 180, ellipsis: true, tooltip: true },
-    { dataIndex: "operation", title: "操作", width: 100, fixed: "right", slotName: "operation" },
+    {
+      dataIndex: "operation",
+      title: "操作",
+      width: 80,
+      align: "center",
+      fixed: "right",
+      slotName: "operation",
+    },
   ],
 });
 </script>
