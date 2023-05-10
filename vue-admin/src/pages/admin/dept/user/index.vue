@@ -51,13 +51,13 @@ import { Message } from "@arco-design/web-vue";
 import Table from "@/components/table/index.vue";
 import Mark from "@/components/mark/index.vue";
 import Popconfirm from "@/components/popconfirm/index.vue";
-import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
+import { userQuery, userUpdate, userDelete } from "@/api/admin/user.js";
 import { useFormEdit } from "@/hooks/form.js";
 import { detectDeviceType } from "@/utils/browser.js";
 
 // 这里布局有问题 等官方更新 https://github.com/arco-design/arco-design-vue/issues/2397
 onMounted(() => {
-  // getDatas();
+  getDatas();
 });
 
 const props = defineProps({
@@ -82,7 +82,7 @@ const isShowDeptFun = () => {
 const getDatas = async () => {
   const {
     data: { fields, data },
-  } = await deptQuery({
+  } = await userQuery({
     ...table.form,
   });
   table.fields = fields;
@@ -91,7 +91,7 @@ const getDatas = async () => {
 
 // 切换状态
 const changeStatusFun = (record) => {
-  deptUpdate({ id: record.id, status: record.status }).then((res) => {
+  userUpdate({ id: record.id, status: record.status }).then((res) => {
     Message.success("更新成功");
   });
 };
@@ -103,13 +103,11 @@ const editData = (row) => {
 };
 
 const delData = (row) => {
-  deptDelete(row).then((res) => {
+  userDelete(row).then((res) => {
     Message.success("删除成功");
     getDatas();
   });
 };
-// 侧栏是否显示
-const isShowDept = ref(true);
 
 // 数据
 const table = reactive({
@@ -121,79 +119,39 @@ const table = reactive({
   fields: [],
   ignoreFields: ["operation"],
   columns: [
+    { dataIndex: "id", title: "ID", width: 60 },
     {
-      dataIndex: "dept_name",
-      title: "部门名称",
-      width: 150,
+      dataIndex: "nickname",
+      title: "用户昵称",
+      width: 130,
       ellipsis: true,
       tooltip: true,
-      slotName: "deptName",
+      filterable: {
+        slotName: "nicknameFilter",
+      },
     },
     {
-      dataIndex: "dept_desc",
-      title: "部门备注",
-      width: 200,
+      dataIndex: "username",
+      title: "用户账号",
+      width: 130,
       ellipsis: true,
       tooltip: true,
+      filterable: {
+        slotName: "usernameFilter",
+      },
+    },
+    {
+      dataIndex: "user_id",
+      title: "邀请人",
+      width: 130,
+      ellipsis: true,
+      tooltip: true,
+      slotName: "userId",
     },
     { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
-    { dataIndex: "create_time", title: "创建时间", width: 180, ellipsis: true },
-    { dataIndex: "update_time", title: "更新时间", width: 180, ellipsis: true },
-    { dataIndex: "operation", title: "操作", width: 95, fixed: "right", slotName: "operation" },
+    { dataIndex: "create_time", title: "创建时间", width: 180, ellipsis: true, tooltip: true },
+    { dataIndex: "update_time", title: "更新时间", width: 180, ellipsis: true, tooltip: true },
+    { dataIndex: "operation", title: "操作", width: 100, fixed: "right", slotName: "operation" },
   ],
 });
 </script>
-<style lang="less">
-.arco-tree-node-selected .arco-typography {
-  color: rgb(var(--primary-6)) !important;
-  transition: color 0.2s cubic-bezier(0, 0, 1, 1);
-}
-.dept-button {
-  padding: 6px 0 10px 0;
-  border-bottom: 1px solid var(--color-neutral-3);
-}
-.dept-box {
-  display: inline-block;
-  height: calc(100vh - 110px);
-  padding: 10px;
-  background: #fff;
-  border: 1px solid var(--color-neutral-3);
-  border-right: 0px;
-  box-shadow: 0 2px 5px 0 rgb(0 0 0 / 10%);
-  @media screen and (max-width: 1200px) {
-    width: 300px;
-    z-index: 997;
-    position: absolute;
-    border: 1px solid var(--color-neutral-3);
-  }
-  .arco-tree-node-title {
-    display: block;
-  }
-  .arco-typography {
-    margin-bottom: 0;
-  }
-  .arco-tree {
-    height: calc(100% - 49px);
-    overflow: hidden;
-    overflow-y: auto;
-    &::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    &::-webkit-scrollbar-track {
-      border-radius: 8px;
-    }
-    &::-webkit-scrollbar-thumb {
-      border-radius: 8px;
-      background: var(--color-neutral-3);
-    }
-  }
-  .cccms-mark {
-    top: 90px !important;
-    z-index: 996 !important;
-  }
-}
-.dept-box-show {
-  display: none;
-}
-</style>
