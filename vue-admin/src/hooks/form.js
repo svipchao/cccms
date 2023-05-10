@@ -21,15 +21,15 @@ export const useResetForm = (initialValues) => {
 
 export function useFormEdit() {
   // 是否打开弹窗
-  const showData = ref(false);
+  const showPopup = ref(false);
 
   // 当前编辑的数据
   const currentData = ref();
 
   const updateFormEditStatus = (row) => {
-    showData.value = true;
+    showPopup.value = true;
     currentData.value = row;
   };
 
-  return { showData, currentData, updateFormEditStatus };
+  return { showPopup, currentData, updateFormEditStatus };
 }

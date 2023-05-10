@@ -5,16 +5,18 @@
         <a-button type="primary" long @click="editData()">添加</a-button>
       </div>
       <a-tree
-        v-if="table.datas?.length > 0"
+        v-if="deptInfo.datas?.length > 0"
         blockNode
         showLine
-        :data="table.datas"
+        :data="deptInfo.datas"
         :fieldNames="{
           key: 'id',
           title: 'dept_name',
           children: 'children',
         }"
+        :selected-keys="[deptInfo.currentSelectDeptId]"
         :default-expand-all="false"
+        @select="selectDept"
       >
         <template #title="node">
           <a-typography-paragraph
@@ -65,54 +67,11 @@
       <a-empty v-else />
     </a-col>
     <a-col flex="auto">
-      <Table
-        :fields="table.fields"
-        :ignoreFields="table.ignoreFields"
-        v-model:columns="table.columns"
-        v-model:pagination="table.pagination"
-        :data="table.datas"
-        @reload="getDatas"
-      >
-        <template #headerButton>
-          <a-space>
-            <a-button @click="isShowDept = !isShowDept">
-              <template #icon>
-                <i class="ri-arrow-left-double-line" v-if="isShowDept"></i>
-                <i class="ri-arrow-right-double-line" v-else></i>
-              </template>
-            </a-button>
-            <a-button type="primary" @click="editData()">添加</a-button>
-          </a-space>
-        </template>
-        <template #deptName="{ record }"> {{ record.mark }}{{ record.dept_name }} </template>
-        <template #status="{ record }">
-          <a-switch
-            v-model:model-value="record.status"
-            :checked-value="1"
-            :unchecked-value="0"
-            @change="changeStatusFun(record)"
-          />
-        </template>
-        <template #operation="{ record }">
-          <a-typography-text
-            type="primary"
-            @click="editData(record)"
-            v-permission="'admin/dept/update'"
-          >
-            详情
-          </a-typography-text>
-          <Popconfirm
-            content="确定要删除吗？"
-            type="warning"
-            position="left"
-            @ok="delData(record)"
-          >
-            <a-typography-text type="danger" v-permission="'admin/dept/delete'">
-              删除
-            </a-typography-text>
-          </Popconfirm>
-        </template>
-      </Table>
+      <UserList
+        v-model:isShowDept="isShowDept"
+        :dept="deptInfo.datas"
+        :currentSelectDeptId="deptInfo.currentSelectDeptId"
+      />
       <Mark
         @click="isShowDept = !isShowDept"
         v-show="isShowDept"
@@ -123,17 +82,23 @@
       />
     </a-col>
   </a-row>
-  <DataInfo v-model:visible="showData" :data="currentData" :depts="table.datas" @done="getDatas" />
+  <DeptInfo
+    v-model:visible="showPopup"
+    :data="currentData"
+    :depts="deptInfo.datas"
+    @done="getDatas"
+  />
 </template>
 
 <script setup>
-import Header from "@/components/table/header.vue";
 import { ref, reactive, onMounted } from "vue";
 import { Message } from "@arco-design/web-vue";
+import Header from "@/components/table/header.vue";
 import Table from "@/components/table/index.vue";
 import Mark from "@/components/mark/index.vue";
 import Popconfirm from "@/components/popconfirm/index.vue";
-import DataInfo from "./components/info.vue";
+import DeptInfo from "./components/info.vue";
+import UserList from "./user/index.vue";
 import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
 import { useFormEdit } from "@/hooks/form.js";
 import { detectDeviceType } from "@/utils/browser.js";
@@ -143,14 +108,19 @@ onMounted(() => {
   getDatas();
 });
 
+const deptInfo = reactive({
+  form: {
+    user: undefined,
+  },
+  datas: [],
+  currentSelectDeptId: 0,
+});
+
 const getDatas = async () => {
-  const {
-    data: { fields, data },
-  } = await deptQuery({
-    ...table.form,
+  const { data } = await deptQuery({
+    ...deptInfo.form,
   });
-  table.fields = fields;
-  table.datas = data;
+  deptInfo.datas = data.data;
 };
 
 // 切换状态
@@ -160,7 +130,7 @@ const changeStatusFun = (record) => {
   });
 };
 
-const { showData, currentData, updateFormEditStatus } = useFormEdit();
+const { showPopup, currentData, updateFormEditStatus } = useFormEdit();
 
 const editData = (row) => {
   updateFormEditStatus(row);
@@ -172,40 +142,17 @@ const delData = (row) => {
     getDatas();
   });
 };
+
+// tree选中取消方法
+const selectDept = (selectedKeys) => {
+  if (selectedKeys.indexOf(Number(deptInfo.currentSelectDeptId)) > -1) {
+    deptInfo.currentSelectDeptId = 0;
+  } else {
+    deptInfo.currentSelectDeptId = Number(selectedKeys);
+  }
+};
 // 侧栏是否显示
 const isShowDept = ref(true);
-
-// 数据
-const table = reactive({
-  form: {
-    user: undefined,
-  },
-  pagination: false,
-  datas: [],
-  fields: [],
-  ignoreFields: ["operation"],
-  columns: [
-    {
-      dataIndex: "dept_name",
-      title: "部门名称",
-      width: 150,
-      ellipsis: true,
-      tooltip: true,
-      slotName: "deptName",
-    },
-    {
-      dataIndex: "dept_desc",
-      title: "部门备注",
-      width: 200,
-      ellipsis: true,
-      tooltip: true,
-    },
-    { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
-    { dataIndex: "create_time", title: "创建时间", width: 180, ellipsis: true },
-    { dataIndex: "update_time", title: "更新时间", width: 180, ellipsis: true },
-    { dataIndex: "operation", title: "操作", width: 95, fixed: "right", slotName: "operation" },
-  ],
-});
 </script>
 <style lang="less">
 .arco-tree-node-selected .arco-typography {

@@ -72,7 +72,7 @@ const changeStatusFun = (record) => {
   });
 };
 
-const { showData, currentData, updateFormEditStatus } = useFormEdit();
+const { showPopup, currentData, updateFormEditStatus } = useFormEdit();
 
 const editData = (row) => {
   updateFormEditStatus(row);

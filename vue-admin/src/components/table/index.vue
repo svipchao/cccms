@@ -15,7 +15,7 @@
       hide-expand-button-on-empty
       :loading="loading"
       :pagination="page"
-      :scroll="{ x: 320 }"
+      :scroll="{ x: 320, y: '100%' }"
       @page-change="handlePageChange"
       @page-size-change="handleSizeChange"
       v-bind="$attrs"
