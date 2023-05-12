@@ -14,6 +14,9 @@
           title: 'dept_name',
           children: 'children',
         }"
+        :virtualListProps="{
+          height: '100%',
+        }"
         :selected-keys="[deptInfo.currentSelectDeptId]"
         :default-expand-all="false"
         @select="selectDept"
