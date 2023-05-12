@@ -1,7 +1,7 @@
 {
-  "name": "vue-admin",
+  "name": "ele-admin",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arco-design/web-vue": "^2.45.3",
     "axios": "^1.4.0",
+    "element-plus": "^2.3.4",
     "less": "^4.1.3",
     "pinia": "^2.0.36",
     "pinia-plugin-persistedstate": "3.1.0",
@@ -19,6 +19,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.2",
+    "unplugin-auto-import": "^0.15.3",
+    "unplugin-vue-components": "^0.24.1",
     "vite": "^4.3.5"
   }
 }
