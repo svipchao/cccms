@@ -52,7 +52,6 @@ import { userQuery, userUpdate, userDelete } from "@/api/admin/user.js";
 import { useFormEdit } from "@/hooks/form.js";
 import { detectDeviceType } from "@/utils/browser.js";
 
-// 这里布局有问题 等官方更新 https://github.com/arco-design/arco-design-vue/issues/2397
 onMounted(() => {
   getDatas();
 });
@@ -65,18 +64,26 @@ const props = defineProps({
 watch(
   () => props.currentSelectDeptId,
   () => {
-    console.log(props.currentSelectDeptId);
+    table.form.dept_id = props.currentSelectDeptId;
+    getDatas();
   }
 );
 
 const getDatas = async () => {
   const {
-    data: { fields, data },
+    data: { fields, data, total },
   } = await userQuery({
     ...table.form,
+    ...table.pagination,
   });
-  table.fields = fields;
   table.datas = data;
+  table.fields = fields;
+  console.log(123);
+  table.pagination.total = total;
+};
+
+const demo1 = () => {
+  table.pagination.total = 20;
 };
 
 // 切换状态
@@ -103,8 +110,13 @@ const delData = (row) => {
 const table = reactive({
   form: {
     user: undefined,
+    dept_id: undefined,
   },
-  pagination: false,
+  pagination: {
+    total: 1,
+    page: 1,
+    limit: 15,
+  },
   datas: [],
   fields: [],
   ignoreFields: ["operation"],

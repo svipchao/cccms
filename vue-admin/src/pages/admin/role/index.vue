@@ -27,12 +27,7 @@
       >
         详情
       </a-typography-text>
-      <Popconfirm
-        content="确定要删除吗？"
-        type="warning"
-        position="left"
-        @ok="delData(record)"
-      >
+      <Popconfirm content="确定要删除吗？" type="warning" position="left" @ok="delData(record)">
         <a-typography-text type="danger" v-permission="'admin/role/delete'">
           删除
         </a-typography-text>

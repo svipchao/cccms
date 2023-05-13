@@ -34,11 +34,7 @@ const attrs = useAttrs();
 const emits = defineEmits(["reload", "update:pagination"]);
 
 const props = defineProps({
-  pagination: {
-    total: 1,
-    current: 1,
-    pageSize: 10,
-  },
+  pagination: false,
 });
 
 onMounted(() => {
@@ -47,15 +43,15 @@ onMounted(() => {
 });
 
 // 分页配置
-let page = {
+let page = reactive({
   total: 0,
   current: 1,
   pageSize: 10,
   showTotal: true,
   showJumper: true,
   showPageSize: true,
-  pageSizeOptions: [10, 20, 30, 40, 50, 100],
-};
+  pageSizeOptions: [15, 20, 30, 40, 50, 100],
+});
 
 const loading = ref(true);
 watch(
@@ -70,6 +66,8 @@ watch(
   () => {
     if (props.pagination !== false) {
       page = Object.assign({ ...page, ...props.pagination });
+      page.current = page.page;
+      page.pageSize = page.limit;
       if (props.pagination?.simple === undefined && window.innerWidth < 930) {
         // 自动简洁分页
         page.simple = true;
@@ -78,11 +76,13 @@ watch(
         page.showPageSize = false;
       }
     }
-  }
+  },
+  { deep: true }
 );
 
 // 页码改变时触发
 const handlePageChange = (current) => {
+  props.pagination.page = current;
   props.pagination.current = current;
   emits("update:pagination", props.pagination);
   emits("reload");
@@ -90,6 +90,7 @@ const handlePageChange = (current) => {
 
 // 数据条数改变时触发
 const handleSizeChange = (pageSize) => {
+  props.pagination.limit = pageSize;
   props.pagination.pageSize = pageSize;
   emits("update:pagination", props.pagination);
   emits("reload");

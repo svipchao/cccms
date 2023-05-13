@@ -120,22 +120,25 @@ body {
         overflow-y: auto;
         height: calc(100vh - 110px);
         background-color: var(--color-fill-2);
-        &::-webkit-scrollbar {
-          width: 9px;
-          height: 9px;
-        }
-        &::-webkit-scrollbar-track {
-          border-radius: 9px;
-        }
-        &::-webkit-scrollbar-thumb {
-          border-radius: 9px;
-          background: var(--color-neutral-3);
-        }
-        &::-webkit-scrollbar-thumb:hover {
-          background: var(--color-neutral-4);
-        }
       }
     }
+  }
+}
+.cccms-content,
+.arco-virtual-list {
+  &::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  &::-webkit-scrollbar-track {
+    border-radius: 9px;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 9px;
+    background: var(--color-neutral-3);
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-neutral-4);
   }
 }
 .footer-copyright {

@@ -15,7 +15,8 @@
           children: 'children',
         }"
         :virtualListProps="{
-          height: '100%',
+          height: 'calc(100vh - 205px)',
+          threshold: 30,
         }"
         :selected-keys="[deptInfo.currentSelectDeptId]"
         :default-expand-all="false"
@@ -94,7 +95,6 @@ import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
 import { useFormEdit } from "@/hooks/form.js";
 import { detectDeviceType } from "@/utils/browser.js";
 
-// 这里布局有问题 等官方更新 https://github.com/arco-design/arco-design-vue/issues/2397
 onMounted(() => {
   getDatas();
 });
@@ -150,7 +150,6 @@ const demoFun = () => {
 </script>
 <style lang="less">
 .cc-pane {
-  height: calc(100vh - 110px);
   .dept-button {
     padding: 6px 0 10px 0;
     border-bottom: 1px solid var(--color-neutral-3);
@@ -159,20 +158,6 @@ const demoFun = () => {
     height: calc(100% - 49px);
     overflow: hidden;
     overflow-y: auto;
-    .arco-virtual-list::-webkit-scrollbar {
-      width: 9px;
-      height: 9px;
-    }
-    .arco-virtual-list::-webkit-scrollbar-track {
-      border-radius: 9px;
-    }
-    .arco-virtual-list::-webkit-scrollbar-thumb {
-      border-radius: 9px;
-      background: var(--color-neutral-3);
-    }
-    .arco-virtual-list::-webkit-scrollbar-thumb:hover {
-      background: var(--color-neutral-4);
-    }
     .arco-typography {
       margin-bottom: 0;
     }

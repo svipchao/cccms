@@ -62,41 +62,36 @@ const switchSizeFun = () => {
 
 <style scoped lang="less">
 .cc-pane {
-  padding: 10px;
   position: relative;
   box-sizing: border-box;
-  background: var(--color-bg-2);
-  border: 1px solid var(--color-neutral-3);
   .cc-pane-box {
-    display: flex;
     height: 100%;
-    position: relative;
+    display: flex;
     overflow: hidden;
+    position: relative;
     .cc-pane-left {
       height: 100%;
       position: relative;
-      background: var(--color-bg-2);
       @media screen and (max-width: 930px) {
         z-index: 998;
         position: absolute;
-        box-shadow: 0 2px 5px 0 rgb(0 0 0 / 8%);
       }
       & > div {
         width: calc(100% - 10px);
         height: 100%;
         padding: 10px;
-        margin-right: 10px;
         box-sizing: border-box;
+        background: var(--color-bg-2);
       }
       .ri-arrow-left-s-fill,
       .ri-arrow-right-s-fill {
         cursor: pointer;
-        z-index: 997;
         font-size: 14px;
         height: 35px;
         line-height: 35px;
         top: 1px;
         right: -16px;
+        z-index: 997;
         position: absolute;
         background: rgb(var(--gray-3));
         border-radius: 0 0px 6px 0;
@@ -120,7 +115,9 @@ const switchSizeFun = () => {
         top: 0;
         z-index: 996;
         position: absolute;
+        box-sizing: border-box;
         background-color: rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--color-neutral-3);
         @media screen and (min-width: 930px) {
           display: none;
         }
