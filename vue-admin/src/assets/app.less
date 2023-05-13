@@ -121,15 +121,18 @@ body {
         height: calc(100vh - 110px);
         background-color: var(--color-fill-2);
         &::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 9px;
+          height: 9px;
         }
         &::-webkit-scrollbar-track {
-          border-radius: 8px;
+          border-radius: 9px;
         }
         &::-webkit-scrollbar-thumb {
-          border-radius: 8px;
+          border-radius: 9px;
           background: var(--color-neutral-3);
+        }
+        &::-webkit-scrollbar-thumb:hover {
+          background: var(--color-neutral-4);
         }
       }
     }

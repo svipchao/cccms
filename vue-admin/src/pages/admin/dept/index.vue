@@ -159,16 +159,19 @@ const demoFun = () => {
     height: calc(100% - 49px);
     overflow: hidden;
     overflow-y: auto;
-    &::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+    .arco-virtual-list::-webkit-scrollbar {
+      width: 9px;
+      height: 9px;
     }
-    &::-webkit-scrollbar-track {
-      border-radius: 8px;
+    .arco-virtual-list::-webkit-scrollbar-track {
+      border-radius: 9px;
     }
-    &::-webkit-scrollbar-thumb {
-      border-radius: 8px;
+    .arco-virtual-list::-webkit-scrollbar-thumb {
+      border-radius: 9px;
       background: var(--color-neutral-3);
+    }
+    .arco-virtual-list::-webkit-scrollbar-thumb:hover {
+      background: var(--color-neutral-4);
     }
     .arco-typography {
       margin-bottom: 0;

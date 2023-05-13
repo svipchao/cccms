@@ -1,20 +1,20 @@
 /*
-* Remix Icon v3.0.0
+* Remix Icon v3.2.0
 * https://remixicon.com
 * https://github.com/Remix-Design/RemixIcon
 *
 * Copyright RemixIcon.com
 * Released under the Apache License Version 2.0
 *
-* Date: 2023-04-01
+* Date: 2023-04-15
 */
 @font-face {font-family: "remixicon";
-  src: url('remixicon.eot?t=1680339538483'); /* IE9*/
-  src: url('remixicon.eot?t=1680339538483#iefix') format('embedded-opentype'), /* IE6-IE8 */
-  url("remixicon.woff2?t=1680339538483") format("woff2"),
-  url("remixicon.woff?t=1680339538483") format("woff"),
-  url('remixicon.ttf?t=1680339538483') format('truetype'), /* chrome, firefox, opera, Safari, Android, iOS 4.2+*/
-  url('remixicon.svg?t=1680339538483#remixicon') format('svg'); /* iOS 4.1- */
+  src: url('remixicon.eot?t=1681573354175'); /* IE9*/
+  src: url('remixicon.eot?t=1681573354175#iefix') format('embedded-opentype'), /* IE6-IE8 */
+  url("remixicon.woff2?t=1681573354175") format("woff2"),
+  url("remixicon.woff?t=1681573354175") format("woff"),
+  url('remixicon.ttf?t=1681573354175') format('truetype'), /* chrome, firefox, opera, Safari, Android, iOS 4.2+*/
+  url('remixicon.svg?t=1681573354175#remixicon') format('svg'); /* iOS 4.1- */
 }
 
 [class^="ri-"], [class*=" ri-"] {
@@ -2452,6 +2452,48 @@
 .ri-wechat-channels-line:before { content: "\f379"; }
 .ri-wordpress-fill:before { content: "\f37a"; }
 .ri-wordpress-line:before { content: "\f37b"; }
+.ri-blender-fill:before { content: "\f37c"; }
+.ri-blender-line:before { content: "\f37d"; }
+.ri-emoji-sticker-fill:before { content: "\f37e"; }
+.ri-emoji-sticker-line:before { content: "\f37f"; }
+.ri-git-close-pull-request-fill:before { content: "\f380"; }
+.ri-git-close-pull-request-line:before { content: "\f381"; }
+.ri-instance-fill:before { content: "\f382"; }
+.ri-instance-line:before { content: "\f383"; }
+.ri-megaphone-fill:before { content: "\f384"; }
+.ri-megaphone-line:before { content: "\f385"; }
+.ri-pass-expired-fill:before { content: "\f386"; }
+.ri-pass-expired-line:before { content: "\f387"; }
+.ri-pass-pending-fill:before { content: "\f388"; }
+.ri-pass-pending-line:before { content: "\f389"; }
+.ri-pass-valid-fill:before { content: "\f38a"; }
+.ri-pass-valid-line:before { content: "\f38b"; }
+.ri-ai-generate:before { content: "\f38c"; }
+.ri-calendar-close-fill:before { content: "\f38d"; }
+.ri-calendar-close-line:before { content: "\f38e"; }
+.ri-draggable:before { content: "\f38f"; }
+.ri-font-family:before { content: "\f390"; }
+.ri-font-mono:before { content: "\f391"; }
+.ri-font-sans-serif:before { content: "\f392"; }
+.ri-font-sans:before { content: "\f393"; }
+.ri-hard-drive-3-fill:before { content: "\f394"; }
+.ri-hard-drive-3-line:before { content: "\f395"; }
+.ri-kick-fill:before { content: "\f396"; }
+.ri-kick-line:before { content: "\f397"; }
+.ri-list-check-3:before { content: "\f398"; }
+.ri-list-indefinite:before { content: "\f399"; }
+.ri-list-ordered-2:before { content: "\f39a"; }
+.ri-list-radio:before { content: "\f39b"; }
+.ri-openbase-fill:before { content: "\f39c"; }
+.ri-openbase-line:before { content: "\f39d"; }
+.ri-planet-fill:before { content: "\f39e"; }
+.ri-planet-line:before { content: "\f39f"; }
+.ri-prohibited-fill:before { content: "\f3a0"; }
+.ri-prohibited-line:before { content: "\f3a1"; }
+.ri-quote-text:before { content: "\f3a2"; }
+.ri-seo-fill:before { content: "\f3a3"; }
+.ri-seo-line:before { content: "\f3a4"; }
+.ri-slash-commands:before { content: "\f3a5"; }
 
 $ri-24-hours-fill: "\ea01";
 $ri-24-hours-line: "\ea02";
@@ -4880,4 +4922,46 @@ $ri-wechat-channels-fill: "\f378";
 $ri-wechat-channels-line: "\f379";
 $ri-wordpress-fill: "\f37a";
 $ri-wordpress-line: "\f37b";
+$ri-blender-fill: "\f37c";
+$ri-blender-line: "\f37d";
+$ri-emoji-sticker-fill: "\f37e";
+$ri-emoji-sticker-line: "\f37f";
+$ri-git-close-pull-request-fill: "\f380";
+$ri-git-close-pull-request-line: "\f381";
+$ri-instance-fill: "\f382";
+$ri-instance-line: "\f383";
+$ri-megaphone-fill: "\f384";
+$ri-megaphone-line: "\f385";
+$ri-pass-expired-fill: "\f386";
+$ri-pass-expired-line: "\f387";
+$ri-pass-pending-fill: "\f388";
+$ri-pass-pending-line: "\f389";
+$ri-pass-valid-fill: "\f38a";
+$ri-pass-valid-line: "\f38b";
+$ri-ai-generate: "\f38c";
+$ri-calendar-close-fill: "\f38d";
+$ri-calendar-close-line: "\f38e";
+$ri-draggable: "\f38f";
+$ri-font-family: "\f390";
+$ri-font-mono: "\f391";
+$ri-font-sans-serif: "\f392";
+$ri-font-sans: "\f393";
+$ri-hard-drive-3-fill: "\f394";
+$ri-hard-drive-3-line: "\f395";
+$ri-kick-fill: "\f396";
+$ri-kick-line: "\f397";
+$ri-list-check-3: "\f398";
+$ri-list-indefinite: "\f399";
+$ri-list-ordered-2: "\f39a";
+$ri-list-radio: "\f39b";
+$ri-openbase-fill: "\f39c";
+$ri-openbase-line: "\f39d";
+$ri-planet-fill: "\f39e";
+$ri-planet-line: "\f39f";
+$ri-prohibited-fill: "\f3a0";
+$ri-prohibited-line: "\f3a1";
+$ri-quote-text: "\f3a2";
+$ri-seo-fill: "\f3a3";
+$ri-seo-line: "\f3a4";
+$ri-slash-commands: "\f3a5";
 
