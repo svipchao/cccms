@@ -43,9 +43,9 @@
 </template>
 
 <script setup>
-import Header from "@/components/table/header.vue";
 import { ref, reactive, onMounted, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
+import Header from "@/components/table/header.vue";
 import Table from "@/components/table/index.vue";
 import Popconfirm from "@/components/popconfirm/index.vue";
 import { userQuery, userUpdate, userDelete } from "@/api/admin/user.js";
@@ -78,7 +78,6 @@ const getDatas = async () => {
   });
   table.datas = data;
   table.fields = fields;
-  console.log(123);
   table.pagination.total = total;
 };
 

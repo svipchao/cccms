@@ -1,3 +1,8 @@
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}
 body {
   background-color: var(--color-bg-1);
   color: var(--color-text-1);
@@ -8,6 +13,9 @@ body {
 .arco-avatar,
 .arco-table .arco-typography {
   cursor: pointer;
+}
+.arco-card>.arco-card-body {
+  padding: 10px;
 }
 .cccms-layout {
   box-sizing: border-box;
@@ -118,7 +126,7 @@ body {
         padding: 10px;
         overflow: hidden;
         overflow-y: auto;
-        height: calc(100vh - 110px);
+        height: calc(100vh - 90px);
         background-color: var(--color-fill-2);
       }
     }

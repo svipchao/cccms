@@ -20,21 +20,26 @@
       />
     </template>
     <template #operation="{ record }">
-      <a-typography-text
-        type="primary"
+      <a-button
+        type="text"
+        size="mini"
         @click="editData(record)"
         v-permission="'admin/role/update'"
       >
-        详情
-      </a-typography-text>
+        <template #icon>
+          <i class="ri-edit-line"></i>
+        </template>
+      </a-button>
       <Popconfirm content="确定要删除吗？" type="warning" position="left" @ok="delData(record)">
-        <a-typography-text type="danger" v-permission="'admin/role/delete'">
-          删除
-        </a-typography-text>
+        <a-button type="text" size="mini" v-permission="'admin/role/delete'">
+          <template #icon>
+            <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
+          </template>
+        </a-button>
       </Popconfirm>
     </template>
   </Table>
-  <DataInfo v-model:visible="showData" :data="currentData" :roles="table.datas" @done="getDatas" />
+  <DataInfo v-model:visible="showPopup" :data="currentData" :roles="table.datas" @done="getDatas" />
 </template>
 
 <script setup>
@@ -108,7 +113,7 @@ const table = reactive({
     { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
     { dataIndex: "create_time", title: "创建时间", width: 180, ellipsis: true },
     { dataIndex: "update_time", title: "更新时间", width: 180, ellipsis: true },
-    { dataIndex: "operation", title: "操作", width: 95, fixed: "right", slotName: "operation" },
+    { dataIndex: "operation", title: "操作", width: 80, fixed: "right", slotName: "operation" },
   ],
 });
 </script>

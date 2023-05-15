@@ -1,34 +1,30 @@
 <template>
   <div class="cc-pane">
-    <div class="cc-pane-box">
+    <div
+      class="cc-pane-left"
+      :style="{
+        width: data.size,
+        flex: '0 0 ' + data.size,
+        marginLeft: show ? '0px' : '-' + data.size,
+      }"
+    >
       <div
-        class="cc-pane-left"
         :style="{
-          width: data.size,
-          flex: '0 0 ' + data.size,
-          marginLeft: show ? '0px' : '-' + data.size,
+          border: data.leftBorder ? '1px solid var(--color-neutral-3)' : 'none',
         }"
       >
-        <div
-          :style="{
-            border: data.leftBorder ? '1px solid var(--color-neutral-3)' : 'none',
-          }"
-        >
-          <slot name="left" />
-        </div>
-        <i class="ri-arrow ri-arrow-left-s-fill" @click="switchSizeFun" v-if="show"></i>
-        <i class="ri-arrow ri-arrow-right-s-fill" @click="switchSizeFun" v-else></i>
+        <slot name="left" />
       </div>
-      <div
-        class="cc-pane-right"
-        :style="{
-          border: data.rightBorder ? '1px solid var(--color-neutral-3)' : 'none',
-          width: 'calc(100% - ' + data.size + ')',
-        }"
-      >
-        <slot name="right" />
-        <div class="cc-pane-mark" v-show="show" @click="switchSizeFun"></div>
-      </div>
+    </div>
+    <div
+      class="cc-pane-right"
+      :style="{
+        border: data.rightBorder ? '1px solid var(--color-neutral-3)' : 'none',
+        width: 'calc(100% - ' + data.size + ')',
+      }"
+    >
+      <slot name="right" />
+      <div class="cc-pane-mark" v-show="show" />
     </div>
   </div>
 </template>
@@ -55,72 +51,39 @@ onMounted(() => {
 
 const show = ref(true);
 
-const switchSizeFun = () => {
+const switchSplitFun = () => {
   show.value = !show.value;
 };
 </script>
 
 <style scoped lang="less">
 .cc-pane {
-  position: relative;
-  box-sizing: border-box;
-  .cc-pane-box {
-    height: 100%;
-    display: flex;
-    overflow: hidden;
+  display: flex;
+  .cc-pane-left {
+    flex: 0 0 300px;
     position: relative;
-    .cc-pane-left {
+    border-right: 0px;
+    & > div {
+      width: calc(100% - 10px);
       height: 100%;
-      position: relative;
-      @media screen and (max-width: 930px) {
-        z-index: 998;
-        position: absolute;
-      }
-      & > div {
-        width: calc(100% - 10px);
-        height: 100%;
-        padding: 10px;
-        box-sizing: border-box;
-        background: var(--color-bg-2);
-      }
-      .ri-arrow-left-s-fill,
-      .ri-arrow-right-s-fill {
-        cursor: pointer;
-        font-size: 14px;
-        height: 35px;
-        line-height: 35px;
-        top: 1px;
-        right: -16px;
-        z-index: 997;
-        position: absolute;
-        background: rgb(var(--gray-3));
-        border-radius: 0 0px 6px 0;
-        border: 1px solid var(--color-neutral-3);
-        border-top: 0px;
-        border-left: 0px;
-        &:hover {
-          z-index: 100;
-          background: var(--color-bg-4);
-        }
-      }
+      padding: 10px;
+      background: var(--color-bg-2);
     }
-    .cc-pane-right {
-      flex: 1 1 auto;
+  }
+  .cc-pane-right {
+    flex-grow: 1;
+    position: relative;
+    overflow: hidden;
+    .cc-pane-mark {
+      width: 100%;
       height: 100%;
-      position: relative;
-      box-sizing: border-box;
-      .cc-pane-mark {
-        width: 100%;
-        height: 100%;
-        top: 0;
-        z-index: 996;
-        position: absolute;
-        box-sizing: border-box;
-        background-color: rgba(0, 0, 0, 0.15);
-        border: 1px solid var(--color-neutral-3);
-        @media screen and (min-width: 930px) {
-          display: none;
-        }
+      top: 0;
+      z-index: 996;
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--color-neutral-3);
+      @media screen and (min-width: 930px) {
+        display: none;
       }
     }
   }
