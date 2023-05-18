@@ -1,8 +1,9 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import App from "./App.vue";
+import Antd from "ant-design-vue";
 import { createPersistedState } from "pinia-plugin-persistedstate";
-import 'ant-design-vue/dist/reset.css';
+import "ant-design-vue/dist/reset.css";
 import "@/assets/remixicon/remixicon.css";
 
 const app = createApp(App);
@@ -15,5 +16,6 @@ pinia.use(
   })
 );
 app.use(pinia);
+app.use(Antd);
 
 app.mount("#app");

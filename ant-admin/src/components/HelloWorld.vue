@@ -1,17 +1,13 @@
 <template>
+  <span style="color: var(--ant-primary-color)">var(`--ant-primary-color`)</span>
   <a-config-provider
     :theme="{
       algorithm: dark ? theme.defaultAlgorithm : theme.darkAlgorithm,
     }"
   >
-    <a-row class="cc-pane">
+    <a-row class="cc-pane" :style="{ backgroundColor: token.colorPrimaryBg }">
       <a-col flex="300px" class="cc-pane-left">
-        <div
-          class="cc-pane-split"
-          :style="{
-            backgroundColor: token.colorBgLayout,
-          }"
-        >
+        <div class="cc-pane-split" style="background: var(--ant-primary-color)">
           <i class="ri-arrow ri-arrow-left-s-fill"></i>
         </div>
       </a-col>
@@ -31,9 +27,7 @@ const { token } = useToken();
 const dark = ref(false);
 const darkSwitch = () => {
   dark.value = !dark.value;
-  console.log(token);
 };
-console.log(token);
 </script>
 
 <style lang="less">
@@ -52,7 +46,7 @@ body {
   overflow: hidden;
 }
 .cc-pane-left {
-  border: 1px solid red;
+  border: 1px solid var(--ant-primary-color);
   // margin-left: -300px;
   .cc-pane-split {
     width: 10px;
@@ -60,6 +54,7 @@ body {
     right: -11px;
     position: absolute;
     border: 1px solid blue;
+    background: rgb(var(--primary-color));
     .ri-arrow-left-s-fill,
     .ri-arrow-right-s-fill {
       cursor: pointer;
@@ -70,7 +65,7 @@ body {
       // right: -16px;
       z-index: 997;
       position: absolute;
-      background: rgb(var(--gray-3));
+      background: rgb(var(--primary-color));
       border-radius: 0 0px 6px 0;
       border: 1px solid var(--color-neutral-3);
       border-top: 0px;
