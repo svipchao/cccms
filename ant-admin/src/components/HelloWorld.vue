@@ -1,16 +1,39 @@
 <template>
-  <a-row class="cc-pane">
-    <a-col flex="300px" class="cc-pane-left">
-      <div class="cc-pane-split">
-        <i class="ri-arrow ri-arrow-left-s-fill"></i>
-      </div>
-    </a-col>
-    <a-col flex="auto" class="cc-pane-right">auto</a-col>
-  </a-row>
+  <a-config-provider
+    :theme="{
+      algorithm: dark ? theme.defaultAlgorithm : theme.darkAlgorithm,
+    }"
+  >
+    <a-row class="cc-pane">
+      <a-col flex="300px" class="cc-pane-left">
+        <div
+          class="cc-pane-split"
+          :style="{
+            backgroundColor: token.colorBgLayout,
+          }"
+        >
+          <i class="ri-arrow ri-arrow-left-s-fill"></i>
+        </div>
+      </a-col>
+      <a-col flex="auto" class="cc-pane-right">
+        <a-button @click="darkSwitch">切换</a-button>
+      </a-col>
+    </a-row>
+  </a-config-provider>
 </template>
 
 <script setup>
 import { ref } from "vue";
+import { theme } from "ant-design-vue";
+const { useToken } = theme;
+const { token } = useToken();
+
+const dark = ref(false);
+const darkSwitch = () => {
+  dark.value = !dark.value;
+  console.log(token);
+};
+console.log(token);
 </script>
 
 <style lang="less">
