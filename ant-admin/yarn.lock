@@ -317,10 +317,10 @@ acorn@^8.8.2:
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.8.2.tgz#1b2f25db02af965399b9776b0c2c391276d37c4a"
   integrity sha512-xjIYgE8HBrkpd/sJqOGNspf8uHG+NOHGOw6a/Urj8taM2EXfdNAH2oFcPeIFfsv3+kz/mJrS5VuMqbNLjCa2vw==
 
-ant-design-vue@^4.0.0-beta.4:
-  version "4.0.0-beta.4"
-  resolved "https://registry.yarnpkg.com/ant-design-vue/-/ant-design-vue-4.0.0-beta.4.tgz#a52090d1b5f6219999a2870efe73ed7fa1878896"
-  integrity sha512-7CCtStK1jydXgQJvPIg+qg4zzhiLyITl96QjFWPvVLvhhsOneadWQpE1ebHdMhb3DlKeJPRSOUEQ/v8/U9mzgQ==
+ant-design-vue@^4.0.0-rc.1:
+  version "4.0.0-rc.1"
+  resolved "https://registry.yarnpkg.com/ant-design-vue/-/ant-design-vue-4.0.0-rc.1.tgz#53cd3ba0a460b08cd68db4bf60e38e2b7a18f7e2"
+  integrity sha512-zXnrpYKE7rK+lzOXoFA1ThJ5RpSXWOzBIydlB8mr54nuGTDGQVPfBifWTcw/xilkmxN8iSHd8B1mRKYEM6JL9Q==
   dependencies:
     "@ant-design/colors" "^6.0.0"
     "@ant-design/icons-vue" "^6.1.0"

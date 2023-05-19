@@ -1,11 +1,15 @@
 <template>
-  <span style="color: var(--ant-primary-color)">var(`--ant-primary-color`)</span>
   <a-config-provider
     :theme="{
       algorithm: dark ? theme.defaultAlgorithm : theme.darkAlgorithm,
+      token: {
+        colorPrimary: '#1890ff',
+      },
     }"
   >
-    <a-row class="cc-pane" :style="{ backgroundColor: token.colorPrimaryBg }">
+    <a-button />
+    <span style="color: var(--ant-color-primary)">var(`--ant-color-primary`)</span>
+    <a-row class="cc-pane" :style="{ backgroundColor: token.ccColor }">
       <a-col flex="300px" class="cc-pane-left">
         <div class="cc-pane-split" style="background: var(--ant-primary-color)">
           <i class="ri-arrow ri-arrow-left-s-fill"></i>
@@ -19,14 +23,23 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { theme } from "ant-design-vue";
+import { ref, reactive } from "vue";
+import { ConfigProvider, theme } from "ant-design-vue";
 const { useToken } = theme;
 const { token } = useToken();
+console.log(token);
+
+const colorState = reactive({
+  ccColor: "red",
+});
 
 const dark = ref(false);
 const darkSwitch = () => {
   dark.value = !dark.value;
+  colorState.ccColor = "blue";
+  ConfigProvider.config({
+    theme: colorState,
+  });
 };
 </script>
 
