@@ -1,49 +1,199 @@
 <template>
-  <a-config-provider
-    :theme="{
-      algorithm: dark ? theme.defaultAlgorithm : theme.darkAlgorithm,
-      token: {
-        colorPrimary: '#1890ff',
-      },
-    }"
-  >
-    <a-button />
-    <span style="color: var(--ant-color-primary)">var(`--ant-color-primary`)</span>
-    <a-row class="cc-pane" :style="{ backgroundColor: token.ccColor }">
-      <a-col flex="300px" class="cc-pane-left">
-        <div class="cc-pane-split" style="background: var(--ant-primary-color)">
-          <i class="ri-arrow ri-arrow-left-s-fill"></i>
+  <div :class="dark ? 'dark' : 'default'">
+    <a-config-provider
+      :theme="{
+        algorithm: dark ? theme.defaultAlgorithm : theme.darkAlgorithm,
+      }"
+    >
+      <div class="cc-pane">
+        <div
+          class="cc-pane-left"
+          :style="{
+            marginLeft: siderShow ? '0px' : '-300px',
+          }"
+        >
+          <div class="cc-pane-split" @click="siderSwitch">
+            <i class="ri-arrow ri-arrow-left-s-fill"></i>
+          </div>
         </div>
-      </a-col>
-      <a-col flex="auto" class="cc-pane-right">
-        <a-button @click="darkSwitch">切换</a-button>
-      </a-col>
-    </a-row>
-  </a-config-provider>
+        <div class="cc-pane-right">
+          <a-spin :spinning="siderShow" @click="siderSwitch">
+            <a-button @click="darkSwitch">切换</a-button>
+            <a-table :dataSource="dataSource" :columns="columns" :scroll="{ x: 1500 }" />
+            <div class="cc-pane-mark" v-show="siderShow" @click="siderSwitch" />
+          </a-spin>
+        </div>
+      </div>
+    </a-config-provider>
+  </div>
 </template>
 
 <script setup>
 import { ref, reactive } from "vue";
-import { ConfigProvider, theme } from "ant-design-vue";
-const { useToken } = theme;
-const { token } = useToken();
-console.log(token);
+import { theme } from "ant-design-vue";
 
-const colorState = reactive({
-  ccColor: "red",
-});
-
-const dark = ref(false);
+const dark = ref(true);
 const darkSwitch = () => {
   dark.value = !dark.value;
-  colorState.ccColor = "blue";
-  ConfigProvider.config({
-    theme: colorState,
-  });
 };
+
+const siderShow = ref(true);
+const siderSwitch = () => {
+  siderShow.value = !siderShow.value;
+};
+
+const dataSource = [
+  {
+    key: "1",
+    name: "胡彦斌",
+    age: 32,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+  {
+    key: "2",
+    name: "胡彦祖",
+    age: 42,
+    address: "西湖区湖底公园1号",
+  },
+];
+
+const columns = [
+  {
+    title: "姓名",
+    dataIndex: "name",
+    key: "name",
+    width: 200,
+  },
+  {
+    title: "年龄",
+    dataIndex: "age",
+    key: "age",
+    width: 200,
+  },
+  {
+    title: "住址",
+    dataIndex: "address",
+    key: "address",
+    width: 200,
+  },
+];
 </script>
 
 <style lang="less">
+.dark {
+  --cc-color: #d9d9d9;
+}
+.default {
+  --cc-color: #424242;
+}
 *,
 *:before,
 *:after {
@@ -54,43 +204,58 @@ body {
   padding: 10px;
 }
 .cc-pane {
-  background: #fff;
-  height: 500px;
   overflow: hidden;
-}
-.cc-pane-left {
-  border: 1px solid var(--ant-primary-color);
-  // margin-left: -300px;
-  .cc-pane-split {
-    width: 10px;
-    height: 100%;
-    right: -11px;
-    position: absolute;
-    border: 1px solid blue;
-    background: rgb(var(--primary-color));
-    .ri-arrow-left-s-fill,
-    .ri-arrow-right-s-fill {
-      cursor: pointer;
-      font-size: 14px;
-      height: 35px;
-      line-height: 35px;
-      top: 1px;
-      // right: -16px;
-      z-index: 997;
-      position: absolute;
-      background: rgb(var(--primary-color));
-      border-radius: 0 0px 6px 0;
-      border: 1px solid var(--color-neutral-3);
-      border-top: 0px;
-      border-left: 0px;
-      &:hover {
-        z-index: 100;
-        background: var(--color-bg-4);
+  display: flex;
+  height: 500px;
+  .cc-pane-left {
+    width: 300px;
+    flex-shrink: 0;
+    flex-grow: 0;
+    border: 1px solid var(--cc-color);
+    border-right: 0px;
+    .cc-pane-split {
+      width: 1px;
+      left: 299px;
+      z-index: 200;
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      .ri-arrow-left-s-fill,
+      .ri-arrow-right-s-fill {
+        // color: #f1f1f1;
+        cursor: pointer;
+        font-size: 14px;
+        height: 30px;
+        line-height: 30px;
+        z-index: 997;
+        border-radius: 0 6px 6px 0;
+        background: var(--cc-color);
+        border-top: 0px;
+        border-left: 0px;
+        &:hover {
+          z-index: 100;
+        }
       }
     }
-    @media screen and (max-width: 930px) {
-      z-index: 998;
+  }
+  .cc-pane-right {
+    flex-grow: 1;
+    position: relative;
+    min-width: 300px;
+    border: 1px solid var(--cc-color);
+    overflow: auto;
+    .cc-pane-mark {
+      background: rgba(0, 0, 0, 0.3);
+      width: 100%;
+      height: 100%;
+      top: 0;
+      bottom: 0;
       position: absolute;
+      overflow: hidden;
+      @media screen and (min-width: 930px) {
+        display: none;
+      }
     }
   }
 }
