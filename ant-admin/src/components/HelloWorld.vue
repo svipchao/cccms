@@ -12,16 +12,13 @@
             marginLeft: siderShow ? '0px' : '-300px',
           }"
         >
-          <div class="cc-pane-split" @click="siderSwitch">
+          <span class="cc-pane-split" @click="siderSwitch">
             <i class="ri-arrow ri-arrow-left-s-fill"></i>
-          </div>
+          </span>
         </div>
         <div class="cc-pane-right">
-          <a-spin :spinning="siderShow" @click="siderSwitch">
-            <a-button @click="darkSwitch">切换</a-button>
-            <a-table :dataSource="dataSource" :columns="columns" :scroll="{ x: 1500 }" />
-            <div class="cc-pane-mark" v-show="siderShow" @click="siderSwitch" />
-          </a-spin>
+          <a-button @click="darkSwitch">切换</a-button>
+          <a-table :dataSource="dataSource" :columns="columns" :scroll="{ x: 1500 }" />
         </div>
       </div>
     </a-config-provider>
@@ -208,9 +205,10 @@ body {
   display: flex;
   height: 500px;
   .cc-pane-left {
-    width: 300px;
-    flex-shrink: 0;
-    flex-grow: 0;
+    flex: 0 0 300px;
+    // width: 300px;
+    // flex-shrink: 0;
+    // flex-grow: 0;
     border: 1px solid var(--cc-color);
     border-right: 0px;
     .cc-pane-split {
@@ -218,18 +216,18 @@ body {
       left: 299px;
       z-index: 200;
       position: relative;
-      height: 100%;
-      display: flex;
-      align-items: center;
+      height: 40px;
       .ri-arrow-left-s-fill,
       .ri-arrow-right-s-fill {
         // color: #f1f1f1;
+        width: 20px;
         cursor: pointer;
         font-size: 14px;
         height: 30px;
         line-height: 30px;
         z-index: 997;
         border-radius: 0 6px 6px 0;
+        display: block;
         background: var(--cc-color);
         border-top: 0px;
         border-left: 0px;
@@ -240,7 +238,7 @@ body {
     }
   }
   .cc-pane-right {
-    flex-grow: 1;
+    flex: 1 1 auto;
     position: relative;
     min-width: 300px;
     border: 1px solid var(--cc-color);
