@@ -243,18 +243,6 @@ body {
     min-width: 300px;
     border: 1px solid var(--cc-color);
     overflow: auto;
-    .cc-pane-mark {
-      background: rgba(0, 0, 0, 0.3);
-      width: 100%;
-      height: 100%;
-      top: 0;
-      bottom: 0;
-      position: absolute;
-      overflow: hidden;
-      @media screen and (min-width: 930px) {
-        display: none;
-      }
-    }
   }
 }
 </style>
