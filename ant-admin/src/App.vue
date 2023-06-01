@@ -1,7 +1,7 @@
 <template>
-  <HelloWorld msg="Vite + Vue" />
+  <Pane msg="Vite + Vue" />
 </template>
 
 <script setup>
-import HelloWorld from "./components/HelloWorld.vue";
+import Pane from "./components/pane.vue";
 </script>
