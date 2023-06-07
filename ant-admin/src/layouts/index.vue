@@ -6,7 +6,9 @@
         : theme.defaultAlgorithm,
     }"
   >
-    <a-layout>
+    <a-layout
+      :class="'cccms-layout ' + (themeStore.darkTheme ? 'dark' : 'default')"
+    >
       <a-layout-sider
         :style="{ display: themeStore.getShowSider ? 'block' : 'none' }"
       >
@@ -32,8 +34,8 @@
         </a-layout-content>
         <div
           class="cccms-mark"
-          @click="themeStore.switchShowSider()"
           v-show="themeStore.showSider"
+          @click="themeStore.switchShowSider()"
         />
       </a-layout>
     </a-layout>

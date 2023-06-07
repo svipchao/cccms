@@ -15,6 +15,11 @@ const router = createRouter({
       component: () => import("@/layouts/index.vue"),
       children: [
         {
+          path: "/admin/index/index",
+          component: () => import("@/pages/admin/index/index.vue"),
+          meta: { title: "首页" },
+        },
+        {
           path: "/:pathMatch(.*)*",
           component: () => import("@/layouts/result/404.vue"),
           meta: { title: "404" },

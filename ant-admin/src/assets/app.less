@@ -2,8 +2,9 @@
   // 全局色
   --cc-text-color: #000;
   --cc-border-color: #f0f0f0;
-  --cc-background-color: #f0f0f0;
-  --cc-background-hover-color: #d9d9d9;
+  --cc-bg1-color: #fff;
+  --cc-bg2-color: #f0f0f0;
+  --cc-bg-hover-color: #d9d9d9;
   // 滚动条
   --cc-scrollbar-thumb-color: #cfcfcf;
   --cc-scrollbar-thumb-hover-color: #b6b6b6;
@@ -12,8 +13,9 @@
   // 全局色
   --cc-text-color: #fff;
   --cc-border-color: #303030;
-  --cc-background-color: #303030;
-  --cc-background-hover-color: #434343;
+  --cc-bg1-color: #141414;
+  --cc-bg2-color: #303030;
+  --cc-bg-hover-color: #434343;
   // 滚动条
   --cc-scrollbar-thumb-color: #484848;
   --cc-scrollbar-thumb-hover-color: #5b5b5b;
@@ -40,24 +42,23 @@
   }
 }
 
-.arco-avatar,
-.arco-table .arco-typography {
-  cursor: pointer;
-}
-.arco-card > .arco-card-body {
-  padding: 10px;
-}
 .cccms-layout {
   box-sizing: border-box;
   height: 100vh !important;
-  .arco-layout-sider {
+  .ant-layout-sider {
     z-index: 999;
+    flex: 0 0 260px !important;
     width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+    background-color: var(--cc-bg1-color);
+    border-right: 1px solid var(--cc-border-color);
+    box-shadow: 0 2px 5px 0 rgb(0 0 0 / 8%);
     @media screen and (max-width: 930px) {
       z-index: 1000;
       position: absolute;
     }
-    .arco-layout-sider-system {
+    .ant-layout-sider-system {
       padding: 20px 10px 0px 10px;
       .username {
         font-size: 14px;
@@ -73,30 +74,30 @@
         margin: 5px 0;
       }
     }
-    .arco-layout-sider-menu {
+    .ant-layout-sider-menu {
       height: calc(100vh - 171px);
       overflow: hidden;
       overflow-y: auto;
-      .arco-menu-light {
+      .ant-menu-light {
         background-color: var(--color-bg-1);
-        .arco-menu-item,
-        .arco-menu-inline-header {
+        .ant-menu-item,
+        .ant-menu-inline-header {
           padding: 0 7px;
           background-color: var(--color-bg-1);
-          &.arco-menu-selected,
-          .arco-icon {
+          &.ant-menu-selected,
+          .ant-icon {
             color: var(--color-text-2);
           }
         }
-        .arco-menu-item:hover {
+        .ant-menu-item:hover {
           background-color: var(--color-fill-2);
         }
-        .arco-menu-selected {
+        .ant-menu-selected {
           background-color: var(--color-fill-2);
         }
       }
-      .arco-menu-inline-content {
-        .arco-menu-item {
+      .ant-menu-inline-content {
+        .ant-menu-item {
           padding: 0 10px;
         }
       }
@@ -106,16 +107,20 @@
       }
     }
   }
-  .arco-layout-sider-light {
+  .ant-layout-sider-light {
     background: var(--color-bg-1);
     border-right: 1px solid var(--color-border);
   }
-  .arco-layout {
-    .arco-layout-header {
+  .ant-layout {
+    .ant-layout-header {
       height: 50px;
-      border-bottom: 1px solid var(--color-border);
+      line-height: 50px;
+      padding-inline: 10px;
+      background-color: var(--cc-bg1-color);
+      box-shadow: 0 2px 5px 0 rgb(0 0 0 / 8%);
+      border-bottom: 1px solid var(--cc-border-color);
       .header-custom {
-        padding: 9px 10px;
+        height: 50px;
         .header-custom-right {
           display: flex;
           justify-content: flex-end;
@@ -126,13 +131,13 @@
         }
       }
     }
-    .arco-layout-content {
+    .ant-layout-content {
       height: calc(100vh - 50px);
       .cccms-tabs {
         position: relative;
         box-shadow: 0 2px 5px 0 rgb(0 0 0 / 8%);
-        .arco-tabs-tab-active i,
-        .arco-tabs-tab-active:hover i {
+        .ant-tabs-tab-active i,
+        .ant-tabs-tab-active:hover i {
           color: rgb(var(--primary-6)) !important;
         }
         .tabs-icon-box {
