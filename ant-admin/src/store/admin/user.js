@@ -13,9 +13,9 @@ export const useUser = defineStore({
     // ID
     id: 0,
     // 昵称
-    nickname: "",
+    nickname: "昵称",
     // 用户名
-    username: "",
+    username: "账号",
     // accessToken
     accessToken: "",
     // 过期时间戳

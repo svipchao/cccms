@@ -1,6 +1,6 @@
 <template>
   <div class="ant-layout-sider-system">
-    <a-space-compact direction="vertical" block>
+    <a-space direction="vertical" :size="10" style="width:100%;">
       <a-row style="flex-flow: row nowrap">
         <Userinfo />
       </a-row>
@@ -66,10 +66,10 @@
           </a-tooltip>
         </a-col>
       </a-row>
-    </a-space-compact>
+    </a-space>
     <a-divider />
   </div>
-  <div class="arco-layout-sider-menu">
+  <div class="ant-layout-sider-menu">
     <a-menu
       mode="vertical"
       :level-indent="10"

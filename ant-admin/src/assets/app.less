@@ -1,8 +1,9 @@
 .default {
   // 全局色
-  --cc-text-color: #000;
+  --cc-text1-color: rgba(0, 0, 0, 0.9);
+  --cc-text2-color: rgba(0, 0, 0, 0.5);
   --cc-border-color: #f0f0f0;
-  --cc-bg1-color: #fff;
+  --cc-bg1-color: #ffffff;
   --cc-bg2-color: #f0f0f0;
   --cc-bg-hover-color: #d9d9d9;
   // 滚动条
@@ -11,7 +12,8 @@
 }
 .dark {
   // 全局色
-  --cc-text-color: #fff;
+  --cc-text1-color: rgba(255, 255, 255, 0.9);
+  --cc-text2-color: rgba(255, 255, 255, 0.5);
   --cc-border-color: #303030;
   --cc-bg1-color: #141414;
   --cc-bg2-color: #303030;
@@ -62,20 +64,20 @@
       padding: 20px 10px 0px 10px;
       .username {
         font-size: 14px;
-        color: var(--color-text-1);
         margin: 4px 0 2px 0;
+        color: var(--cc-text1-color);
       }
       .nickname {
-        font-size: 12px;
-        color: var(--color-text-3);
         margin: 1px 0;
+        font-size: 12px;
+        color: var(--cc-text2-color);
       }
-      & > .arco-divider {
+      & > .ant-divider {
         margin: 5px 0;
       }
     }
     .ant-layout-sider-menu {
-      height: calc(100vh - 171px);
+      height: calc(100vh - 173px);
       overflow: hidden;
       overflow-y: auto;
       .ant-menu-light {
