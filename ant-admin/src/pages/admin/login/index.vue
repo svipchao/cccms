@@ -22,6 +22,7 @@
           size="large"
           placeholder="请输入密码！"
           v-model:value="userinfo.password"
+          @blur="$event.target.focus()"
         />
       </a-form-item>
       <a-form-item>
@@ -73,13 +74,16 @@ const onFinishFailed = (errorInfo) => {
   }
   .ant-form {
     min-width: 320px;
-    .ant-input:hover,
-    .ant-input-password:hover,
-    .ant-input:focus,
-    .ant-input-password:focus,
-    .ant-input-affix-wrapper:focus {
-      border-color: #434755 !important;
-      box-shadow: 0 0 0 2px rgb(0 0 0 / 10%) !important;
+    .ant-input,
+    .ant-input-password,
+    .ant-input-affix-wrapper {
+      // border-color: #434755 !important;
+      // box-shadow: 0 0 0 2px rgb(0 0 0 / 10%) !important;
+      &:hover,
+      &:focus {
+        border-color: #434755 !important;
+        box-shadow: 0 0 0 2px rgb(0 0 0 / 10%) !important;
+      }
     }
     button {
       color: #fff;
