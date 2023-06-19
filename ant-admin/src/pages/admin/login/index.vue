@@ -23,6 +23,7 @@
         >
           <a-input-password
             size="large"
+            autocomplete
             placeholder="请输入密码！"
             v-model:value="userinfo.password"
           />
@@ -71,6 +72,7 @@ const onFinishFailed = (errorInfo) => {
   align-content: center;
   height: calc(100vh - 50px);
   justify-content: center;
+  overflow: hidden;
   .login-body {
     width: 400px;
     padding: 25px;
