@@ -2,11 +2,7 @@
   <div class="login">
     <div class="login-body">
       <h1>用户登录</h1>
-      <a-form
-        :model="userinfo"
-        @finish="onFinish"
-        @finishFailed="onFinishFailed"
-      >
+      <a-form :model="userinfo" @finish="setUserInfo">
         <a-form-item
           name="username"
           :rules="[{ required: true, message: '请输入账号！' }]"
@@ -57,12 +53,6 @@ const userinfo = reactive({
   username: "",
   password: "",
 });
-const onFinish = (values) => {
-  console.log("Success:", values);
-};
-const onFinishFailed = (errorInfo) => {
-  console.log("Failed:", errorInfo);
-};
 </script>
 
 <style scoped lang="less">
@@ -78,7 +68,6 @@ const onFinishFailed = (errorInfo) => {
     padding: 25px;
     overflow: hidden;
     border-radius: 5px;
-    text-align: center;
     background-color: #fff;
     box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
     @media screen and (max-width: 760px) {
@@ -87,6 +76,7 @@ const onFinishFailed = (errorInfo) => {
     }
     h1 {
       font-size: 24px;
+      text-align: center;
       padding: 0 0 20px 0;
     }
   }

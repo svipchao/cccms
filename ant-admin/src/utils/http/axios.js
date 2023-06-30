@@ -43,6 +43,8 @@ function http(axiosConfig, customOptions, loadingOptions = { content: "请稍等
         if (LoadingInstance._count === 1) {
           LoadingInstance._target = message.loading(loadingOptions);
         }
+        console.log(LoadingInstance._target);
+        console.log(message.loading(loadingOptions));
       }
       // 自动携带token
       const userStore = useUser();
@@ -161,7 +163,9 @@ function httpErrorStatusHandle(error) {
 function closeLoading(_options) {
   if (_options.loading && LoadingInstance._count > 0) LoadingInstance._count--;
   if (LoadingInstance._count === 0) {
-    LoadingInstance._target.close();
+    // console.log(LoadingInstance._target());
+    // LoadingInstance._target.destroy();
+    message.destroy();
     LoadingInstance._target = null;
   }
 }
