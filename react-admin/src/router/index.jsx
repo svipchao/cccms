@@ -13,7 +13,7 @@ const lazyLoad = (path) => {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            height: "100%",
+            height: "100vh",
           }}
         />
       }
