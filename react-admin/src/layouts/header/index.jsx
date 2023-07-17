@@ -7,7 +7,7 @@ export default function Header() {
   const { Header } = Layout;
   const { token } = theme.useToken();
   const { showSider, switchShowSider } = useThemeStore();
-  console.log(fullscreen);
+
   return (
     <Header style={{ background: token.colorBgContainer }}>
       <Row>
@@ -16,7 +16,13 @@ export default function Header() {
             <Button
               type="text"
               onClick={() => switchShowSider()}
-              icon={<i className={showSider ? "ri-menu-unfold-line" : "ri-menu-fold-line"}></i>}
+              icon={
+                <i
+                  className={
+                    showSider ? "ri-menu-unfold-line" : "ri-menu-fold-line"
+                  }
+                ></i>
+              }
             />
           </div>
         </Col>
@@ -28,7 +34,9 @@ export default function Header() {
               icon={
                 <i
                   className={
-                    fullscreen.isFullscreen ? "ri-fullscreen-exit-line" : "ri-fullscreen-line"
+                    fullscreen.isFullscreen
+                      ? "ri-fullscreen-exit-line"
+                      : "ri-fullscreen-line"
                   }
                 ></i>
               }
