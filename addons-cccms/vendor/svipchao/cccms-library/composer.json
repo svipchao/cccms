@@ -1,0 +1,35 @@
+{
+    "name": "svipchao/cccms-library",
+    "description": "基于ThinkPHP6封装的基础类库",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "诗无尽头i",
+            "email": "svipchao@qq.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=7.1",
+        "topthink/think-orm": "^2.0",
+        "topthink/framework": "^6.0.0",
+        "topthink/think-view": "^1.0",
+        "topthink/think-multi-app": "^1.0"
+    },
+    "autoload": {
+        "files": [
+            "src/common.php"
+        ],
+        "psr-4": {
+            "cccms\\":"src"
+        }
+    },
+    "extra": {
+        "think": {
+            "services": [
+                "cccms\\Library"
+            ]
+        }
+    }
+}

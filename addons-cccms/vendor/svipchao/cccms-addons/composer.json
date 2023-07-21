@@ -1,0 +1,32 @@
+{
+  "name": "svipchao/cccms-addons",
+  "description": "基于ThinkPHP6插件管理系统",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "诗无尽头i",
+      "email": "svipchao@qq.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.1.0",
+    "topthink/framework": "^6.0",
+    "svipchao/cccms-library": "dev-dev"
+  },
+  "autoload": {
+    "psr-4": {
+      "cccms\\addons\\": "src/"
+    },
+    "files": [
+      "src/common.php"
+    ]
+  },
+  "extra": {
+    "think": {
+      "services": [
+        "cccms\\addons\\Service"
+      ]
+    }
+  }
+}
