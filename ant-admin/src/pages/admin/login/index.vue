@@ -12,7 +12,7 @@
           <img src="@/assets/login/banner-3.png" />
         </a-carousel>
       </a-col>
-      <a-col flex="auto">
+      <a-col flex="auto" class="login-right">
         <a-tabs centered>
           <a-tab-pane key="1" tab="密码登录">Content of Tab Pane 1</a-tab-pane>
           <a-tab-pane key="3" tab="手机登录">Content of Tab Pane 3</a-tab-pane>
@@ -83,6 +83,9 @@ const userinfo = reactive({
           height: 100%;
         }
       }
+    }
+    .login-right {
+      padding: 15px 35px;
     }
   }
 }
