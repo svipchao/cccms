@@ -1,7 +1,7 @@
 <template>
   <div class="login">
-    <div class="login-body">
-      <div class="login-left">
+    <a-row class="login-body">
+      <a-col flex="520px" class="login-left">
         <div class="login-copyright">
           <h1>{{ config.title }}</h1>
           <span>{{ config.description }}</span>
@@ -11,8 +11,14 @@
           <img src="@/assets/login/banner-2.png" />
           <img src="@/assets/login/banner-3.png" />
         </a-carousel>
-      </div>
-    </div>
+      </a-col>
+      <a-col flex="auto">
+        <a-tabs centered>
+          <a-tab-pane key="1" tab="密码登录">Content of Tab Pane 1</a-tab-pane>
+          <a-tab-pane key="3" tab="手机登录">Content of Tab Pane 3</a-tab-pane>
+        </a-tabs>
+      </a-col>
+    </a-row>
   </div>
 </template>
 
@@ -50,7 +56,7 @@ const userinfo = reactive({
     box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
       0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
     .login-left {
-      width: 500px;
+      width: 520px;
       height: 460px;
       background: #1681fd;
       .login-copyright {
