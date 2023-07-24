@@ -2,7 +2,7 @@ export default {
   // 标题
   title: "CCCMS",
   // 描述
-  description: "CCCMS后台管理系统",
+  description: "适用快速二次开发，内置多种基本功能",
   // 版权链接
   copyrightTitle: "CCCMS",
   // 版权链接

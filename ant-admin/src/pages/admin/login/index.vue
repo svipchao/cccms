@@ -1,42 +1,18 @@
 <template>
   <div class="login">
     <div class="login-body">
-      <h1>用户登录</h1>
-      <a-form :model="userinfo" @finish="setUserInfo">
-        <a-form-item
-          name="username"
-          :rules="[{ required: true, message: '请输入账号！' }]"
-        >
-          <a-input
-            size="large"
-            placeholder="请输入账号！"
-            v-model:value="userinfo.username"
-          />
-        </a-form-item>
-        <a-form-item
-          name="password"
-          :rules="[{ required: true, message: '请输入密码！' }]"
-        >
-          <a-input-password
-            size="large"
-            autocomplete
-            placeholder="请输入密码！"
-            v-model:value="userinfo.password"
-          />
-        </a-form-item>
-        <a-form-item>
-          <a-button type="primary" html-type="submit" size="large" block>
-            登录
-          </a-button>
-        </a-form-item>
-      </a-form>
+      <div class="login-left">
+        <div class="login-copyright">
+          <h1>{{ config.title }}</h1>
+          <span>{{ config.description }}</span>
+        </div>
+        <a-carousel autoplay dot-position="bottom" class="login-banner">
+          <img src="@/assets/login/banner-1.png" />
+          <img src="@/assets/login/banner-2.png" />
+          <img src="@/assets/login/banner-3.png" />
+        </a-carousel>
+      </div>
     </div>
-  </div>
-  <div className="footer-copyright">
-    <span>&copy;{{ new Date().getFullYear() }}&nbsp;</span>
-    <a :href="config.copyrightUrl" target="_blank">
-      {{ config.copyrightTitle }}
-    </a>
   </div>
 </template>
 
@@ -57,37 +33,51 @@ const userinfo = reactive({
 
 <style scoped lang="less">
 .login {
-  display: grid;
   width: 100vw;
+  height: 100vh;
+  display: grid;
   align-content: center;
-  height: calc(100vh - 50px);
   justify-content: center;
-  overflow: hidden;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-image: url("@/assets/login/bg.svg");
   .login-body {
-    width: 400px;
-    padding: 25px;
+    width: 920px;
+    height: 460px;
+    border-radius: 8px;
     overflow: hidden;
-    border-radius: 5px;
     background-color: #fff;
-    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
-    @media screen and (max-width: 760px) {
-      width: 320px;
-      box-shadow: none;
-    }
-    h1 {
-      font-size: 24px;
-      text-align: center;
-      padding: 0 0 20px 0;
+    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
+      0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+    .login-left {
+      width: 500px;
+      height: 460px;
+      background: #1681fd;
+      .login-copyright {
+        height: 110px;
+        text-align: center;
+        padding: 25px;
+        h1 {
+          color: #fff;
+          font-size: 26px;
+          font-weight: 400;
+          letter-spacing: 1.5px;
+        }
+        span {
+          color: #f5f5f5;
+          font-size: 16px;
+          letter-spacing: 4px;
+        }
+      }
+      .login-banner {
+        width: 500px;
+        height: 350px;
+        img {
+          width: 100%;
+          height: 100%;
+        }
+      }
     }
   }
-  .ant-form {
-    .ant-form-item:last-child {
-      margin-bottom: 0px;
-    }
-  }
-}
-.footer-copyright {
-  height: 50px;
-  line-height: 50px;
 }
 </style>
