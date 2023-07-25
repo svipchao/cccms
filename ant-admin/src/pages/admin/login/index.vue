@@ -13,10 +13,40 @@
         </a-carousel>
       </a-col>
       <a-col flex="auto" class="login-right">
-        <a-tabs centered>
-          <a-tab-pane key="1" tab="密码登录">Content of Tab Pane 1</a-tab-pane>
-          <a-tab-pane key="3" tab="手机登录">Content of Tab Pane 3</a-tab-pane>
+        <a-tabs centered class="login-tabs">
+          <a-tab-pane key="1" tab="密码登录">
+            <a-space direction="vertical" block style="width: 100%" :size="25">
+              <a-input placeholder="请输入登录账号" size="large">
+                <template #prefix>
+                  <i class="ri-user-3-line"></i>
+                </template>
+              </a-input>
+              <a-input placeholder="请输入登录密码" size="large">
+                <template #prefix>
+                  <i class="ri-lock-line"></i>
+                </template>
+              </a-input>
+              <a-space :size="10">
+                <a-input placeholder="请输入验证码" size="large">
+                  <template #prefix>
+                    <i class="ri-shield-check-line"></i>
+                  </template>
+                </a-input>
+                <img src="@/assets/login/qrcode.png" class="login-captcha" />
+              </a-space>
+              <a-button type="primary" block size="large">登录</a-button>
+            </a-space>
+          </a-tab-pane>
+          <a-tab-pane key="3" tab="手机登录">
+            <a-empty />
+          </a-tab-pane>
         </a-tabs>
+        <div class="login-copyright-link">
+          <span>&copy;{{ new Date().getFullYear() }}&nbsp;</span>
+          <a :href="config.copyrightUrl" target="_blank">
+            {{ config.copyrightTitle }}
+          </a>
+        </div>
       </a-col>
     </a-row>
   </div>
@@ -85,7 +115,33 @@ const userinfo = reactive({
       }
     }
     .login-right {
-      padding: 15px 35px;
+      padding: 40px 40px;
+      .login-tabs {
+        .ant-tabs-tabpane {
+          padding: 15px 0px;
+          .ant-input-affix-wrapper {
+            i {
+              color: #aaa;
+            }
+          }
+          .login-captcha {
+            width: 85px;
+            height: 40px;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px;
+          }
+        }
+      }
+      .login-copyright-link {
+        height: 25px;
+        line-height: 25px;
+        margin-top: 30px;
+        text-align: center;
+        color: #999;
+        a {
+          color: #999;
+        }
+      }
     }
   }
 }
