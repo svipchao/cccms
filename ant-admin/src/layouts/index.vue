@@ -4,9 +4,6 @@
       algorithm: themeStore.darkTheme
         ? theme.darkAlgorithm
         : theme.defaultAlgorithm,
-      token: {
-        colorPrimary: '#141414',
-      },
     }"
   >
     <a-layout

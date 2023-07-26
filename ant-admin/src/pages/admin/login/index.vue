@@ -115,10 +115,11 @@ const userinfo = reactive({
       }
     }
     .login-right {
-      padding: 40px 40px;
+      padding: 40px;
       .login-tabs {
+        height: 356px;
         .ant-tabs-tabpane {
-          padding: 15px 0px;
+          padding: 20px 0px 30px 0px;
           .ant-input-affix-wrapper {
             i {
               color: #aaa;
@@ -135,7 +136,6 @@ const userinfo = reactive({
       .login-copyright-link {
         height: 25px;
         line-height: 25px;
-        margin-top: 30px;
         text-align: center;
         color: #999;
         a {
