@@ -1,0 +1,22 @@
+{
+  "name": "poetry/cccms-app",
+  "description": "CCCMS 应用包扩展",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "诗无尽头i",
+      "email": "admin@cccms.cc"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "php": ">=8.0.0",
+    "poetry/cccms-library": "dev-main"
+  },
+  "autoload": {
+    "psr-4": {
+      "app\\": "src/"
+    }
+  }
+}
