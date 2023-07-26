@@ -1,11 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace app\admin\controller;
 
 use cccms\Base;
 use cccms\model\SysUser;
-use cccms\services\UserService;
+use cccms\services\{UserService, CaptchaService};
 
 /**
  * 登录管理
@@ -65,5 +66,17 @@ class Login extends Base
             ->append(['accessToken', 'nodes', 'menus'])
             ->toArray();
         _result(['code' => 200, 'msg' => '缓存清除成功', 'data' => $userInfo], _getEnCode());
+    }
+
+    /**
+     * 验证码
+     * @auth  false
+     * @login false
+     * @encode view
+     * @methods GET
+     */
+    public function captcha()
+    {
+        return CaptchaService::mk()->create();
     }
 }
