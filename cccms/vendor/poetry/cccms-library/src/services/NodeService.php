@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace cccms\services;
@@ -56,16 +57,6 @@ class NodeService extends Service
     }
 
     /**
-     * 获取节点信息
-     * @param string $node 权限节点(键)
-     * @return array
-     */
-    public function getNode(string $node = ''): array
-    {
-        return $this->getNodesInfo()[$node] ?? [];
-    }
-
-    /**
      * 获取所有节点
      * @return array
      */
@@ -98,6 +89,26 @@ class NodeService extends Service
     }
 
     /**
+     * 获取当前节点
+     * @return string
+     */
+    public function getCurrentNode()
+    {
+        return StrExtend::humpToUnderline(app('http')->getName() . '/' . str_replace('.', '/', request()->controller()) . '/' . request()->action());
+    }
+
+    /**
+     * 获取节点信息
+     * @param string $node 权限节点(键)
+     * @return array
+     */
+    public function getCurrentNodeInfo(string $node = '')
+    {
+        $node = $node ?: self::getCurrentNode();
+        return $this->getNodesInfo()[$node] ?? [];
+    }
+
+    /**
      * 获取所有控制器方法
      * @param array $toScanFileArray 待扫描文件数组
      * @param bool $isCache
@@ -123,7 +134,7 @@ class NodeService extends Service
             $ignores = get_class_methods('\cccms\Base');
             foreach ($toScanFileArray as $val) {
                 if (!preg_match("/(\w+)[\/\\\\](\w+)[\/\\\\]controller[\/\\\\](.*)\.php/i", $val, $matches)) continue;
-                [, , $appName, $className] = $matches;
+                [,, $appName, $className] = $matches;
                 // 添加应用
                 $title = $appNames[$appName] ?? $appName;
                 $data[$appName] = ['title' => $title, 'sort' => 0, 'currentNode' => $appName, 'parentNode' => '#', 'parentTitle' => '#'];

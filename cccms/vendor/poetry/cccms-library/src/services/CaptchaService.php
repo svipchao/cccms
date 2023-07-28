@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace cccms\services;
 
-use cccms\Service;
 use Exception;
 use think\Config;
-use think\Response;
+use cccms\Service;
+use cccms\extend\{JwtExtend, StrExtend};
 
 class CaptchaService extends Service
 {
@@ -22,7 +22,7 @@ class CaptchaService extends Service
     // 验证码字符集合
     protected $codeSet = '2345678abcdefhijkmnpqrstuvwxyzABCDEFGHJKLMNPQRTUVWXY';
     // 验证码过期时间（s）
-    protected $expire = 1800;
+    protected $expire = 60;
     // 使用中文验证码
     protected $useZh = false;
     // 中文验证码字符串
@@ -47,6 +47,8 @@ class CaptchaService extends Service
     protected $bg = [243, 251, 254];
     // 算术验证码
     protected $math = false;
+    // 是否区分大小写
+    protected $matchCase = true;
 
     /**
      * 架构方法 设置参数
@@ -107,19 +109,12 @@ class CaptchaService extends Service
                 $bag .= $characters[random_int(0, count($characters) - 1)];
             }
 
-            $key = mb_strtolower($bag, 'UTF-8');
+            $key = $this->matchCase ? $bag : StrExtend::lower($bag);
         }
 
         $hash = password_hash($key, PASSWORD_BCRYPT, ['cost' => 10]);
 
-        // $this->session->set('captcha', [
-        //     'key' => $hash,
-        // ]);
-
-        return [
-            'value' => $bag,
-            'key'   => $hash,
-        ];
+        return ['value' => $bag, 'hash' => $hash];
     }
 
     /**
@@ -128,39 +123,36 @@ class CaptchaService extends Service
      * @param string $code 用户验证码
      * @return bool 用户验证码是否正确
      */
-    public function check(string $code): bool
+    public function check(string $code, string $accessToken = ''): bool
     {
-        // if (!$this->session->has('captcha')) {
-        //     return false;
-        // }
+        $accessToken = JwtExtend::verifyToken($accessToken);
+        if (empty($accessToken)) return false;
 
-        // $key = $this->session->get('captcha.key');
-
-        $code = mb_strtolower($code, 'UTF-8');
-
-        $res = password_verify($code, $key);
-
-        if ($res) {
-            // $this->session->delete('captcha');
+        // 判断节点是否正确
+        if ($accessToken['node'] !== NodeService::mk()->getCurrentNode()) {
+            return false;
         }
 
-        return $res;
+        // 验证码是否区分大小写
+        if (!$this->matchCase) {
+            $code = StrExtend::lower($code);
+        }
+        return password_verify($code, $accessToken['hash']);
     }
 
     /**
-     * 输出验证码并把验证码的值保存的session中
+     * 输出验证码
      * @access public
-     * @param null|string $config
-     * @param bool        $api
-     * @return Response
+     * @param null|string $config 验证码配置
+     * @param string      $node 节点
+     * @return array
      */
-    public function create(string $config = null, bool $api = false): Response
+    public function create(string $config = null, string $node = ''): array
     {
+        $node = $node ?: NodeService::mk()->getCurrentNode();
         $this->configure($config);
 
         $generator = $this->generate();
-        halt($generator);
-
         // 图片宽(px)
         $this->imageW || $this->imageW = $this->length * $this->fontSize * 1.5 + $this->length * $this->fontSize / 2;
         // 图片高(px)
@@ -193,25 +185,15 @@ class CaptchaService extends Service
         }
 
         $fontttf = $ttfPath . $this->fontttf;
-
-        if ($this->useImgBg) {
-            $this->background();
-        }
-
-        if ($this->useNoise) {
-            // 绘杂点
-            $this->writeNoise();
-        }
-        if ($this->useCurve) {
-            // 绘干扰线
-            $this->writeCurve();
-        }
-
+        // 绘制背景图片
+        if ($this->useImgBg) $this->background();
+        // 绘杂点
+        if ($this->useNoise) $this->writeNoise();
+        // 绘干扰线
+        if ($this->useCurve) $this->writeCurve();
         // 绘验证码
-        $text = $this->useZh ? preg_split('/(?<!^)(?!$)/u', $generator['value']) : str_split($generator['value']); // 验证码
-
+        $text = $this->useZh ? preg_split('/(?<!^)(?!$)/u', $generator['value']) : str_split($generator['value']);
         foreach ($text as $index => $char) {
-
             $x     = $this->fontSize * ($index + 1) * ($this->math ? 1 : 1.5);
             $y     = $this->fontSize + mt_rand(10, 20);
             $angle = $this->math ? 0 : mt_rand(-40, 40);
@@ -224,8 +206,23 @@ class CaptchaService extends Service
         imagepng($this->im);
         $content = ob_get_clean();
         imagedestroy($this->im);
+        $base64 = base64_encode($content);
+        $imageData = 'data:' . "image/png" . ';base64,' . $base64;
 
-        return response($content, 200, ['Content-Length' => strlen($content)])->contentType('image/png');
+        // 验证码是否区分大小写
+        if (!$this->matchCase) {
+            $generator['value'] = StrExtend::lower($generator['value']);
+        }
+
+        $accessToken = JwtExtend::getToken([
+            'iss' => $node,
+            'exp' => time() + $this->expire,
+            'ip' => request()->ip(),
+            'code' => md5($generator['value']),
+            'hash' => $generator['hash'],
+        ]);
+
+        return ['accessToken' => $accessToken, 'base64' => $imageData,];
     }
 
     /**

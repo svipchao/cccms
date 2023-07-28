@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace cccms\extend;
@@ -26,6 +27,14 @@ class JwtExtend
      */
     public static function getToken(array $payload): string
     {
+        $payload = array_merge([
+            'iss' => 'cccms',
+            'iat' => time(),
+            'exp' => time() + 7200,
+            'nbf' => time(),
+            'sub' => 'cccms',
+            'jti' => md5(($payload['iss'] ?? 'cccms') . StrExtend::random() . time())
+        ], $payload);
         $base64header = self::base64UrlEncode(json_encode(self::$header, JSON_UNESCAPED_UNICODE));
         $base64payload = self::base64UrlEncode(json_encode($payload, JSON_UNESCAPED_UNICODE));
         $jwtKey = config('database.connections.mysql.password') ?? '诗无尽头i[QQ:93093369]';

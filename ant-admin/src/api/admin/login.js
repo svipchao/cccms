@@ -9,3 +9,8 @@ export const login = (data, headers = {}) => {
 export const refreshToken = (data, headers = {}) => {
   return http.post("/admin/login/refreshToken", data, headers);
 };
+
+// 刷新Token
+export const getCaptcha = (data, headers = {}) => {
+  return http.get("/admin/login/captcha", data, headers);
+};

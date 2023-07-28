@@ -32,7 +32,11 @@
                     <i class="ri-shield-check-line"></i>
                   </template>
                 </a-input>
-                <img src="@/assets/login/qrcode.png" class="login-captcha" />
+                <img
+                  :src="captcha"
+                  class="login-captcha"
+                  @click="getCaptchaFun()"
+                />
               </a-space>
               <a-button type="primary" block size="large">登录</a-button>
             </a-space>
@@ -55,8 +59,8 @@
 <script setup>
 import config from "@/config";
 import router from "@/router";
-import { reactive } from "vue";
-import { login } from "@/api/admin/login.js";
+import { onMounted, reactive, ref } from "vue";
+import { login, getCaptcha } from "@/api/admin/login.js";
 import { useUser } from "@/store/admin/user.js";
 
 const { setUserInfo } = useUser();
@@ -64,7 +68,19 @@ const { setUserInfo } = useUser();
 const userinfo = reactive({
   username: "",
   password: "",
+  accessToken: "",
 });
+const captcha = ref("");
+
+onMounted(() => {
+  getCaptchaFun();
+});
+
+const getCaptchaFun = async () => {
+  const { data } = await getCaptcha();
+  captcha.value = data.base64;
+  userinfo.accessToken = data.accessToken;
+};
 </script>
 
 <style scoped lang="less">
@@ -126,10 +142,11 @@ const userinfo = reactive({
             }
           }
           .login-captcha {
+            cursor: pointer;
             width: 85px;
             height: 40px;
-            border: 1px solid #d9d9d9;
             border-radius: 8px;
+            border: 1px solid #d9d9d9;
           }
         }
       }

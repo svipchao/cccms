@@ -43,8 +43,6 @@ function http(axiosConfig, customOptions, loadingOptions = { content: "请稍等
         if (LoadingInstance._count === 1) {
           LoadingInstance._target = message.loading(loadingOptions);
         }
-        console.log(LoadingInstance._target);
-        console.log(message.loading(loadingOptions));
       }
       // 自动携带token
       const userStore = useUser();

@@ -63,6 +63,7 @@ class UserService extends Service
      */
     public function isAuth(string $node = ''): bool
     {
+        $node = $node ?: NodeService::mk()->getCurrentNode();
         return in_array($node, $this->getUserNodes());
     }
 

@@ -72,11 +72,15 @@ class Login extends Base
      * 验证码
      * @auth  false
      * @login false
-     * @encode view
+     * @encode json
      * @methods GET
      */
     public function captcha()
     {
-        return CaptchaService::mk()->create();
+        _result([
+            'code' => 200,
+            'msg' => 'success',
+            'data' => CaptchaService::mk()->create()
+        ]);
     }
 }

@@ -29,14 +29,6 @@ if (!function_exists('_getConfig')) {
     }
 }
 
-if (!function_exists('_getNode')) {
-    // 获取当前节点
-    function _getNode(): string
-    {
-        return StrExtend::humpToUnderline(app('http')->getName() . '/' . str_replace('.', '/', request()->controller()) . '/' . request()->action());
-    }
-}
-
 if (!function_exists('_getEnCode')) {
     /**
      * 获取返回编码类型 (view,json,jsonp,xml)
