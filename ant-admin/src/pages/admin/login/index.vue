@@ -15,7 +15,7 @@
       <a-col flex="auto" class="login-right">
         <a-tabs centered class="login-tabs">
           <a-tab-pane key="1" tab="密码登录">
-            <a-space direction="vertical" block style="width: 100%" :size="25">
+            <a-space direction="vertical" block style="width: 100%" :size="30">
               <a-input placeholder="请输入登录账号" size="large">
                 <template #prefix>
                   <i class="ri-user-3-line"></i>

@@ -16,11 +16,11 @@ return [
     'math'     => false,
     // 是否使用背景图
     'useImgBg' => false,
-    //验证码字符大小
-    'fontSize' => 60,
+    // 验证码字符大小
+    'fontSize' => 100,
     // 是否使用混淆曲线
     'useCurve' => true,
-    //是否添加杂点
+    // 是否添加杂点
     'useNoise' => true,
     // 验证码字体 不设置则随机
     'fontttf'  => '',
