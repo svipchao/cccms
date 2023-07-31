@@ -175,8 +175,8 @@ class CaptchaService extends Service
         // 绘验证码
         $text = str_split($generator['value']);
         foreach ($text as $index => $char) {
-            $x     = $this->fontSize * ($index + 0.5) * ($this->math ? 1 : 1.3);
-            $y     = $this->fontSize + mt_rand(30, 100);
+            $x     = $this->fontSize * ($index + 0.5) * ($this->math ? 1 : 1.4);
+            $y     = $this->fontSize + mt_rand(40, 80);
             $angle = $this->math ? 0 : mt_rand(-20, 40);
 
             $color = imagecolorallocate($this->im, ...$this->color[array_rand($this->color)]);
