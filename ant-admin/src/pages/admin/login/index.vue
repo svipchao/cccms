@@ -19,7 +19,7 @@
               :model="userinfo"
               name="userinfo"
               autocomplete="off"
-              @finish="setUserInfo"
+              @finish="doLogin"
             >
               <a-form-item
                 name="username"
@@ -28,7 +28,7 @@
                 <a-input
                   placeholder="请输入登录账号"
                   size="large"
-                  v-model="userinfo.username"
+                  v-model:value="userinfo.username"
                 >
                   <template #prefix>
                     <i class="ri-user-3-line"></i>
@@ -42,7 +42,7 @@
                 <a-input-password
                   placeholder="请输入登录密码"
                   size="large"
-                  v-model="userinfo.password"
+                  v-model:value="userinfo.password"
                 >
                   <template #prefix>
                     <i class="ri-lock-line"></i>
@@ -57,7 +57,7 @@
                   <a-input
                     placeholder="请输入验证码"
                     size="large"
-                    v-model="userinfo.captcha"
+                    v-model:value="userinfo.captcha"
                   >
                     <template #prefix>
                       <i class="ri-shield-check-line"></i>
@@ -120,6 +120,10 @@ const getCaptchaFun = async () => {
   const { data } = await getCaptcha();
   captcha.value = data.base64;
   userinfo.captchaToken = data.captchaToken;
+};
+
+const doLogin = () => {
+  setUserInfo(userinfo);
 };
 </script>
 
