@@ -75,7 +75,7 @@ class Role extends Base
             }, $data->toArray());
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'fields' => AuthService::mk()->fields('sys_role'),
+            'fields' => AuthService::instance()->fields('sys_role'),
             'data' => ArrExtend::toTreeList($roles, 'id', 'role_id')
         ]], _getEnCode());
     }
@@ -91,11 +91,11 @@ class Role extends Base
     {
         $role_id = $this->request->get('role_id/d', 0);
         if ($role_id === 0) {
-            $nodes = UserService::mk()->isAdmin() ?
-                NodeService::mk()->getNodesInfo() :
-                array_diff_key(NodeService::mk()->getNodesInfo(), array_flip(UserService::mk()->getUserNodes()));
+            $nodes = UserService::instance()->isAdmin() ?
+                NodeService::instance()->getNodesInfo() :
+                array_diff_key(NodeService::instance()->getNodesInfo(), array_flip(UserService::instance()->getUserNodes()));
         } else {
-            $nodes = NodeService::mk()->setFrameNodes(SysAuth::mk()->where('role_id', $role_id)->column('node'));
+            $nodes = NodeService::instance()->setFrameNodes(SysAuth::mk()->where('role_id', $role_id)->column('node'));
         }
         _result([
             'code' => 200,

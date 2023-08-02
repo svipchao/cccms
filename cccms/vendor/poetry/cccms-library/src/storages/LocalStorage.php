@@ -37,7 +37,7 @@ class LocalStorage extends Storage
                 ];
             }
         } else {
-            $user_id = UserService::mk()->getUserInfo('id');
+            $user_id = UserService::instance()->getUserInfo('id');
             $path = $this->getTypePath((int)$pathOrId);
             foreach ($res as $val) {
                 $file_url = str_replace('\\', '/', Filesystem::putFile($path, $val, 'date("Y-m-d")'));

@@ -59,7 +59,7 @@ class SysUser extends Model
      */
     public function getNodesAttr($value, $data): array
     {
-        $data['nodes'] = UserService::mk()->getUserNodes($data);
+        $data['nodes'] = UserService::instance()->getUserNodes($data);
         $this->data($data, true);
         return $data['nodes'];
     }
@@ -120,7 +120,7 @@ class SysUser extends Model
     public function setStatusAttr($value, $data): mixed
     {
         if ($data['id'] == 1) $value = 1;
-        if ($data['id'] == UserService::mk()->getUserInfo('id')) {
+        if ($data['id'] == UserService::instance()->getUserInfo('id')) {
             _result(['code' => 403, 'msg' => '不能冻结自己的账户'], _getEnCode());
         }
         return $value;

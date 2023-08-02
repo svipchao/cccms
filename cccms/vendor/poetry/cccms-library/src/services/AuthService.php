@@ -24,8 +24,8 @@ class AuthService extends Service
      */
     public function fields(string $tableName = ''): array
     {
-        $tableFields = InitService::mk()->getTables($tableName);
-        $dataFields = DataService::mk()->getUserData($tableName);
+        $tableFields = InitService::instance()->getTables($tableName);
+        $dataFields = DataService::instance()->getUserData($tableName);
         return array_diff_key($tableFields, array_flip($dataFields['withoutField']));
     }
 }

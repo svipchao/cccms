@@ -73,7 +73,7 @@ abstract class Model extends \think\Model
      */
     public static function onBeforeWrite($model)
     {
-        $data = DataService::mk()->getUserData($model->name);
+        $data = DataService::instance()->getUserData($model->name);
         // 如果主键不存在 则不让更新 或 写入 没有写入权限
         if (in_array($model->pk, $data['readOnly'])) return false;
         $readOnly = array_diff_key($model->getData(), array_flip($data['readOnly']));
@@ -95,7 +95,7 @@ abstract class Model extends \think\Model
      */
     public static function onBeforeDelete($model)
     {
-        $data = DataService::mk()->getUserData($model->name);
+        $data = DataService::instance()->getUserData($model->name);
         // 如果字段主键只读 数据禁止删除
         if (in_array($model->pk, $data['readOnly'])) return false;
     }
@@ -126,8 +126,8 @@ abstract class Model extends \think\Model
 
     public function scopeCommonAuth($query): void
     {
-        $node = NodeService::mk()->getCurrentNodeInfo();
-        if ($node['auth'] && !UserService::mk()->isAdmin()) {
+        $node = NodeService::instance()->getCurrentNodeInfo();
+        if ($node['auth'] && !UserService::instance()->isAdmin()) {
             $fields = $query->getTableFields();
             // 数据权限
             $this->commonDataAuth($query, $fields);
@@ -143,7 +143,7 @@ abstract class Model extends \think\Model
     // 数据权限
     private function commonDataAuth($query, $fields): void
     {
-        $data = DataService::mk()->getUserData($this->name);
+        $data = DataService::instance()->getUserData($this->name);
         $data['fields'] = array_intersect($fields, $data['fields']);
         $data['withoutField'] = array_intersect($fields, $data['withoutField']);
         // 查询字段
@@ -174,8 +174,8 @@ abstract class Model extends \think\Model
         if (in_array('user_id', $fields)) {
             $query->where('user_id', 'in', function ($query) {
                 $query->table('sys_auth')->whereOr([
-                    ['dept_id', 'in', UserService::mk()->getUserDeptIds()],
-                    ['user_id', 'in', UserService::mk()->getUserSubUserIds()]
+                    ['dept_id', 'in', UserService::instance()->getUserDeptIds()],
+                    ['user_id', 'in', UserService::instance()->getUserSubUserIds()]
                 ])->field('user_id');
             });
         }
@@ -185,7 +185,7 @@ abstract class Model extends \think\Model
     private function commonDeptAuth($query, $fields): void
     {
         if (in_array('dept_id', $fields)) {
-            $query->where('dept_id', 'in', UserService::mk()->getUserDeptIds());
+            $query->where('dept_id', 'in', UserService::instance()->getUserDeptIds());
         }
     }
 
@@ -193,7 +193,7 @@ abstract class Model extends \think\Model
     private function commonRoleAuth($query, $fields): void
     {
         if (in_array('role_id', $fields)) {
-            $query->where('role_id', 'in', UserService::mk()->getUserRoleIds());
+            $query->where('role_id', 'in', UserService::instance()->getUserRoleIds());
         }
     }
 }

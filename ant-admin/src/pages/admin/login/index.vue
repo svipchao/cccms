@@ -52,6 +52,7 @@
               <a-form-item
                 name="captcha"
                 :rules="[{ required: true, message: '请输入验证码！' }]"
+                v-if="false"
               >
                 <a-space :size="10">
                   <a-input

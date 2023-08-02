@@ -63,7 +63,7 @@ class UserService extends Service
      */
     public function isAuth(string $node = ''): bool
     {
-        $node = $node ?: NodeService::mk()->getCurrentNode();
+        $node = $node ?: NodeService::instance()->getCurrentNode();
         return in_array($node, $this->getUserNodes());
     }
 
@@ -150,9 +150,9 @@ class UserService extends Service
     public function getUserNodes(array $userInfo = []): array
     {
         $userInfo = $userInfo ?: $this->getUserInfo();
-        if ($userInfo['is_admin']) return NodeService::mk()->getNodes();
+        if ($userInfo['is_admin']) return NodeService::instance()->getNodes();
         $nodes = array_column($this->getUserAuths($userInfo), 'node');
-        return array_keys(NodeService::mk()->setFrameNodes($nodes));
+        return array_keys(NodeService::instance()->setFrameNodes($nodes));
     }
 
     /**

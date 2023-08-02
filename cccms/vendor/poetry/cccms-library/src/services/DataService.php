@@ -84,7 +84,7 @@ class DataService extends Service
             'whereAndMap' => [], // 并且条件
             'whereOrMap' => [], // 或者条件
         ];
-        $userData = UserService::mk()->getUserAuths();
+        $userData = UserService::instance()->getUserAuths();
         foreach ($userData as $d) {
             if ($d['table_name'] !== $tableName) continue;
             if (empty($d['field'])) continue;

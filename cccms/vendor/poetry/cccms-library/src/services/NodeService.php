@@ -124,8 +124,8 @@ class NodeService extends Service
                 $rootPath = $this->app->getRootPath();
                 // 这里扫描文件路径需要独立出来 有可能会有其他应用扩展
                 $toScanFileArray = array_merge(
-                    BaseService::mk()->scanDirArray($rootPath . 'vendor/poetry/cccms-app/src/*/' . $controller_layer . '/*'),
-                    BaseService::mk()->scanDirArray($rootPath . 'app/*/' . $controller_layer . '/*')
+                    BaseService::instance()->scanDirArray($rootPath . 'vendor/poetry/cccms-app/src/*/' . $controller_layer . '/*'),
+                    BaseService::instance()->scanDirArray($rootPath . 'app/*/' . $controller_layer . '/*')
                 );
             }
             $appNames = config('cccms.appName');

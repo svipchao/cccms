@@ -6,7 +6,7 @@ namespace app\admin\controller;
 
 use cccms\Base;
 use cccms\model\SysUser;
-use cccms\services\{UserService, CaptchaService};
+use cccms\services\{ConfigService, UserService, CaptchaService};
 
 /**
  * 登录管理
@@ -24,6 +24,8 @@ class Login extends Base
      */
     public function index(): void
     {
+        halt(ConfigService::instance());
+        die;
         $params = _validate('post', 'password,username,captcha,captchaToken', [
             'username|账号' => 'require',
             'password|密码' => 'require',
@@ -62,7 +64,7 @@ class Login extends Base
         $userInfo = SysUser::mk()
             ->field('id,nickname,username')
             ->where('status', 1)
-            ->findOrEmpty(UserService::mk()->getUserInfo('id'))
+            ->findOrEmpty(UserService::instance()->getUserInfo('id'))
             ->append(['accessToken', 'nodes', 'menus'])
             ->toArray();
         _result(['code' => 200, 'msg' => '缓存清除成功', 'data' => $userInfo], _getEnCode());
@@ -80,7 +82,7 @@ class Login extends Base
         _result([
             'code' => 200,
             'msg' => 'success',
-            'data' => CaptchaService::mk()->create()
+            'data' => CaptchaService::instance()->create()
         ]);
     }
 }

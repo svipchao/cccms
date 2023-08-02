@@ -31,7 +31,7 @@ class LogService extends Service
             $request_param['token'] = '********';
         }
         $data = [
-            'user_id' => UserService::mk()->getUserInfo('id'),
+            'user_id' => UserService::instance()->getUserInfo('id'),
             'name' => ($node['parentTitle'] ?: '空') . '-' . $node['title'],
             'node' => $node['currentNode'],
             'req_ip' => $this->app->request->ip(),

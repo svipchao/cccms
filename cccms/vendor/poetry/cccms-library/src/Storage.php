@@ -55,7 +55,7 @@ abstract class Storage
     public function getTypePath(int $type_id = 0): string
     {
         if (empty($type_id)) return '';
-        $types = TypesService::mk()->getTypes(4, 'id');
+        $types = TypesService::instance()->getTypes(4, 'id');
         return isset($types[$type_id]) ? $types[$type_id]['alias'] : '';
     }
 

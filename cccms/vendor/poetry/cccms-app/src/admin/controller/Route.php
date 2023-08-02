@@ -70,8 +70,8 @@ class Route extends Base
             'type_id' => $this->request->get('type_id/d', 0)
         ])->_page($this->request->get(['page' => 1, 'limit' => 10]));
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'fields' => AuthService::mk()->fields('sys_route'),
-            'types' => TypesService::mk()->getTypes(3),
+            'fields' => AuthService::instance()->fields('sys_route'),
+            'types' => TypesService::instance()->getTypes(3),
             'total' => $data['total'],
             'data' => $data['data']
         ]], _getEnCode());

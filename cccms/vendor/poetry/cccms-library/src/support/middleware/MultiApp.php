@@ -214,7 +214,7 @@ class MultiApp
      */
     private function setRoute(): void
     {
-        $files = BaseService::mk()->scanDirArray($this->app->getRootPath() . 'vendor/poetry/cccms-library/src/cccms/route/*');
+        $files = BaseService::instance()->scanDirArray($this->app->getRootPath() . 'vendor/poetry/cccms-library/src/cccms/route/*');
         foreach ($files as $file) {
             include $file;
         }

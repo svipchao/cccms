@@ -83,7 +83,7 @@ class User extends Base
             'code' => 200,
             'msg' => 'success',
             'data' => [
-                'fields' => AuthService::mk()->fields('sys_user'),
+                'fields' => AuthService::instance()->fields('sys_user'),
                 'total' => $users['total'] ?? 0,
                 'data' => $users['data'] ?? [],
             ]

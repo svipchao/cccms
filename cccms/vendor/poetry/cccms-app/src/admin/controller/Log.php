@@ -53,7 +53,7 @@ class Log extends Base
             'user' => $params['user']
         ])->order('log.id desc')->_page($params);
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'fields' => AuthService::mk()->fields('sys_log'),
+            'fields' => AuthService::instance()->fields('sys_log'),
             'total' => $data['total'],
             'data' => $data['data']
         ]], _getEnCode());

@@ -73,7 +73,7 @@ class Data extends Base
             'role_id' => 0,
             'table' => null,
         ]]);
-        $tableInfo = InitService::mk()->getTables();
+        $tableInfo = InitService::instance()->getTables();
         $data = $this->model->with('role')->_withSearch('role_id,table', [
             'role_id' => $params['role_id'],
             'table' => $params['table']
@@ -88,7 +88,7 @@ class Data extends Base
             return $data;
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'roles' => AuthService::mk()->getUserRoles(),
+            'roles' => AuthService::instance()->getUserRoles(),
             'table' => $tableInfo,
             'data' => $data['data'],
             'total' => $data['total']

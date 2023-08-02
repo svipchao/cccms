@@ -50,8 +50,8 @@ class Library extends Service
         $rootPath = $this->app->getRootPath();
         $lang = $this->app->lang->getLangSet();
         $toScanFileArray = array_merge(
-            BaseService::mk()->scanDirArray($rootPath . 'vendor/poetry/cccms-library/src/cccms/validate/' . $lang . '*'),
-            BaseService::mk()->scanDirArray($rootPath . 'cccms/validate/' . $lang . '*')
+            BaseService::instance()->scanDirArray($rootPath . 'vendor/poetry/cccms-library/src/cccms/validate/' . $lang . '*'),
+            BaseService::instance()->scanDirArray($rootPath . 'cccms/validate/' . $lang . '*')
         );
         foreach ($toScanFileArray as $file) {
             $this->app->config->load($file, 'validate_' . pathinfo($file, PATHINFO_FILENAME));
@@ -64,7 +64,7 @@ class Library extends Service
      */
     private function setConfig(): void
     {
-        $files = BaseService::mk()->scanDirArray($this->app->getRootPath() . 'vendor/poetry/cccms-library/src/cccms/config/*');
+        $files = BaseService::instance()->scanDirArray($this->app->getRootPath() . 'vendor/poetry/cccms-library/src/cccms/config/*');
         foreach ($files as $file) {
             $this->app->config->load($file, pathinfo($file, PATHINFO_FILENAME));
         }

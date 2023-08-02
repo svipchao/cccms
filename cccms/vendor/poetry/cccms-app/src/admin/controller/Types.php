@@ -73,7 +73,7 @@ class Types extends Base
         ]]);
         $data = $this->model->_withSearch('type', ['type' => $params['type']])->_page($params);
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'fields' => AuthService::mk()->fields('sys_types'),
+            'fields' => AuthService::instance()->fields('sys_types'),
             'type' => config('cccms.types.type'),
             'total' => $data['total'],
             'data' => $data['data'],

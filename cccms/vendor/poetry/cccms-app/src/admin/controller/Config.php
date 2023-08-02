@@ -100,8 +100,8 @@ class Config extends Base
             }, $data);
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'fields' => AuthService::mk()->fields('sys_config'),
-            'types' => TypesService::mk()->getTypes(2),
+            'fields' => AuthService::instance()->fields('sys_config'),
+            'types' => TypesService::instance()->getTypes(2),
             'data' => $data
         ]], _getEnCode());
     }

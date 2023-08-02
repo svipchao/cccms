@@ -90,8 +90,8 @@ class File extends Base
             'user' => $params['user']
         ])->order('id desc')->_page($params);
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'fields' => AuthService::mk()->fields('sys_file'),
-            'types' => TypesService::mk()->getTypes(4),
+            'fields' => AuthService::instance()->fields('sys_file'),
+            'types' => TypesService::instance()->getTypes(4),
             'total' => $data['total'],
             'data' => $data['data']
         ]], _getEnCode());

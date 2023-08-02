@@ -75,7 +75,7 @@ class Dept extends Base
             }, $data->toArray());
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'fields' => AuthService::mk()->fields('sys_dept'),
+            'fields' => AuthService::instance()->fields('sys_dept'),
             'data' => ArrExtend::toTreeArray($roles, 'id', 'dept_id')
         ]], _getEnCode());
     }

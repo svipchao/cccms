@@ -124,13 +124,11 @@ class CaptchaService extends Service
         $accessToken = JwtExtend::verifyToken($accessToken);
         if (empty($accessToken)) return false;
         // 判断节点是否正确
-        if ($accessToken['node'] !== NodeService::mk()->getCurrentNode()) {
+        if ($accessToken['node'] !== NodeService::instance()->getCurrentNode()) {
             return false;
         }
         // 验证码是否区分大小写
-        if (!$this->matchCase) {
-            $code = StrExtend::lower($code);
-        }
+        if (!$this->matchCase) $code = StrExtend::lower($code);
         return password_verify($code, $accessToken['hash']);
     }
 
@@ -143,7 +141,7 @@ class CaptchaService extends Service
      */
     public function create(string $config = null, string $node = ''): array
     {
-        $node = $node ?: NodeService::mk()->getCurrentNode();
+        $node = $node ?: NodeService::instance()->getCurrentNode();
         $this->configure($config);
 
         $generator = $this->generate();

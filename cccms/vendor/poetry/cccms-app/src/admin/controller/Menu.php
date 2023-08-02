@@ -70,8 +70,8 @@ class Menu extends Base
             'type_id' => $this->request->get('type_id/d', 0)
         ])->_list();
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'fields' => AuthService::mk()->fields('sys_menu'),
-            'types' => TypesService::mk()->getTypes(1),
+            'fields' => AuthService::instance()->fields('sys_menu'),
+            'types' => TypesService::instance()->getTypes(1),
             'data' => ArrExtend::toTreeList($data, 'id', 'menu_id')
         ]], _getEnCode());
     }

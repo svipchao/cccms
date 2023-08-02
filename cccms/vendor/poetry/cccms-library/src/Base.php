@@ -39,7 +39,7 @@ abstract class Base extends stdClass
         $this->request = $this->app->request;
 
         // 权限拦截
-        $this->check();
+        // $this->check();
 
         // 控制器初始化
         $this->init();
@@ -57,7 +57,7 @@ abstract class Base extends stdClass
      */
     public function check(): void
     {
-        $node = NodeService::mk()->getCurrentNodeInfo();
+        $node = NodeService::instance()->getCurrentNodeInfo();
         if (empty($node)) {
             _result(['code' => 404, 'msg' => '页面不存在']);
         }
@@ -72,11 +72,11 @@ abstract class Base extends stdClass
         // 检测是否需要验证登录
         if ($node['login']) {
             // 判断是否登陆
-            if (!UserService::mk()->getUserInfo('id')) {
+            if (!UserService::instance()->getUserInfo('id')) {
                 _result(['code' => 401, 'msg' => '请登陆']);
             }
             // 判断是否需要验证权限 检查用户是否拥有权限
-            if ($node['auth'] && !UserService::mk()->isAuth()) {
+            if ($node['auth'] && !UserService::instance()->isAuth()) {
                 _result(['code' => 403, 'msg' => '权限不足，请申请【' . $node['currentPath'] . '】节点权限！']);
             }
         }

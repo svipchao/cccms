@@ -30,6 +30,7 @@ abstract class Service
     {
         $this->app = $app;
         $this->request = $app->request;
+        $this->initialize();
     }
 
     /**
@@ -45,7 +46,7 @@ abstract class Service
      * @param boolean $new 创建新实例
      * @return static
      */
-    public static function mk(array $var = [], bool $new = false): Service
+    public static function instance(array $var = [], bool $new = false): Service
     {
         return Container::getInstance()->make(static::class, $var, $new);
     }
