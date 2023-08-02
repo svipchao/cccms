@@ -15,31 +15,67 @@
       <a-col flex="auto" class="login-right">
         <a-tabs centered class="login-tabs">
           <a-tab-pane key="1" tab="密码登录">
-            <a-space direction="vertical" block style="width: 100%" :size="30">
-              <a-input placeholder="请输入登录账号" size="large">
-                <template #prefix>
-                  <i class="ri-user-3-line"></i>
-                </template>
-              </a-input>
-              <a-input placeholder="请输入登录密码" size="large">
-                <template #prefix>
-                  <i class="ri-lock-line"></i>
-                </template>
-              </a-input>
-              <a-space :size="10">
-                <a-input placeholder="请输入验证码" size="large">
+            <a-form
+              :model="userinfo"
+              name="userinfo"
+              autocomplete="off"
+              @finish="setUserInfo"
+            >
+              <a-form-item
+                name="username"
+                :rules="[{ required: true, message: '请输入登录账号！' }]"
+              >
+                <a-input
+                  placeholder="请输入登录账号"
+                  size="large"
+                  v-model="userinfo.username"
+                >
                   <template #prefix>
-                    <i class="ri-shield-check-line"></i>
+                    <i class="ri-user-3-line"></i>
                   </template>
                 </a-input>
-                <img
-                  :src="captcha"
-                  class="login-captcha"
-                  @click="getCaptchaFun()"
-                />
-              </a-space>
-              <a-button type="primary" block size="large">登录</a-button>
-            </a-space>
+              </a-form-item>
+              <a-form-item
+                name="password"
+                :rules="[{ required: true, message: '请输入登录密码！' }]"
+              >
+                <a-input-password
+                  placeholder="请输入登录密码"
+                  size="large"
+                  v-model="userinfo.password"
+                >
+                  <template #prefix>
+                    <i class="ri-lock-line"></i>
+                  </template>
+                </a-input-password>
+              </a-form-item>
+              <a-form-item
+                name="captcha"
+                :rules="[{ required: true, message: '请输入验证码！' }]"
+              >
+                <a-space :size="10">
+                  <a-input
+                    placeholder="请输入验证码"
+                    size="large"
+                    v-model="userinfo.captcha"
+                  >
+                    <template #prefix>
+                      <i class="ri-shield-check-line"></i>
+                    </template>
+                  </a-input>
+                  <img
+                    :src="captcha"
+                    class="login-captcha"
+                    @click="getCaptchaFun()"
+                  />
+                </a-space>
+              </a-form-item>
+              <a-form-item>
+                <a-button type="primary" block size="large" html-type="submit">
+                  登录
+                </a-button>
+              </a-form-item>
+            </a-form>
           </a-tab-pane>
           <a-tab-pane key="3" tab="手机登录">
             <a-empty />
@@ -68,9 +104,13 @@ const { setUserInfo } = useUser();
 const userinfo = reactive({
   username: "",
   password: "",
-  accessToken: "",
+  captcha: "",
+  captchaToken: "",
 });
-const captcha = ref("");
+
+const captcha = ref(
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+);
 
 onMounted(() => {
   getCaptchaFun();
@@ -79,7 +119,7 @@ onMounted(() => {
 const getCaptchaFun = async () => {
   const { data } = await getCaptcha();
   captcha.value = data.base64;
-  userinfo.accessToken = data.accessToken;
+  userinfo.captchaToken = data.captchaToken;
 };
 </script>
 
@@ -90,21 +130,29 @@ const getCaptchaFun = async () => {
   display: grid;
   align-content: center;
   justify-content: center;
-  background-size: 100% 100%;
+  background-size: 100%;
+  background-position: center 100px;
   background-repeat: no-repeat;
   background-image: url("@/assets/login/bg.svg");
   .login-body {
     width: 920px;
     height: 460px;
     border-radius: 8px;
-    overflow: hidden;
+    // overflow: hidden;
     background-color: #fff;
     box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
       0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+    @media screen and (max-width: 930px) {
+      max-width: 400px;
+      box-shadow: none;
+    }
     .login-left {
       width: 520px;
       height: 460px;
       background: #1681fd;
+      @media screen and (max-width: 930px) {
+        display: none;
+      }
       .login-copyright {
         height: 110px;
         text-align: center;
@@ -131,11 +179,12 @@ const getCaptchaFun = async () => {
       }
     }
     .login-right {
+      width: 400px;
       padding: 40px;
       .login-tabs {
         height: 356px;
         .ant-tabs-tabpane {
-          padding: 20px 0px 30px 0px;
+          padding: 20px 0px;
           .ant-input-affix-wrapper {
             i {
               color: #aaa;
@@ -151,10 +200,10 @@ const getCaptchaFun = async () => {
         }
       }
       .login-copyright-link {
+        color: #999;
         height: 25px;
         line-height: 25px;
         text-align: center;
-        color: #999;
         a {
           color: #999;
         }

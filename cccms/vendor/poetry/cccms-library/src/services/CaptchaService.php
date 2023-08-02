@@ -11,10 +11,11 @@ use cccms\extend\{JwtExtend, StrExtend};
 
 class CaptchaService extends Service
 {
-    private $im    = null; // 验证码图片实例
+    private $im = null; // 验证码图片实例
     // 验证码文字颜色
     private $color = [
         [255, 106, 106],
+        [255, 102, 102],
         [255, 69, 0],
         [255, 48, 48],
         [30, 144, 255],
@@ -24,12 +25,15 @@ class CaptchaService extends Service
         [139, 90, 0],
         [102, 102, 255],
         [153, 102, 0],
+        [0, 153, 204],
+        [0, 51, 102],
+        [51, 153, 153],
+        [255, 153, 0],
     ];
     /**
      * @var Config|null
      */
     private $config = null;
-
     // 验证码字符集合
     protected $codeSet = '2345678abcdefhijkmnpqrstuvwxyzABCDEFGHJKLMNPQRTUVWXY';
     // 验证码过期时间（s）
@@ -37,15 +41,15 @@ class CaptchaService extends Service
     // 使用背景图片
     protected $useImgBg = false;
     // 验证码字体大小(px)
-    protected $fontSize = 25;
+    protected $fontSize = 22;
     // 是否画混淆曲线
     protected $useCurve = true;
     // 是否添加杂点
     protected $useNoise = true;
-    // 验证码图片高度
-    protected $imageH = 0;
     // 验证码图片宽度
-    protected $imageW = 0;
+    protected $imageW = 130;
+    // 验证码图片高度
+    protected $imageH = 48;
     // 验证码位数
     protected $length = 5;
     // 背景颜色
@@ -58,11 +62,11 @@ class CaptchaService extends Service
     /**
      * 架构方法 设置参数
      * @access public
-     * @param Config  $config
+     * @param Config $config
      */
     public function __construct(Config $config)
     {
-        $this->config  = $config;
+        $this->config = $config;
     }
 
     /**
@@ -71,13 +75,11 @@ class CaptchaService extends Service
      */
     protected function configure(string $config = null): void
     {
-        // 返回base图片以及校验码(jwt) 无状态
         if (is_null($config)) {
             $config = $this->config->get('captcha', []);
         } else {
             $config = $this->config->get('captcha.' . $config, []);
         }
-
         foreach ($config as $key => $val) {
             if (property_exists($this, $key)) {
                 $this->{$key} = $val;
@@ -93,12 +95,10 @@ class CaptchaService extends Service
     protected function generate(): array
     {
         $bag = '';
-
         if ($this->math) {
             $this->length = 5;
-
-            $x   = random_int(10, 30);
-            $y   = random_int(1, 9);
+            $x = random_int(10, 30);
+            $y = random_int(1, 9);
             $bag = "{$x} + {$y} = ";
             $key = $x + $y;
             $key .= '';
@@ -107,12 +107,9 @@ class CaptchaService extends Service
             for ($i = 0; $i < $this->length; $i++) {
                 $bag .= $characters[random_int(0, count($characters) - 1)];
             }
-
             $key = $this->matchCase ? $bag : StrExtend::lower($bag);
         }
-
         $hash = password_hash($key, PASSWORD_BCRYPT, ['cost' => 10]);
-
         return ['value' => $bag, 'hash' => $hash];
     }
 
@@ -126,12 +123,10 @@ class CaptchaService extends Service
     {
         $accessToken = JwtExtend::verifyToken($accessToken);
         if (empty($accessToken)) return false;
-
         // 判断节点是否正确
         if ($accessToken['node'] !== NodeService::mk()->getCurrentNode()) {
             return false;
         }
-
         // 验证码是否区分大小写
         if (!$this->matchCase) {
             $code = StrExtend::lower($code);
@@ -143,7 +138,7 @@ class CaptchaService extends Service
      * 输出验证码
      * @access public
      * @param null|string $config 验证码配置
-     * @param string      $node 节点
+     * @param string $node 节点
      * @return array
      */
     public function create(string $config = null, string $node = ''): array
@@ -174,9 +169,11 @@ class CaptchaService extends Service
         if ($this->useCurve) $this->writeCurve();
         // 绘验证码
         $text = str_split($generator['value']);
+        // 横向间距
+        $xSpace = $this->math ? 0.6 : ((20 - $this->length * 2) / 10);
         foreach ($text as $index => $char) {
-            $x     = $this->fontSize * ($index + 0.5) * ($this->math ? 1 : 1.4);
-            $y     = $this->fontSize + mt_rand(40, 80);
+            $x = $this->fontSize * ($index + 0.5) * $xSpace;
+            $y = $this->fontSize + mt_rand(10, 20);
             $angle = $this->math ? 0 : mt_rand(-20, 40);
 
             $color = imagecolorallocate($this->im, ...$this->color[array_rand($this->color)]);
@@ -195,36 +192,31 @@ class CaptchaService extends Service
         if (!$this->matchCase) {
             $generator['value'] = StrExtend::lower($generator['value']);
         }
-
         $accessToken = JwtExtend::getToken([
             'iss' => $node,
             'exp' => time() + $this->expire,
             'ip' => request()->ip(),
-            'code' => md5($generator['value']),
             'hash' => $generator['hash'],
         ]);
-
-        return ['accessToken' => $accessToken, 'base64' => $imageData,];
+        return ['captchaToken' => $accessToken, 'base64' => $imageData];
     }
 
     /**
      * 画一条由两条连在一起构成的随机正弦函数曲线作干扰线(你可以改成更帅的曲线函数)
-     *
-     *      高中的数学公式咋都忘了涅，写出来
-     *        正弦型函数解析式：y=Asin(ωx+φ)+b
-     *      各常数值对函数图像的影响：
-     *        A：决定峰值（即纵向拉伸压缩的倍数）
-     *        b：表示波形在Y轴的位置关系或纵向移动距离（上加下减）
-     *        φ：决定波形与X轴位置关系或横向移动距离（左加右减）
-     *        ω：决定周期（最小正周期T=2π/∣ω∣）
-     *
+     *   高中的数学公式咋都忘了涅，写出来
+     *     正弦型函数解析式：y=Asin(ωx+φ)+b
+     *   各常数值对函数图像的影响：
+     *     A：决定峰值（即纵向拉伸压缩的倍数）
+     *     b：表示波形在Y轴的位置关系或纵向移动距离（上加下减）
+     *     φ：决定波形与X轴位置关系或横向移动距离（左加右减）
+     *     ω：决定周期（最小正周期T=2π/∣ω∣）
      */
     protected function writeCurve(): void
     {
         $px = $py = 0;
 
         // 曲线前部分
-        $A = mt_rand(1, (int)($this->imageH / 2)); // 振幅
+        $A = mt_rand(1, (int)($this->imageH / 5)); // 振幅
         $b = mt_rand((int)(-$this->imageH / 4), (int)($this->imageH / 4)); // Y轴方向偏移量
         $f = mt_rand((int)(-$this->imageH / 4), (int)($this->imageH / 4)); // X轴方向偏移量
         $T = mt_rand((int)$this->imageH, (int)$this->imageW * 2); // 周期
@@ -237,7 +229,7 @@ class CaptchaService extends Service
         for ($px = $px1; $px <= $px2; $px = $px + 1) {
             if (0 != $w) {
                 $py = $A * sin($w * $px + $f) + $b + $this->imageH / 2; // y = Asin(ωx+φ) + b
-                $i  = (int) ($this->fontSize / 5);
+                $i = (int)($this->fontSize / 5);
                 while ($i > 0) {
                     imagesetpixel($this->im, (int)($px + $i), (int)($py + $i), (int)$color); // 这里(while)循环画像素点比imagettftext和imagestring用字体大小一次画出（不用这while循环）性能要好很多
                     $i--;
@@ -246,18 +238,18 @@ class CaptchaService extends Service
         }
 
         // 曲线后部分
-        $A   = mt_rand(1, (int)($this->imageH / 2)); // 振幅
-        $f   = mt_rand((int)(-$this->imageH / 4), (int)($this->imageH / 4)); // X轴方向偏移量
-        $T   = mt_rand((int)$this->imageH, (int)$this->imageW * 2); // 周期
-        $w   = (2 * M_PI) / $T;
-        $b   = $py - $A * sin($w * $px + $f) - $this->imageH / 2;
+        $A = mt_rand(1, (int)($this->imageH / 10)); // 振幅
+        $f = mt_rand((int)(-$this->imageH / 4), (int)($this->imageH / 4)); // X轴方向偏移量
+        $T = mt_rand((int)$this->imageH, (int)$this->imageW * 2); // 周期
+        $w = (2 * M_PI) / $T;
+        $b = $py - $A * sin($w * $px + $f) - $this->imageH / 2;
         $px1 = $px2;
         $px2 = $this->imageW;
 
         for ($px = $px1; $px <= $px2; $px = $px + 1) {
             if (0 != $w) {
                 $py = $A * sin($w * $px + $f) + $b + $this->imageH / 2; // y = Asin(ωx+φ) + b
-                $i  = (int) ($this->fontSize / 5);
+                $i = (int)($this->fontSize / 5);
                 while ($i > 0) {
                     imagesetpixel($this->im, (int)($px + $i), (int)($py + $i), $color);
                     $i--;
@@ -273,12 +265,12 @@ class CaptchaService extends Service
     protected function writeNoise(): void
     {
         $codeSet = '2345678abcdefhijkmnpqrstuvwxyz';
-        for ($i = 0; $i < 10; $i++) {
-            for ($j = 0; $j < 5; $j++) {
-                //杂点颜色
+        for ($i = 0; $i < 3; $i++) {
+            for ($j = 0; $j < 3; $j++) {
+                // 杂点颜色
                 $noiseColor = imagecolorallocate($this->im, mt_rand(0, 225), mt_rand(0, 225), mt_rand(0, 225));
                 // 绘杂点
-                imagestring($this->im, 5, mt_rand(-10, (int)$this->imageW), mt_rand(-10, (int)$this->imageH), $codeSet[mt_rand(0, 29)], $noiseColor);
+                imagestring($this->im, 1, mt_rand(-10, (int)$this->imageW), mt_rand(-10, (int)$this->imageH), $codeSet[mt_rand(0, 29)], $noiseColor);
             }
         }
     }
@@ -290,7 +282,7 @@ class CaptchaService extends Service
     protected function background(): void
     {
         $path = __DIR__ . '/../../assets/bgs/';
-        $dir  = dir($path);
+        $dir = dir($path);
 
         $bgs = [];
         while (false !== ($file = $dir->read())) {

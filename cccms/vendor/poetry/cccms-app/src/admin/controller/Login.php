@@ -24,7 +24,7 @@ class Login extends Base
      */
     public function index(): void
     {
-        $params = _validate('post', 'password,username', [
+        $params = _validate('post', 'password,username,captcha,captchaToken', [
             'username|账号' => 'require',
             'password|密码' => 'require',
         ]);
