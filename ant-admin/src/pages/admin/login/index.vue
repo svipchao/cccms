@@ -52,7 +52,6 @@
               <a-form-item
                 name="captcha"
                 :rules="[{ required: true, message: '请输入验证码！' }]"
-                v-if="false"
               >
                 <a-space :size="10">
                   <a-input
@@ -78,7 +77,7 @@
               </a-form-item>
             </a-form>
           </a-tab-pane>
-          <a-tab-pane key="3" tab="手机登录">
+          <a-tab-pane key="3" tab="手机登录" disabled>
             <a-empty />
           </a-tab-pane>
         </a-tabs>
@@ -143,7 +142,7 @@ const doLogin = () => {
     width: 920px;
     height: 460px;
     border-radius: 8px;
-    // overflow: hidden;
+    overflow: hidden;
     background-color: #fff;
     box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
       0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
@@ -187,9 +186,9 @@ const doLogin = () => {
       width: 400px;
       padding: 40px;
       .login-tabs {
-        height: 356px;
+        height: 355px;
         .ant-tabs-tabpane {
-          padding: 20px 0px;
+          padding: 30px 0px 10px 0px;
           .ant-input-affix-wrapper {
             i {
               color: #aaa;

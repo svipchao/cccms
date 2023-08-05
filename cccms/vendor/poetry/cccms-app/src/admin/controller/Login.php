@@ -24,8 +24,6 @@ class Login extends Base
      */
     public function index(): void
     {
-        halt(ConfigService::instance());
-        die;
         $params = _validate('post', 'password,username,captcha,captchaToken', [
             'username|账号' => 'require',
             'password|密码' => 'require',
@@ -79,6 +77,8 @@ class Login extends Base
      */
     public function captcha()
     {
+        halt(ConfigService::instance());
+        die;
         _result([
             'code' => 200,
             'msg' => 'success',
