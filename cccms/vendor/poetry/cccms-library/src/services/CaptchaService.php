@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace cccms\services;
@@ -11,6 +10,7 @@ use cccms\extend\{JwtExtend, StrExtend};
 
 class CaptchaService extends Service
 {
+    private $open = true; // 是否启用验证码
     private $im = null; // 验证码图片实例
     // 验证码文字颜色
     private $color = [
@@ -30,10 +30,6 @@ class CaptchaService extends Service
         [51, 153, 153],
         [255, 153, 0],
     ];
-    /**
-     * @var Config|null
-     */
-    private $config = null;
     // 验证码字符集合
     protected $codeSet = '2345678abcdefhijkmnpqrstuvwxyzABCDEFGHJKLMNPQRTUVWXY';
     // 验证码过期时间（s）
@@ -62,28 +58,12 @@ class CaptchaService extends Service
     /**
      * 架构方法 设置参数
      * @access public
-     * @param Config $config
      */
-    public function __construct(Config $config)
+    public function __construct()
     {
-        $this->config = $config;
-    }
-
-    /**
-     * 配置验证码
-     * @param string|null $config
-     */
-    protected function configure(string $config = null): void
-    {
-        if (is_null($config)) {
-            $config = $this->config->get('captcha', []);
-        } else {
-            $config = $this->config->get('captcha.' . $config, []);
-        }
+        $config = ConfigService::instance()->getConfig('captcha', []);
         foreach ($config as $key => $val) {
-            if (property_exists($this, $key)) {
-                $this->{$key} = $val;
-            }
+            if (property_exists($this, $key)) $this->{$key} = $val;
         }
     }
 
@@ -121,6 +101,8 @@ class CaptchaService extends Service
      */
     public function check(string $code, string $accessToken = ''): bool
     {
+        // 没有启用验证码不需要验证
+        if (!$this->open) return true;
         $accessToken = JwtExtend::verifyToken($accessToken);
         if (empty($accessToken)) return false;
         // 判断节点是否正确
@@ -135,15 +117,13 @@ class CaptchaService extends Service
     /**
      * 输出验证码
      * @access public
-     * @param null|string $config 验证码配置
      * @param string $node 节点
      * @return array
      */
-    public function create(string $config = null, string $node = ''): array
+    public function create(string $node = ''): array
     {
+        if (!$this->open) return ['open' => false, 'captchaToken' => '', 'base64' => ''];
         $node = $node ?: NodeService::instance()->getCurrentNode();
-        $this->configure($config);
-
         $generator = $this->generate();
         // 图片宽(px)
         $this->imageW || $this->imageW = $this->length * $this->fontSize * 1 + $this->length * $this->fontSize / 2;
@@ -196,7 +176,7 @@ class CaptchaService extends Service
             'ip' => request()->ip(),
             'hash' => $generator['hash'],
         ]);
-        return ['captchaToken' => $accessToken, 'base64' => $imageData];
+        return ['open' => true, 'captchaToken' => $accessToken, 'base64' => $imageData];
     }
 
     /**

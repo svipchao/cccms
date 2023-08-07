@@ -52,6 +52,7 @@
               <a-form-item
                 name="captcha"
                 :rules="[{ required: true, message: '请输入验证码！' }]"
+                v-if="isOpenCaptcha"
               >
                 <a-space :size="10">
                   <a-input
@@ -108,6 +109,8 @@ const userinfo = reactive({
   captchaToken: "",
 });
 
+const isOpenCaptcha = ref(true);
+
 const captcha = ref(
   "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 );
@@ -119,6 +122,7 @@ onMounted(() => {
 const getCaptchaFun = async () => {
   const { data } = await getCaptcha();
   captcha.value = data.base64;
+  isOpenCaptcha.value = data.open;
   userinfo.captchaToken = data.captchaToken;
 };
 

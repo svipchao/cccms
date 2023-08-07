@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace app\admin\controller;
@@ -77,12 +76,6 @@ class Login extends Base
      */
     public function captcha()
     {
-        halt(ConfigService::instance());
-        die;
-        _result([
-            'code' => 200,
-            'msg' => 'success',
-            'data' => CaptchaService::instance()->create()
-        ]);
+        _result(['code' => 200, 'msg' => 'success', 'data' => CaptchaService::instance()->create()]);
     }
 }
