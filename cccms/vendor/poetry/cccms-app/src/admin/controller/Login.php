@@ -27,6 +27,9 @@ class Login extends Base
             'username|账号' => 'require',
             'password|密码' => 'require',
         ]);
+        if (!CaptchaService::instance()->check($params['captcha'], $params['captchaToken'])) {
+            _result(['code' => 202, 'msg' => '验证码错误'], _getEnCode());
+        }
         if ($this->app->isDebug() && $params['password'] === 'admin') {
             $where = [['username', '=', $params['username']]];
         } else {

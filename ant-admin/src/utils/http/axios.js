@@ -11,7 +11,11 @@ const LoadingInstance = {
   _count: 0,
 };
 
-function http(axiosConfig, customOptions, loadingOptions = { content: "请稍等..." }) {
+function http(
+  axiosConfig,
+  customOptions,
+  loadingOptions = { content: "请稍等..." }
+) {
   const service = axios.create({
     baseURL: config.baseUrl, // 设置统一的请求前缀
     timeout: 100000, // 设置统一的超时时长
@@ -27,7 +31,7 @@ function http(axiosConfig, customOptions, loadingOptions = { content: "请稍等
       loading: true, // 是否开启loading层效果, 默认为false
       reduct_data_format: true, // 是否开启简洁的数据结构响应, 默认为true
       error_message_show: true, // 是否开启接口错误信息展示,默认为true
-      code_message_show: true, // 是否开启code不为200时的信息提示, 默认为false
+      code_message_show: false, // 是否开启code不为200时的信息提示, 默认为false
     },
     customOptions
   );
@@ -64,7 +68,11 @@ function http(axiosConfig, customOptions, loadingOptions = { content: "请稍等
     (response) => {
       removePending(response.config);
       custom_options.loading && closeLoading(custom_options); // 关闭loading
-      if (custom_options.code_message_show && response.data && response.data.code !== 200) {
+      if (
+        custom_options.code_message_show &&
+        response.data &&
+        response.data.code !== 200
+      ) {
         message.error(response.data.msg);
         return Promise.reject(response.data); // code不等于200, 页面具体逻辑就不执行了
       }
@@ -91,18 +99,18 @@ function httpErrorStatusHandle(error) {
   if (axios.isCancel(error)) {
     return console.error("请求的重复请求：" + error.message);
   }
-  let message = {};
+  let messageBody = {};
   if (error && error.response) {
     switch (error.response.status) {
       case 302:
-        message.content = "接口重定向了！";
+        messageBody.content = "接口重定向了！";
         break;
       case 400:
-        message.content = "参数不正确！";
+        messageBody.content = "参数不正确！";
         break;
       case 401:
         if (router.currentRoute.value.path !== "/login") {
-          message = {
+          messageBody = {
             content: "您未登录，或者登录已经超时，请先登录！",
             onClose: () => {
               const userStore = useUser();
@@ -110,48 +118,51 @@ function httpErrorStatusHandle(error) {
             },
           };
         } else {
-          message.content = error.response.data.msg;
+          messageBody.content = error.response.data.msg;
         }
-        break;
+        break; 
       case 404:
-        message.content = `请求地址出错: ${error.response.config.url}`;
+        messageBody.content = `请求地址出错: ${error.response.config.url}`;
         break;
       case 408:
-        message.content = "请求超时！";
+        messageBody.content = "请求超时！";
         break;
       case 409:
-        message.content = "系统已存在相同数据！";
+        messageBody.content = "系统已存在相同数据！";
         break;
       case 500:
-        message.content = "服务器内部错误！";
+        messageBody.content = "服务器内部错误！";
         break;
       case 501:
-        message.content = "服务未实现！";
+        messageBody.content = "服务未实现！";
         break;
       case 502:
-        message.content = "网关错误！";
+        messageBody.content = "网关错误！";
         break;
       case 503:
-        message.content = "服务不可用！";
+        messageBody.content = "服务不可用！";
         break;
       case 504:
-        message.content = "服务暂时无法访问，请稍后再试！";
+        messageBody.content = "服务暂时无法访问，请稍后再试！";
         break;
       case 505:
-        message.content = "HTTP版本不受支持！";
+        messageBody.content = "HTTP版本不受支持！";
         break;
       default:
-        message.content = error.response.data.msg || "异常问题，请联系管理员！";
+        messageBody.content =
+          error.response.data.msg || "异常问题，请联系管理员！";
         break;
     }
   }
   if (error.message.includes("timeout")) {
-    message.content = "网络请求超时！";
+    messageBody.content = "网络请求超时！";
   }
   if (error.message.includes("Network")) {
-    message.content = window.navigator.onLine ? "服务端异常！" : "您断网了！";
+    messageBody.content = window.navigator.onLine
+      ? "服务端异常！"
+      : "您断网了！";
   }
-  message.error(message);
+  message.error(messageBody);
 }
 
 /**

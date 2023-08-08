@@ -94,19 +94,20 @@
 </template>
 
 <script setup>
+import { onMounted, reactive, ref } from "vue";
+import { message } from "ant-design-vue";
 import config from "@/config";
 import router from "@/router";
-import { onMounted, reactive, ref } from "vue";
 import { login, getCaptcha } from "@/api/admin/login.js";
 import { useUser } from "@/store/admin/user.js";
 
 const { setUserInfo } = useUser();
 
 const userinfo = reactive({
-  username: "",
-  password: "",
-  captcha: "",
-  captchaToken: "",
+  username: "admin",
+  password: "admin",
+  captcha: "admin",
+  captchaToken: "admin",
 });
 
 const isOpenCaptcha = ref(true);
@@ -127,7 +128,15 @@ const getCaptchaFun = async () => {
 };
 
 const doLogin = () => {
-  setUserInfo(userinfo);
+  login(userinfo).then((res) => {
+    console.log(res);
+    if (res.code == 200) {
+      setUserInfo(res);
+    } else {
+      message.error(res?.msg || "验证码错误");
+      getCaptchaFun();
+    }
+  });
 };
 </script>
 

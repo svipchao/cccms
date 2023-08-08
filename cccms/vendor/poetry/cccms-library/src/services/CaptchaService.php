@@ -123,7 +123,6 @@ class CaptchaService extends Service
     public function create(string $node = ''): array
     {
         if (!$this->open) return ['open' => false, 'captchaToken' => '', 'base64' => ''];
-        $node = $node ?: NodeService::instance()->getCurrentNode();
         $generator = $this->generate();
         // 图片宽(px)
         $this->imageW || $this->imageW = $this->length * $this->fontSize * 1 + $this->length * $this->fontSize / 2;
@@ -175,6 +174,7 @@ class CaptchaService extends Service
             'exp' => time() + $this->expire,
             'ip' => request()->ip(),
             'hash' => $generator['hash'],
+            'node' => $node ?: NodeService::instance()->getCurrentNode(),
         ]);
         return ['open' => true, 'captchaToken' => $accessToken, 'base64' => $imageData];
     }
