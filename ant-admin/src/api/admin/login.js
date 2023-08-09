@@ -12,5 +12,5 @@ export const refreshToken = (data, headers = {}) => {
 
 // 刷新Token
 export const getCaptcha = (data, headers = {}) => {
-  return http.get("/admin/login/captcha", data, headers);
+  return http.get("/admin/login/captcha", data, headers, { loading: false });
 };

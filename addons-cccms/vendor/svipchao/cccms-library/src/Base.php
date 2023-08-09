@@ -4,9 +4,7 @@ declare (strict_types=1);
 namespace cccms;
 
 use think\{App, Request, facade\Cache, facade\Env};
-use cccms\service\AuthService;
-use cccms\service\LogService;
-use cccms\service\NodeService;
+use cccms\service\{AuthService, NodeService, LogService};
 
 /**
  * 控制器基础类
@@ -46,7 +44,7 @@ abstract class Base
         $this->request->filter(['htmlspecialchars', 'trim']);
 
         // 验证请求
-//        $this->check();
+        // $this->check();
 
         // 控制器初始化
         $this->init();
@@ -72,7 +70,7 @@ abstract class Base
         // 检测是否需要验证登录
         if ($node['login']) {
             // 判断是否登陆
-            if(!AuthService::instance()->hasLogin()){
+            if (!AuthService::instance()->hasLogin()) {
                 _result(['code' => 401, 'msg' => '请登陆', 'url' => (string)url('/user/login')], _getEnCode());
             }
             // 判断是否需要验证权限 检查用户是否拥有权限

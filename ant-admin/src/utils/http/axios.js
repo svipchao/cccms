@@ -45,7 +45,7 @@ function http(
       if (custom_options.loading) {
         LoadingInstance._count++;
         if (LoadingInstance._count === 1) {
-          LoadingInstance._target = message.loading(loadingOptions);
+          LoadingInstance._target = message.loading(loadingOptions, 0);
         }
       }
       // 自动携带token
@@ -120,7 +120,7 @@ function httpErrorStatusHandle(error) {
         } else {
           messageBody.content = error.response.data.msg;
         }
-        break; 
+        break;
       case 404:
         messageBody.content = `请求地址出错: ${error.response.config.url}`;
         break;
@@ -172,9 +172,7 @@ function httpErrorStatusHandle(error) {
 function closeLoading(_options) {
   if (_options.loading && LoadingInstance._count > 0) LoadingInstance._count--;
   if (LoadingInstance._count === 0) {
-    // console.log(LoadingInstance._target());
-    // LoadingInstance._target.destroy();
-    message.destroy();
+    setTimeout(LoadingInstance._target, 500);
     LoadingInstance._target = null;
   }
 }

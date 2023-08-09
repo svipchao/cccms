@@ -38,12 +38,13 @@ export default {
       loadingOptions
     );
   },
-  get(url, params, customOptions, loadingOptions) {
+  get(url, params, headers, customOptions, loadingOptions) {
     return http(
       {
         url: url,
         method: "get",
         params: params,
+        headers: headers,
       },
       customOptions,
       loadingOptions

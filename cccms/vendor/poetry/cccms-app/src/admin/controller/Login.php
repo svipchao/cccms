@@ -79,6 +79,6 @@ class Login extends Base
      */
     public function captcha()
     {
-        _result(['code' => 200, 'msg' => 'success', 'data' => CaptchaService::instance()->create()]);
+        _result(['code' => 200, 'msg' => 'success', 'data' => CaptchaService::instance()->create('admin/login/index')]);
     }
 }

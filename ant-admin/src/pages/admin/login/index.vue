@@ -129,9 +129,8 @@ const getCaptchaFun = async () => {
 
 const doLogin = () => {
   login(userinfo).then((res) => {
-    console.log(res);
     if (res.code == 200) {
-      setUserInfo(res);
+      setUserInfo(res.data);
     } else {
       message.error(res?.msg || "验证码错误");
       getCaptchaFun();

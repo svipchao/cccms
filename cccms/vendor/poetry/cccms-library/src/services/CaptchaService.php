@@ -89,6 +89,7 @@ class CaptchaService extends Service
             }
             $key = $this->matchCase ? $bag : StrExtend::lower($bag);
         }
+        if (!$this->matchCase) $key = StrExtend::lower($key);
         $hash = password_hash($key, PASSWORD_BCRYPT, ['cost' => 10]);
         return ['value' => $bag, 'hash' => $hash];
     }
@@ -106,9 +107,7 @@ class CaptchaService extends Service
         $accessToken = JwtExtend::verifyToken($accessToken);
         if (empty($accessToken)) return false;
         // 判断节点是否正确
-        if ($accessToken['node'] !== NodeService::instance()->getCurrentNode()) {
-            return false;
-        }
+        if ($accessToken['iss'] !== NodeService::instance()->getCurrentNode()) return false;
         // 验证码是否区分大小写
         if (!$this->matchCase) $code = StrExtend::lower($code);
         return password_verify($code, $accessToken['hash']);
@@ -170,11 +169,10 @@ class CaptchaService extends Service
             $generator['value'] = StrExtend::lower($generator['value']);
         }
         $accessToken = JwtExtend::getToken([
-            'iss' => $node,
+            'iss' => $node ?: NodeService::instance()->getCurrentNode(),
             'exp' => time() + $this->expire,
             'ip' => request()->ip(),
             'hash' => $generator['hash'],
-            'node' => $node ?: NodeService::instance()->getCurrentNode(),
         ]);
         return ['open' => true, 'captchaToken' => $accessToken, 'base64' => $imageData];
     }
@@ -192,7 +190,6 @@ class CaptchaService extends Service
     protected function writeCurve(): void
     {
         $px = $py = 0;
-
         // 曲线前部分
         $A = mt_rand(1, (int)($this->imageH / 5)); // 振幅
         $b = mt_rand((int)(-$this->imageH / 4), (int)($this->imageH / 4)); // Y轴方向偏移量
