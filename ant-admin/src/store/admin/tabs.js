@@ -47,10 +47,12 @@ export const useTabs = defineStore({
       // 设置菜单选中项
       const menuStore = useMenu();
       const menu = menuStore.getMenu(id);
+      console.log(menu)
       if (menu) {
         // 重新赋值 有可能传进来的不是id 而是node
         id = menu.id;
         router.push("/" + menu.url);
+        console.log(menu.url)
         if (menuStore.showApps) {
           // 如果选择的是应用 则切换Menu数据
           menuStore.currentAppId = id;

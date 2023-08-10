@@ -40,7 +40,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   // 判断是否需要登录
   const userStore = useUser();
-  if (userStore.accessToken) {
+  if (!userStore.accessToken) {
     if (to.name == "login") {
       next();
     } else {

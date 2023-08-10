@@ -61,10 +61,9 @@ export const useMenu = defineStore({
     },
     setMenus(menus = {}) {
       this.menus = menus;
-      console.log(menus)
-      // if (this.currentAppId == undefined) {
-      //   this.currentAppId = menus[0]["id"];
-      // }
+      if (this.currentAppId == undefined) {
+        this.currentAppId = menus[0]["id"];
+      }
     },
     setCurrentApp(currentAppId) {
       this.currentAppId = currentAppId;
