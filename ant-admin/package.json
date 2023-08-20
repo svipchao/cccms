@@ -19,7 +19,7 @@
     "remixicon": "^3.5.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^4.2.3",
+    "@vitejs/plugin-vue": "^4.3.1",
     "unplugin-vue-components": "^0.25.1",
     "vite": "^4.4.9"
   }

@@ -31,20 +31,18 @@ export const useUser = defineStore({
     },
   },
   actions: {
-    async setUserInfo(userInfo = {}) {
-      await login(userInfo).then((res) => {
-        const menuStore = useMenu();
-        menuStore.setMenus(res.data.menus);
-        delete res.data.menus;
-        delete res.data.is_admin;
-        this.$patch(res.data);
-        Message.success({
-          content: "登录成功",
-          onClose: () => {
-            const tabsStore = useTabs();
-            tabsStore.switchTab("admin/index/index");
-          },
-        });
+    setUserInfo(userInfo = {}) {
+      const menuStore = useMenu();
+      menuStore.setMenus(userInfo.menus);
+      delete userInfo.menus;
+      delete userInfo.is_admin;
+      this.$patch(userInfo);
+      Message.success({
+        content: "登录成功",
+        onClose: () => {
+          const tabsStore = useTabs();
+          tabsStore.switchTab("admin/index/index");
+        },
       });
     },
     async setAccessToken() {
@@ -59,7 +57,7 @@ export const useUser = defineStore({
     },
     logout() {
       Message.success({
-        content: "注销登录成功",
+        content: "注销成功",
         onClose: () => {
           router.push("/login");
           this.$reset();

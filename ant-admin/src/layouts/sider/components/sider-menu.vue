@@ -17,21 +17,23 @@
           {{ menu.name }}
         </a-menu-item>
       </a>
-      <a-menu-item v-else :key="menu.id">
-        <i :class="menu.icon"></i>
-        {{ menu.name }}
-      </a-menu-item>
+      <router-link v-else :to="'/' + menu.url">
+        <a-menu-item :key="menu.id">
+          <i :class="menu.icon"></i>
+          {{ menu.name }}
+        </a-menu-item>
+      </router-link>
     </template>
   </div>
 </template>
 
 <script setup>
-import { isLink } from "@/utils/utils";
-import { useMenu } from "@/store/admin/menu.js";
+import { isLink } from '@/utils/utils'
+import { useMenu } from '@/store/admin/menu.js'
 
-const menuStore = useMenu();
+const menuStore = useMenu()
 
 const props = defineProps({
   menus: {},
-});
+})
 </script>

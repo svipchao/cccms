@@ -6,7 +6,7 @@ import ArcoVue from "@arco-design/web-vue";
 import permission from "./utils/directive/permission.js";
 import { createPersistedState } from "pinia-plugin-persistedstate";
 import "@arco-design/web-vue/dist/arco.less";
-import "@/assets/remixicon/remixicon.css";
+import 'remixicon/fonts/remixicon.css'
 import "@/assets/app.less";
 
 const app = createApp(App);
