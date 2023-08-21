@@ -15,7 +15,7 @@
           children: 'children',
         }"
         :virtualListProps="{
-          height: 'calc(100vh - 205px)',
+          height: 'calc(100vh - 185px)',
           threshold: 30,
         }"
         :selected-keys="[deptInfo.currentSelectDeptId]"

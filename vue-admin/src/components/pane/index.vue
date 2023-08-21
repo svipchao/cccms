@@ -59,6 +59,7 @@ const switchSplitFun = () => {
 <style scoped lang="less">
 .cc-pane {
   display: flex;
+  height: 100%;
   .cc-pane-left {
     flex: 0 0 300px;
     position: relative;
