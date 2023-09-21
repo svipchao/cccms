@@ -13,17 +13,15 @@
         showTooltip: true,
       }"
       class="username"
-    >
-      {{ userStore.username }}
-    </a-typography-paragraph>
+      :content="userStore.username"
+    ></a-typography-paragraph>
     <a-typography-paragraph
       :ellipsis="{
         showTooltip: true,
       }"
       class="nickname"
-    >
-      {{ userStore.nickname }}
-    </a-typography-paragraph>
+      :content="userStore.nickname"
+    ></a-typography-paragraph>
   </a-col>
 </template>
 

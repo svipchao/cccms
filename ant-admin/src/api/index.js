@@ -1,4 +1,4 @@
-import http from '@/utils/http/axios';
+import http from '@/api/axios';
 
 //封装获取数据
 export default {

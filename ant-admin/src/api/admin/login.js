@@ -1,4 +1,4 @@
-import http from '@/utils/http/http.js';
+import http from '@/api/index.js';
 
 // 登录接口
 export const login = (data, headers = {}) => {
