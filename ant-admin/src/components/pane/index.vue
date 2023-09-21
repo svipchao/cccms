@@ -28,8 +28,8 @@
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
-import { theme } from "ant-design-vue";
+import { ref, reactive } from 'vue';
+import { theme } from 'ant-design-vue';
 
 const dark = ref(false);
 const darkSwitch = () => {
@@ -43,30 +43,30 @@ const siderSwitch = () => {
 
 const dataSource = [
   {
-    key: "1",
-    name: "胡彦斌",
+    key: '1',
+    name: '胡彦斌',
     age: 32,
-    address: "西湖区湖底公园1号",
+    address: '西湖区湖底公园1号',
   },
 ];
 
 const columns = [
   {
-    title: "姓名",
-    dataIndex: "name",
-    key: "name",
+    title: '姓名',
+    dataIndex: 'name',
+    key: 'name',
     width: 200,
   },
   {
-    title: "年龄",
-    dataIndex: "age",
-    key: "age",
+    title: '年龄',
+    dataIndex: 'age',
+    key: 'age',
     width: 200,
   },
   {
-    title: "住址",
-    dataIndex: "address",
-    key: "address",
+    title: '住址',
+    dataIndex: 'address',
+    key: 'address',
     width: 200,
   },
 ];

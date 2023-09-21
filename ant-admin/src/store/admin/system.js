@@ -1,7 +1,7 @@
-import { defineStore } from "pinia";
+import { defineStore } from 'pinia';
 
 export const useSystem = defineStore({
-  id: "system",
+  id: 'system',
   state: () => ({
     isRegisterRouteFresh: true,
   }),

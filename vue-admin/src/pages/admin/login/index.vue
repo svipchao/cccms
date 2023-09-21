@@ -165,9 +165,6 @@ const doLogin = () => {
   login(userinfo).then((res) => {
     if (res.code == 200) {
       setUserInfo(res.data);
-    } else {
-      Message.error(res?.msg || "验证码错误");
-      getCaptchaFun();
     }
   });
 };

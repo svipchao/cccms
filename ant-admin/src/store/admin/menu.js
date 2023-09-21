@@ -1,7 +1,7 @@
-import { defineStore } from "pinia";
+import { defineStore } from 'pinia';
 
 export const useMenu = defineStore({
-  id: "menu",
+  id: 'menu',
   state: () => ({
     // 应用列表
     menus: undefined,
@@ -62,7 +62,7 @@ export const useMenu = defineStore({
     setMenus(menus = {}) {
       this.menus = menus;
       if (this.currentAppId == undefined) {
-        this.currentAppId = menus[0]["id"];
+        this.currentAppId = menus[0]['id'];
       }
     },
     setCurrentApp(currentAppId) {

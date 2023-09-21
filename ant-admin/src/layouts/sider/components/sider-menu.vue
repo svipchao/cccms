@@ -28,12 +28,12 @@
 </template>
 
 <script setup>
-import { isLink } from '@/utils/utils'
-import { useMenu } from '@/store/admin/menu.js'
+import { isLink } from '@/utils/utils';
+import { useMenu } from '@/store/admin/menu.js';
 
-const menuStore = useMenu()
+const menuStore = useMenu();
 
 const props = defineProps({
   menus: {},
-})
+});
 </script>

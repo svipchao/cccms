@@ -43,12 +43,12 @@
 </template>
 
 <script setup>
-import Header from "./header/index.vue";
-import Sider from "./sider/index.vue";
-import Tabs from "./content/tabs.vue";
-import { useTabs } from "@/store/admin/tabs.js";
-import { useTheme } from "@/store/admin/theme.js";
-import { theme } from "ant-design-vue";
+import Header from './header/index.vue';
+import Sider from './sider/index.vue';
+import Tabs from './content/tabs.vue';
+import { useTabs } from '@/store/admin/tabs.js';
+import { useTheme } from '@/store/admin/theme.js';
+import { theme } from 'ant-design-vue';
 
 const tabsStore = useTabs();
 const themeStore = useTheme();

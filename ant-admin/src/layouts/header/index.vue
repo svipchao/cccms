@@ -24,15 +24,15 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useTheme } from "@/store/admin/theme.js";
-import fullscreen from "@/utils/fullscreen.js";
+import { ref } from 'vue';
+import { useTheme } from '@/store/admin/theme.js';
+import fullscreen from '@/utils/fullscreen.js';
 
 const themeStore = useTheme();
 
 const isFullscreen = ref();
 
-fullscreen.on("change", () => {
+fullscreen.on('change', () => {
   isFullscreen.value = fullscreen.isFullscreen;
 });
 </script>

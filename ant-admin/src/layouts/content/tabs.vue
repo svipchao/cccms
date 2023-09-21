@@ -8,11 +8,10 @@
   </a-tabs>
 </template>
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
 
-const activeKey = ref()
+const activeKey = ref();
 const callback = () => {
-  console.log(123)
-}
+  console.log(123);
+};
 </script>
-<script>

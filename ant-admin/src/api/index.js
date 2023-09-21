@@ -1,4 +1,4 @@
-import http from "@/utils/http/axios";
+import http from '@/utils/http/axios';
 
 //封装获取数据
 export default {
@@ -6,7 +6,7 @@ export default {
     return http(
       {
         url: url,
-        method: "post",
+        method: 'post',
         data: data,
         headers: headers,
       },
@@ -18,7 +18,7 @@ export default {
     return http(
       {
         url: url,
-        method: "put",
+        method: 'put',
         data: data,
         headers: headers,
       },
@@ -30,7 +30,7 @@ export default {
     return http(
       {
         url: url,
-        method: "delete",
+        method: 'delete',
         data: data,
         headers: headers,
       },
@@ -42,7 +42,7 @@ export default {
     return http(
       {
         url: url,
-        method: "get",
+        method: 'get',
         params: params,
         headers: headers,
       },

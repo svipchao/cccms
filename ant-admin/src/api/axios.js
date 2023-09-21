@@ -1,8 +1,8 @@
-import axios from "axios";
-import config from "@/config";
-import router from "@/router/index";
-import { message } from "ant-design-vue";
-import { useUser } from "@/store/admin/user.js";
+import axios from 'axios';
+import config from '@/config';
+import router from '@/router/index';
+import { message } from 'ant-design-vue';
+import { useUser } from '@/store/admin/user.js';
 
 const pendingMap = new Map();
 
@@ -14,13 +14,13 @@ const LoadingInstance = {
 function http(
   axiosConfig,
   customOptions,
-  loadingOptions = { content: "请稍等..." }
+  loadingOptions = { content: '请稍等...' }
 ) {
   const service = axios.create({
     baseURL: config.baseUrl, // 设置统一的请求前缀
     timeout: 100000, // 设置统一的超时时长
     params: {
-      encode: "json",
+      encode: 'json',
     },
   });
 
@@ -53,7 +53,7 @@ function http(
       if (userStore.accessToken) {
         config.headers.accessToken = userStore.accessToken;
       }
-      if (typeof config.headers.accessToken === "undefined") {
+      if (typeof config.headers.accessToken === 'undefined') {
         delete config.headers.accessToken;
       }
       return config;
@@ -97,21 +97,21 @@ export default http;
 function httpErrorStatusHandle(error) {
   // 处理被取消的请求
   if (axios.isCancel(error)) {
-    return console.error("请求的重复请求：" + error.message);
+    return console.error('请求的重复请求：' + error.message);
   }
   let messageBody = {};
   if (error && error.response) {
     switch (error.response.status) {
       case 302:
-        messageBody.content = "接口重定向了！";
+        messageBody.content = '接口重定向了！';
         break;
       case 400:
-        messageBody.content = "参数不正确！";
+        messageBody.content = '参数不正确！';
         break;
       case 401:
-        if (router.currentRoute.value.path !== "/login") {
+        if (router.currentRoute.value.path !== '/login') {
           messageBody = {
-            content: "您未登录，或者登录已经超时，请先登录！",
+            content: '您未登录，或者登录已经超时，请先登录！',
             onClose: () => {
               const userStore = useUser();
               userStore.logout();
@@ -125,42 +125,42 @@ function httpErrorStatusHandle(error) {
         messageBody.content = `请求地址出错: ${error.response.config.url}`;
         break;
       case 408:
-        messageBody.content = "请求超时！";
+        messageBody.content = '请求超时！';
         break;
       case 409:
-        messageBody.content = "系统已存在相同数据！";
+        messageBody.content = '系统已存在相同数据！';
         break;
       case 500:
-        messageBody.content = "服务器内部错误！";
+        messageBody.content = '服务器内部错误！';
         break;
       case 501:
-        messageBody.content = "服务未实现！";
+        messageBody.content = '服务未实现！';
         break;
       case 502:
-        messageBody.content = "网关错误！";
+        messageBody.content = '网关错误！';
         break;
       case 503:
-        messageBody.content = "服务不可用！";
+        messageBody.content = '服务不可用！';
         break;
       case 504:
-        messageBody.content = "服务暂时无法访问，请稍后再试！";
+        messageBody.content = '服务暂时无法访问，请稍后再试！';
         break;
       case 505:
-        messageBody.content = "HTTP版本不受支持！";
+        messageBody.content = 'HTTP版本不受支持！';
         break;
       default:
         messageBody.content =
-          error.response.data.msg || "异常问题，请联系管理员！";
+          error.response.data.msg || '异常问题，请联系管理员！';
         break;
     }
   }
-  if (error.message.includes("timeout")) {
-    messageBody.content = "网络请求超时！";
+  if (error.message.includes('timeout')) {
+    messageBody.content = '网络请求超时！';
   }
-  if (error.message.includes("Network")) {
+  if (error.message.includes('Network')) {
     messageBody.content = window.navigator.onLine
-      ? "服务端异常！"
-      : "您断网了！";
+      ? '服务端异常！'
+      : '您断网了！';
   }
   message.error(messageBody);
 }
@@ -213,9 +213,9 @@ function removePending(config) {
  */
 function getPendingKey(config) {
   let { url, method, params, data } = config;
-  if (typeof data === "string") {
+  if (typeof data === 'string') {
     // response里面返回的config.data是个字符串对象
     data = JSON.parse(data);
   }
-  return [url, method, JSON.stringify(params), JSON.stringify(data)].join("&");
+  return [url, method, JSON.stringify(params), JSON.stringify(data)].join('&');
 }

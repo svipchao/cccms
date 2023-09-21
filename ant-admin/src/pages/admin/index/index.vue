@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import { useTheme } from "@/store/admin/theme.js";
+import { useTheme } from '@/store/admin/theme.js';
 
 const themeStore = useTheme();
 </script>

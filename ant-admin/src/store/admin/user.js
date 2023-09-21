@@ -1,23 +1,23 @@
-import router from "@/router";
-import { defineStore } from "pinia";
-import { useMenu } from "./menu.js";
-import { useTabs } from "./tabs.js";
-import { useTheme } from "./theme.js";
-import { useSystem } from "./system.js";
-import { login, refreshToken } from "@/api/admin/login.js";
-import { message } from "ant-design-vue";
+import router from '@/router';
+import { defineStore } from 'pinia';
+import { useMenu } from './menu.js';
+import { useTabs } from './tabs.js';
+import { useTheme } from './theme.js';
+import { useSystem } from './system.js';
+import { login, refreshToken } from '@/api/admin/login.js';
+import { message } from 'ant-design-vue';
 
 export const useUser = defineStore({
-  id: "user",
+  id: 'user',
   state: () => ({
     // ID
     id: 0,
     // 昵称
-    nickname: "昵称",
+    nickname: '昵称',
     // 用户名
-    username: "账号",
+    username: '账号',
     // accessToken
-    accessToken: "",
+    accessToken: '',
     // 过期时间戳
     login_expire: 0,
     // 权限节点列表
@@ -38,10 +38,10 @@ export const useUser = defineStore({
       delete userInfo.is_admin;
       this.$patch(userInfo);
       message.success({
-        content: "登录成功",
+        content: '登录成功',
         onClose: () => {
           const tabsStore = useTabs();
-          tabsStore.switchTab("admin/index/index");
+          tabsStore.switchTab('admin/index/index');
         },
       });
     },
@@ -52,14 +52,14 @@ export const useUser = defineStore({
         this.$patch(res.data);
         const systemStore = useSystem();
         systemStore.setRegisterRouteFresh();
-        message.success("缓存清除成功");
+        message.success('缓存清除成功');
       });
     },
     logout() {
       message.success({
-        content: "注销登录成功",
+        content: '注销登录成功',
         onClose: () => {
-          router.push("/login");
+          router.push('/login');
           this.$reset();
           const menuStore = useMenu();
           menuStore.$reset();

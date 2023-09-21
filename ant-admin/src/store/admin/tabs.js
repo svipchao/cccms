@@ -1,10 +1,10 @@
-import router from "@/router";
-import { message } from "ant-design-vue";
-import { defineStore } from "pinia";
-import { useMenu } from "./menu.js";
+import router from '@/router';
+import { message } from 'ant-design-vue';
+import { defineStore } from 'pinia';
+import { useMenu } from './menu.js';
 
 export const useTabs = defineStore({
-  id: "tabs",
+  id: 'tabs',
   state: () => ({
     tabs: [],
     cacheTabs: [],
@@ -20,7 +20,7 @@ export const useTabs = defineStore({
       id = id !== undefined ? id : this.getMenuSelected();
       const tabs = this.tabs;
       for (let index in tabs) {
-        if (tabs[index]["id"] == id) {
+        if (tabs[index]['id'] == id) {
           return { index: index, tab: tabs[index] };
         }
       }
@@ -47,12 +47,12 @@ export const useTabs = defineStore({
       // 设置菜单选中项
       const menuStore = useMenu();
       const menu = menuStore.getMenu(id);
-      console.log(menu)
+      console.log(menu);
       if (menu) {
         // 重新赋值 有可能传进来的不是id 而是node
         id = menu.id;
-        router.push("/" + menu.url);
-        console.log(menu.url)
+        router.push('/' + menu.url);
+        console.log(menu.url);
         if (menuStore.showApps) {
           // 如果选择的是应用 则切换Menu数据
           menuStore.currentAppId = id;
@@ -70,7 +70,7 @@ export const useTabs = defineStore({
           menuStore.currentAppId = menu.app_id;
         }
       } else {
-        message.error("标签不存在");
+        message.error('标签不存在');
       }
     },
     closeTab(id) {
@@ -81,16 +81,16 @@ export const useTabs = defineStore({
         if (id === this.getMenuSelected()) {
           // 判断标签下标是否存在 不存在则指向第一个标签
           if (this.tabs[tab.index - 1]) {
-            this.switchTab(this.tabs[tab.index - 1]["id"]);
+            this.switchTab(this.tabs[tab.index - 1]['id']);
           } else {
-            this.switchTab(this.tabs[0]["id"]);
+            this.switchTab(this.tabs[0]['id']);
           }
         }
         // 删除缓存标签
         const cacheTab = this.getCacheTab(tab.tab.node);
         this.cacheTabs.splice(cacheTab.index, 1);
       } else {
-        message.error("请不要删除最后一个标签");
+        message.error('请不要删除最后一个标签');
       }
     },
     closeLeftTab() {
@@ -122,7 +122,7 @@ export const useTabs = defineStore({
           this.isRefresh = !this.isRefresh;
         }, 10);
       } else {
-        message.error("请选中标签后刷新");
+        message.error('请选中标签后刷新');
       }
     },
   },

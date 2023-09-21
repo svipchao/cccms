@@ -1,7 +1,7 @@
-import { defineStore } from "pinia";
+import { defineStore } from 'pinia';
 
 export const useTheme = defineStore({
-  id: "theme",
+  id: 'theme',
   state: () => ({
     darkTheme: false,
     showSider: true,
@@ -10,9 +10,9 @@ export const useTheme = defineStore({
   getters: {
     getTheme() {
       if (this.darkTheme) {
-        document.body.setAttribute("arco-theme", "dark");
+        document.body.setAttribute('arco-theme', 'dark');
       } else {
-        document.body.removeAttribute("arco-theme");
+        document.body.removeAttribute('arco-theme');
       }
       return this.darkTheme;
     },

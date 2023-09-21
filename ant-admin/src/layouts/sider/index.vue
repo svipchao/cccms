@@ -96,40 +96,40 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import config from '@/config'
-import Userinfo from './components/userinfo.vue'
-import SiderMenu from './components/sider-menu.vue'
-import { useUser } from '@/store/admin/user.js'
-import { useMenu } from '@/store/admin/menu.js'
-import { useTabs } from '@/store/admin/tabs.js'
-import { useTheme } from '@/store/admin/theme.js'
+import { ref, watch } from 'vue';
+import config from '@/config';
+import Userinfo from './components/userinfo.vue';
+import SiderMenu from './components/sider-menu.vue';
+import { useUser } from '@/store/admin/user.js';
+import { useMenu } from '@/store/admin/menu.js';
+import { useTabs } from '@/store/admin/tabs.js';
+import { useTheme } from '@/store/admin/theme.js';
 
-const userStore = useUser()
-const menuStore = useMenu()
-const tabsStore = useTabs()
-const themeStore = useTheme()
+const userStore = useUser();
+const menuStore = useMenu();
+const tabsStore = useTabs();
+const themeStore = useTheme();
 
 const showApps = () => {
-  menuStore.showApps = !menuStore.showApps
+  menuStore.showApps = !menuStore.showApps;
   if (menuStore.showApps) {
-    menuStore.currentMenus = menuStore.menus
-    menuStore.currentMenuKey = menuStore.selectedKeys
-    menuStore.selectedKeys = menuStore.currentAppId
+    menuStore.currentMenus = menuStore.menus;
+    menuStore.currentMenuKey = menuStore.selectedKeys;
+    menuStore.selectedKeys = menuStore.currentAppId;
   } else {
-    menuStore.currentMenus = menuStore.getCurrentMenus
-    menuStore.selectedKeys = menuStore.currentMenuKey
+    menuStore.currentMenus = menuStore.getCurrentMenus;
+    menuStore.selectedKeys = menuStore.currentMenuKey;
   }
-}
+};
 
-const currentApp = ref(menuStore.getMenu(menuStore.getCurrentAppId))
+const currentApp = ref(menuStore.getMenu(menuStore.getCurrentAppId));
 
 watch(
   () => menuStore.getCurrentAppId,
   () => {
-    currentApp.value = menuStore.getMenu(menuStore.getCurrentAppId)
+    currentApp.value = menuStore.getMenu(menuStore.getCurrentAppId);
   }
-)
+);
 </script>
 
 <style scoped>

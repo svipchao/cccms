@@ -24,28 +24,28 @@
   </a-modal>
 </template>
 <script setup>
-import { ref, reactive, watch } from "vue";
-import { Message } from "@arco-design/web-vue";
-import { assignObject } from "@/utils/utils.js";
+import { ref, reactive, watch } from 'vue';
+import { Message } from '@arco-design/web-vue';
+import { assignObject } from '@/utils/utils.js';
 
 const props = defineProps({
   visible: false,
 });
 
-const province = ref("Sichuan");
-const city = ref("Chengdu");
+const province = ref('Sichuan');
+const city = ref('Chengdu');
 const data = {
-  Beijing: ["Haidian", "Chaoyang", "Changping"],
-  Sichuan: ["Chengdu", "Mianyang", "Aba"],
-  Guangdong: ["Guangzhou", "Shenzhen", "Shantou"],
+  Beijing: ['Haidian', 'Chaoyang', 'Changping'],
+  Sichuan: ['Chengdu', 'Mianyang', 'Aba'],
+  Guangdong: ['Guangzhou', 'Shenzhen', 'Shantou'],
 };
 watch(province, () => {
-  city.value = "";
+  city.value = '';
 });
 
-const emit = defineEmits(["update:visible"]);
+const emit = defineEmits(['update:visible']);
 
 const okModal = async () => {
-  emit("update:visible", false);
+  emit('update:visible', false);
 };
 </script>
