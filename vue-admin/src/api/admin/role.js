@@ -1,4 +1,4 @@
-import http from "@/utils/http/http.js";
+import http from "@/api/index.js";
 
 export const roleCreate = (data, headers = {}) => {
   return http.post("/admin/role/create", data, headers);
