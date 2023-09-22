@@ -70,7 +70,6 @@
     <a-divider />
   </div>
   <div class="ant-layout-sider-menu">
-    {{ menuStore.getSelectedKeys }}
     <a-menu
       mode="inline"
       :inlineIndent="22"
