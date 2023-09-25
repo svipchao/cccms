@@ -56,7 +56,7 @@ const switchSiderFun = () => {
 .cc-panel {
   position: relative;
   box-sizing: border-box;
-  background-color: var(--color-bg-1);
+  background-color: var(--color-bg-2);
   display: flex;
   height: 100%;
   overflow: hidden;
@@ -64,7 +64,7 @@ const switchSiderFun = () => {
     flex: 0 0 300px;
     padding: 10px;
     height: 100%;
-    background-color: var(--color-bg-1);
+    background-color: var(--color-bg-2);
     @media screen and (max-width: 930px) {
       z-index: 900;
       position: absolute;
@@ -86,7 +86,7 @@ const switchSiderFun = () => {
       line-height: 18px;
       display: block;
       text-align: center;
-      background-color: var(--color-bg-1);
+      background-color: var(--color-bg-2);
       border-radius: 10px;
       margin: 10px 0 0 -10px;
       border: 1px solid var(--color-border);
