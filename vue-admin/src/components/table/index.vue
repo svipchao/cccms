@@ -37,6 +37,7 @@ const emits = defineEmits(["reload", "update:pagination"]);
 
 const props = defineProps({
   hideCardBorder: false,
+  form: undefined,
   pagination: false,
 });
 
@@ -79,6 +80,14 @@ watch(
         page.showPageSize = false;
       }
     }
+  },
+  { deep: true }
+);
+
+watch(
+  () => props.form,
+  () => {
+    page.current = 1;
   },
   { deep: true }
 );
