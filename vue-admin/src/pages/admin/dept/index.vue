@@ -1,5 +1,5 @@
 <template>
-  <Pane size="300px" :rightBorder="false">
+  <Panel size="300px">
     <template #left>
       <div class="dept-button">
         <a-button type="primary" long @click="editData()">添加</a-button>
@@ -13,10 +13,6 @@
           key: 'id',
           title: 'dept_name',
           children: 'children',
-        }"
-        :virtualListProps="{
-          height: 'calc(100vh - 185px)',
-          threshold: 30,
         }"
         :selected-keys="[deptInfo.currentSelectDeptId]"
         :default-expand-all="false"
@@ -59,9 +55,16 @@
               position="left"
               @ok="delData(nodeData)"
             >
-              <a-button type="text" size="mini" v-permission="'admin/dept/delete'">
+              <a-button
+                type="text"
+                size="mini"
+                v-permission="'admin/dept/delete'"
+              >
                 <template #icon>
-                  <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
+                  <i
+                    class="ri-delete-bin-line"
+                    style="color: rgb(var(--danger-6))"
+                  ></i>
                 </template>
               </a-button>
             </Popconfirm>
@@ -77,9 +80,12 @@
       />
     </template>
     <template #right>
-      <UserList :dept="deptInfo.datas" :currentSelectDeptId="deptInfo.currentSelectDeptId" />
+      <UserList
+        :dept="deptInfo.datas"
+        :currentSelectDeptId="deptInfo.currentSelectDeptId"
+      />
     </template>
-  </Pane>
+  </Panel>
 </template>
 
 <script setup>
@@ -90,7 +96,7 @@ import Table from "@/components/table/index.vue";
 import Popconfirm from "@/components/popconfirm/index.vue";
 import DeptInfo from "./components/info.vue";
 import UserList from "./user/index.vue";
-import Pane from "@/components/pane/index.vue";
+import Panel from "@/components/panel/index.vue";
 import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
 import { useFormEdit } from "@/hooks/form.js";
 import { detectDeviceType } from "@/utils/browser.js";
@@ -149,15 +155,19 @@ const demoFun = () => {
 };
 </script>
 <style lang="less">
-.cc-pane {
+.cc-panel {
   .dept-button {
-    padding: 6px 0 10px 0;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--color-neutral-3);
   }
   .arco-tree {
-    height: calc(100% - 49px);
+    height: calc(100vh - 173px);
     overflow: hidden;
     overflow-y: auto;
+    &::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
     .arco-typography {
       margin-bottom: 0;
     }

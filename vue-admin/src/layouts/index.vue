@@ -1,6 +1,8 @@
 <template>
   <a-layout class="cccms-layout">
-    <a-layout-sider :style="{ display: themeStore.getShowSider ? 'block' : 'none' }">
+    <a-layout-sider
+      :style="{ display: themeStore.getShowSider ? 'block' : 'none' }"
+    >
       <Sider />
     </a-layout-sider>
     <a-layout>
@@ -51,7 +53,8 @@ const themeStore = useTheme();
   z-index: 998;
   position: fixed;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(var(--gray-1), 0.3);
+  backdrop-filter: blur(5px);
   @media screen and (min-width: 930px) {
     display: none;
   }

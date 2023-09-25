@@ -8,7 +8,7 @@
         marginLeft: show ? '0px' : '-' + data.size,
       }"
     >
-      123
+      <slot name="left" />
     </div>
     <div
       class="cc-panel-split"
@@ -26,7 +26,7 @@
         paddingLeft: show ? '10px' : '20px',
       }"
     >
-      <a-button type="primary" long>Primary</a-button>
+      <slot name="right" />
     </div>
     <div class="cc-panel-mark" @click="switchSiderFun" v-show="show"></div>
   </div>
@@ -56,7 +56,7 @@ const switchSiderFun = () => {
 .cc-panel {
   position: relative;
   box-sizing: border-box;
-  background-color: #fff;
+  background-color: var(--color-bg-1);
   display: flex;
   height: 100%;
   overflow: hidden;
@@ -64,7 +64,7 @@ const switchSiderFun = () => {
     flex: 0 0 300px;
     padding: 10px;
     height: 100%;
-    background-color: #fff;
+    background-color: var(--color-bg-1);
     @media screen and (max-width: 930px) {
       z-index: 900;
       position: absolute;
@@ -72,10 +72,9 @@ const switchSiderFun = () => {
   }
   .cc-panel-split {
     width: 1px;
-    margin: 10px 10px;
-    border: 1px solid #f2f2f2;
-    padding: 30px 0;
-    height: calc(100% - 20px);
+    border: 1px solid var(--color-border);
+    padding: 32px 0;
+    height: 100%;
     z-index: 900;
     position: absolute;
     i {
@@ -87,15 +86,20 @@ const switchSiderFun = () => {
       line-height: 18px;
       display: block;
       text-align: center;
-      background-color: #fff;
+      background-color: var(--color-bg-1);
       border-radius: 10px;
       margin: 10px 0 0 -10px;
-      border: 1px solid #f2f2f2;
+      border: 1px solid var(--color-border);
     }
   }
   .cc-panel-right {
     flex: 1 1 auto;
     padding: 10px;
+    overflow: auto;
+    &::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
   }
   .cc-panel-mark {
     width: 100%;
@@ -103,7 +107,8 @@ const switchSiderFun = () => {
     position: absolute;
     left: 0;
     z-index: 899;
-    background-color: rgba(0, 0, 0, 0.15);
+    background-color: rgba(var(--gray-1), 0.3);
+    backdrop-filter: blur(5px);
     @media screen and (min-width: 930px) {
       display: none;
     }

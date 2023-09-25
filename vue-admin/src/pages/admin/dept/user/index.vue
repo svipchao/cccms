@@ -1,5 +1,6 @@
 <template>
   <Table
+    hideCardBorder
     :fields="table.fields"
     :ignoreFields="table.ignoreFields"
     v-model:columns="table.columns"
@@ -31,10 +32,18 @@
           <i class="ri-edit-line"></i>
         </template>
       </a-button>
-      <Popconfirm content="确定要删除吗？" type="warning" position="left" @ok="delData(record)">
+      <Popconfirm
+        content="确定要删除吗？"
+        type="warning"
+        position="left"
+        @ok="delData(record)"
+      >
         <a-button type="text" size="mini" v-permission="'admin/user/delete'">
           <template #icon>
-            <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
+            <i
+              class="ri-delete-bin-line"
+              style="color: rgb(var(--danger-6))"
+            ></i>
           </template>
         </a-button>
       </Popconfirm>
@@ -150,8 +159,20 @@ const table = reactive({
       slotName: "userId",
     },
     { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
-    { dataIndex: "create_time", title: "创建时间", width: 180, ellipsis: true, tooltip: true },
-    { dataIndex: "update_time", title: "更新时间", width: 180, ellipsis: true, tooltip: true },
+    {
+      dataIndex: "create_time",
+      title: "创建时间",
+      width: 180,
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      dataIndex: "update_time",
+      title: "更新时间",
+      width: 180,
+      ellipsis: true,
+      tooltip: true,
+    },
     {
       dataIndex: "operation",
       title: "操作",

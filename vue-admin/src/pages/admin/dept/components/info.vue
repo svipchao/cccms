@@ -19,7 +19,11 @@
           :fallback-option="false"
         >
           <template #prefix>父级部门</template>
-          <a-option v-for="dept in props.depts" :value="dept.id" :label="dept.dept_name">
+          <a-option
+            v-for="dept in props.depts"
+            :value="dept.id"
+            :label="dept.dept_name"
+          >
             {{ dept.mark }}{{ dept.dept_name }}
           </a-option>
         </a-select>

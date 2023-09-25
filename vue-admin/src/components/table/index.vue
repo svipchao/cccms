@@ -1,5 +1,7 @@
 <template>
-  <a-card>
+  <a-card
+    :class="[props.hideCardBorder !== undefined ? 'hide-card-border' : '']"
+  >
     <Header v-bind="$attrs" @reload="reloadData">
       <template v-for="(_, name) in $slots" v-slot:[name]="data">
         <slot :name="name" v-bind="data" />
@@ -15,7 +17,7 @@
       hide-expand-button-on-empty
       :loading="loading"
       :pagination="page"
-      :scroll="{ x: 320, y: '100%' }"
+      :scroll="{ x: 320, y: 'calc(100vh - 172px)' }"
       @page-change="handlePageChange"
       @page-size-change="handleSizeChange"
       v-bind="$attrs"
@@ -34,6 +36,7 @@ const attrs = useAttrs();
 const emits = defineEmits(["reload", "update:pagination"]);
 
 const props = defineProps({
+  hideCardBorder: false,
   pagination: false,
 });
 
@@ -101,7 +104,13 @@ const reloadData = () => {
 };
 </script>
 
-<style scoped lang="less">
+<style lang="less">
+.hide-card-border {
+  border: 0px;
+  .arco-card-body {
+    padding: 0px;
+  }
+}
 :deep(.arco-table .arco-table-element) {
   width: auto;
   &::-webkit-scrollbar {

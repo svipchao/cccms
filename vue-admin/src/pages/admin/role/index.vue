@@ -10,7 +10,9 @@
     <template #headerButton>
       <a-button type="primary" @click="editData()">添加</a-button>
     </template>
-    <template #roleName="{ record }"> {{ record.mark }}{{ record.role_name }} </template>
+    <template #roleName="{ record }">
+      {{ record.mark }}{{ record.role_name }}
+    </template>
     <template #status="{ record }">
       <a-switch
         v-model:model-value="record.status"
@@ -30,16 +32,29 @@
           <i class="ri-edit-line"></i>
         </template>
       </a-button>
-      <Popconfirm content="确定要删除吗？" type="warning" position="left" @ok="delData(record)">
+      <Popconfirm
+        content="确定要删除吗？"
+        type="warning"
+        position="left"
+        @ok="delData(record)"
+      >
         <a-button type="text" size="mini" v-permission="'admin/role/delete'">
           <template #icon>
-            <i class="ri-delete-bin-line" style="color: rgb(var(--danger-6))"></i>
+            <i
+              class="ri-delete-bin-line"
+              style="color: rgb(var(--danger-6))"
+            ></i>
           </template>
         </a-button>
       </Popconfirm>
     </template>
   </Table>
-  <DataInfo v-model:visible="showPopup" :data="currentData" :roles="table.datas" @done="getDatas" />
+  <DataInfo
+    v-model:visible="showPopup"
+    :data="currentData"
+    :roles="table.datas"
+    @done="getDatas"
+  />
 </template>
 
 <script setup>
@@ -113,7 +128,13 @@ const table = reactive({
     { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
     { dataIndex: "create_time", title: "创建时间", width: 180, ellipsis: true },
     { dataIndex: "update_time", title: "更新时间", width: 180, ellipsis: true },
-    { dataIndex: "operation", title: "操作", width: 80, fixed: "right", slotName: "operation" },
+    {
+      dataIndex: "operation",
+      title: "操作",
+      width: 80,
+      fixed: "right",
+      slotName: "operation",
+    },
   ],
 });
 </script>
