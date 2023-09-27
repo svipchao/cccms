@@ -11,7 +11,11 @@ const LoadingInstance = {
   _count: 0,
 };
 
-function http(axiosConfig, customOptions, loadingOptions = { content: "请稍等..." }) {
+function http(
+  axiosConfig,
+  customOptions,
+  loadingOptions = { content: "请稍等..." }
+) {
   const service = axios.create({
     baseURL: config.baseUrl, // 设置统一的请求前缀
     timeout: 100000, // 设置统一的超时时长
@@ -27,7 +31,7 @@ function http(axiosConfig, customOptions, loadingOptions = { content: "请稍等
       loading: true, // 是否开启loading层效果, 默认为false
       reduct_data_format: true, // 是否开启简洁的数据结构响应, 默认为true
       error_message_show: true, // 是否开启接口错误信息展示,默认为true
-      code_message_show: true, // 是否开启code不为200时的信息提示, 默认为false
+      code_message_show: true, // 是否开启code不为2xx时的信息提示, 默认为false
     },
     customOptions
   );
@@ -64,7 +68,11 @@ function http(axiosConfig, customOptions, loadingOptions = { content: "请稍等
     (response) => {
       removePending(response.config);
       custom_options.loading && closeLoading(custom_options); // 关闭loading
-      if (custom_options.code_message_show && response.data && response.data.code !== 200) {
+      if (
+        custom_options.code_message_show &&
+        response.data &&
+        (response.data.code >= 300 || response.data.code < 200)
+      ) {
         Message.error(response.data.msg);
         return Promise.reject(response.data); // code不等于200, 页面具体逻辑就不执行了
       }

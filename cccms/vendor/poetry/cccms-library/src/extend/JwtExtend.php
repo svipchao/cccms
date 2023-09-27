@@ -30,7 +30,7 @@ class JwtExtend
         $payload = array_merge([
             'iss' => 'cccms',
             'iat' => time(),
-            'exp' => time() + 7200,
+            'exp' => time() + config('session.expire'),
             'nbf' => time(),
             'sub' => 'cccms',
             'jti' => md5(($payload['iss'] ?? 'cccms') . StrExtend::random() . time())

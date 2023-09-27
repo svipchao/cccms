@@ -237,13 +237,13 @@ VALUES (1, 0, '基础系统', 'ri-stack-line', '#', '#', 0, 1),
        (5, 3, '角色管理', '', 'admin/role/index', 'admin/role/index', 0, 1),
        (6, 3, '用户管理', '', 'admin/user/index', 'admin/user/index', 0, 1),
        (7, 1, '系统配置', 'ri-settings-line', '#', '#', 0, 1),
-       (8, 8, '菜单管理', '', 'admin/menu/index', 'admin/menu/index', 0, 1),
-       (9, 8, '配置管理', '', 'admin/config/index', 'admin/config/index', 0, 1),
-       (10, 8, '路由管理', '', 'admin/route/index', 'admin/route/index', 0, 1),
-       (11, 8, '附件管理', '', 'admin/file/index', 'admin/file/index', 0, 1),
-       (12, 8, '日志管理', '', 'admin/log/index', 'admin/log/index', 0, 1),
+       (8, 7, '菜单管理', '', 'admin/menu/index', 'admin/menu/index', 0, 1),
+       (9, 7, '配置管理', '', 'admin/config/index', 'admin/config/index', 0, 1),
+       (10, 7, '路由管理', '', 'admin/route/index', 'admin/route/index', 0, 1),
+       (11, 7, '附件管理', '', 'admin/file/index', 'admin/file/index', 0, 1),
+       (12, 7, '日志管理', '', 'admin/log/index', 'admin/log/index', 0, 1),
        (13, 0, '测试系统', 'ri-stack-line', '#', '#', 0, 1),
-       (14, 14, '控制台', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1);
+       (14, 13, '控制台', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1);
 
 CREATE TABLE `sys_config_cate`
 (

@@ -90,10 +90,6 @@ const getDatas = async () => {
   table.pagination.total = total;
 };
 
-const demo1 = () => {
-  table.pagination.total = 20;
-};
-
 // 切换状态
 const changeStatusFun = (record) => {
   userUpdate({ id: record.id, status: record.status }).then((res) => {

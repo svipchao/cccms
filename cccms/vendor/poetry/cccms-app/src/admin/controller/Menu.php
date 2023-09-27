@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use app\admin\model\SysMenu;
 use cccms\Base;
+use cccms\model\SysMenu;
 use cccms\extend\ArrExtend;
-use cccms\services\{AuthService, TypesService};
+use cccms\services\AuthService;
 
 /**
  * 菜单管理
@@ -58,6 +58,23 @@ class Menu extends Base
     }
 
     /**
+     * 修改菜单排序
+     * @auth true
+     * @login true
+     * @encode json|jsonp|xml
+     * @methods PUT
+     */
+    public function updateSort()
+    {
+        $data = $this->request->put('data');
+        foreach ($data as &$d) {
+            $d = ['id' => $d['id'], 'sort' => $d['sort']];
+        }
+        $res = $this->model->saveAll($data);
+        _result(['code' => 200, 'msg' => '修改排序成功'], _getEnCode());
+    }
+
+    /**
      * 菜单列表
      * @auth true
      * @login true
@@ -66,13 +83,13 @@ class Menu extends Base
      */
     public function index()
     {
-        $data = $this->model->with('type')->_withSearch('type_id', [
-            'type_id' => $this->request->get('type_id/d', 0)
-        ])->_list();
+        halt($this->app->config->get('session'));
+        $data = $this->model->_withSearch('menu_id', [
+            'menu_id' => $this->request->get('menu_id/d', null)
+        ])->order('sort desc')->_list();
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_menu'),
-            'types' => TypesService::instance()->getTypes(1),
-            'data' => ArrExtend::toTreeList($data, 'id', 'menu_id')
+            'data' => ArrExtend::toTreeArray($data, 'id', 'menu_id')
         ]], _getEnCode());
     }
 }

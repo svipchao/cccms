@@ -127,7 +127,7 @@ abstract class Model extends \think\Model
     public function scopeCommonAuth($query): void
     {
         $node = NodeService::instance()->getCurrentNodeInfo();
-        if ($node['auth'] && !UserService::instance()->isAdmin()) {
+        if (!empty($node) && $node['auth'] && !UserService::instance()->isAdmin()) {
             $fields = $query->getTableFields();
             // 数据权限
             $this->commonDataAuth($query, $fields);

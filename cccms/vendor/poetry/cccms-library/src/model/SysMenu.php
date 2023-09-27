@@ -32,4 +32,9 @@ class SysMenu extends Model
         }
         return (int)$value;
     }
+
+    public function searchMenuIdAttr($query, $value)
+    {
+        $query->where('menu_id', '=', $value);
+    }
 }

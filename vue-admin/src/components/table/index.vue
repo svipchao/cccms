@@ -1,5 +1,6 @@
 <template>
   <a-card
+    :bordered="false"
     :class="[props.hideCardBorder !== undefined ? 'hide-card-border' : '']"
   >
     <Header v-bind="$attrs" @reload="reloadData">
@@ -8,6 +9,7 @@
       </template>
     </Header>
     <a-table
+      ref="tableRef"
       stripe
       bordered
       hoverable
@@ -15,6 +17,7 @@
       column-resizable
       table-layout-fixed
       hide-expand-button-on-empty
+      default-expand-all-rows
       :loading="loading"
       :pagination="page"
       :scroll="{ x: 320, y: 'calc(100vh - 172px)' }"
@@ -30,7 +33,15 @@
 </template>
 
 <script setup>
-import { reactive, watch, useAttrs, onMounted, ref } from "vue";
+import {
+  reactive,
+  watch,
+  useAttrs,
+  onMounted,
+  ref,
+  nextTick,
+  getCurrentInstance,
+} from "vue";
 import Header from "./header.vue";
 const attrs = useAttrs();
 const emits = defineEmits(["reload", "update:pagination"]);
@@ -40,10 +51,14 @@ const props = defineProps({
   form: undefined,
   pagination: false,
 });
+const { proxy } = getCurrentInstance();
 
 onMounted(() => {
   // 关闭分页时
   if (!props.pagination) page = false;
+  proxy.$refs.tableRef.expandAll([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  console.log(proxy);
+  // tableRef.value.expandAll(true);
 });
 
 // 分页配置
