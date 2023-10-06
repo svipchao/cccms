@@ -33,7 +33,11 @@
       <a-form-item field="icon">
         <a-input v-model="form.icon" placeholder="请输入图标...">
           <template #prefix>菜单图标</template>
+          <template #suffix>
+            <i :class="form.icon"></i>
+          </template>
         </a-input>
+        <a-button type="primary">选择图标</a-button>
       </a-form-item>
       <a-form-item field="url">
         <a-input v-model="form.url" placeholder="请输入菜单链接...">
