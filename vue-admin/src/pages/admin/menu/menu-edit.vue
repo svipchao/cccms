@@ -45,11 +45,6 @@
           <template #prefix>权限节点</template>
         </a-input>
       </a-form-item>
-      <a-form-item field="sort">
-        <a-input-number v-model="form.sort" placeholder="数字越大越靠前...">
-          <template #prefix>菜单排序</template>
-        </a-input-number>
-      </a-form-item>
     </a-form>
   </a-modal>
 </template>
@@ -63,19 +58,18 @@ const props = defineProps({
   visible: false,
   data: undefined,
   menus: undefined,
-  type_id: undefined,
+  parent_id: undefined,
 });
 
 const getFormInit = () => {
   return {
     id: undefined,
-    type_id: undefined,
+    parent_id: undefined,
     menu_id: undefined,
     name: undefined,
     icon: undefined,
     url: undefined,
     node: undefined,
-    sort: undefined,
   };
 };
 const form = reactive(getFormInit());
@@ -92,7 +86,7 @@ const cancelModal = () => {
 };
 
 const okModal = async () => {
-  form.type_id = props.type_id;
+  form.parent_id = props.parent_id;
   if (isUpdate.value) {
     await menuUpdate(form).then((res) => {
       Message.success("修改成功");

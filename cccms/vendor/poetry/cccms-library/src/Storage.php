@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace cccms;
@@ -37,11 +38,14 @@ abstract class Storage
      * 设置文件驱动名称
      * @param null|string $name 驱动名称
      */
-    public static function instance(?string $name = null)
+    public static function instance(?string $name = null, ?string $class = null)
     {
-        $class = ucfirst(strtolower($name ?: 'local'));
-        if (class_exists($object = 'cccms\\storages\\' . $class . 'Storage')) {
-            return Container::getInstance()->make($object);
+        if (is_null($class)) {
+            $type = ucfirst(strtolower($name ?: 'local'));
+            $class = 'cccms\\storages\\' . $class . 'Storage';
+        }
+        if (class_exists($class)) {
+            return Container::getInstance()->make($class);
         } else {
             return _result(['code' => 404, 'msg' => 'File driver [' . $class . '] does not exist.'], _getEnCode());
         }

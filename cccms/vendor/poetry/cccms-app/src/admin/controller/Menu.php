@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace app\admin\controller;
@@ -28,7 +29,7 @@ class Menu extends Base
      */
     public function create()
     {
-        $this->model->create(_validate('post', 'sys_menu|type_id,name,url|true'));
+        $this->model->create(_validate('post', 'sys_menu|parent_id,name,url|true'));
         _result(['code' => 200, 'msg' => '添加成功'], _getEnCode());
     }
 
@@ -83,13 +84,16 @@ class Menu extends Base
      */
     public function index()
     {
-        halt($this->app->config->get('session'));
-        $data = $this->model->_withSearch('menu_id', [
-            'menu_id' => $this->request->get('menu_id/d', null)
+        $cate = $this->model->where(['parent_id' => 0, 'menu_id' => 0])->_list();
+        $parent_id = $this->request->get('parent_id/d', null);
+        $parent_id = $parent_id ?: ($cate[0]['id'] ?? 0);
+        $data = $this->model->_withSearch('parent_id', [
+            'parent_id' => $parent_id
         ])->order('sort desc')->_list();
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_menu'),
-            'data' => ArrExtend::toTreeArray($data, 'id', 'menu_id')
+            'cate' => $cate,
+            'data' => ArrExtend::toTreeList($data, 'id', 'menu_id')
         ]], _getEnCode());
     }
 }

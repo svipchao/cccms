@@ -55,20 +55,20 @@ export const useUser = defineStore({
         Message.success("缓存清除成功");
       });
     },
-    logout() {
-      Message.success({
-        content: "注销成功",
-        onClose: () => {
-          router.push("/login");
-          this.$reset();
-          const menuStore = useMenu();
-          menuStore.$reset();
-          const tabsStore = useTabs();
-          tabsStore.$reset();
-          const themeStore = useTheme();
-          themeStore.$reset();
-        },
-      });
+    logout(isTip = true) {
+      if (isTip) {
+        Message.success({
+          content: "注销成功",
+        });
+      }
+      router.push("/login");
+      this.$reset();
+      const menuStore = useMenu();
+      menuStore.$reset();
+      const tabsStore = useTabs();
+      tabsStore.$reset();
+      const themeStore = useTheme();
+      themeStore.$reset();
     },
   },
   persist: true,

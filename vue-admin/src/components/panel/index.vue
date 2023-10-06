@@ -72,11 +72,11 @@ const switchSiderFun = () => {
   }
   .cc-panel-split {
     width: 1px;
-    border: 1px solid var(--color-border);
     padding: 32px 0;
     height: 100%;
     z-index: 900;
     position: absolute;
+    background-color: var(--color-border);
     i {
       cursor: pointer;
       color: #666;

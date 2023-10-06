@@ -114,7 +114,7 @@ function httpErrorStatusHandle(error) {
             content: "您未登录，或者登录已经超时，请先登录！",
             onClose: () => {
               const userStore = useUser();
-              userStore.logout();
+              userStore.logout(false);
             },
           };
         } else {

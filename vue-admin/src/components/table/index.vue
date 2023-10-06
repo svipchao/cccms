@@ -20,7 +20,7 @@
       default-expand-all-rows
       :loading="loading"
       :pagination="page"
-      :scroll="{ x: 320, y: 'calc(100vh - 172px)' }"
+      :scroll="{ minWidth: 320 }"
       @page-change="handlePageChange"
       @page-size-change="handleSizeChange"
       v-bind="$attrs"

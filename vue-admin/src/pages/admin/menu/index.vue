@@ -1,74 +1,87 @@
 <template>
-  <Table
-    :fields="table.fields"
-    :ignoreFields="table.ignoreFields"
-    default-expand-all-rows
-    v-model:columns="table.columns"
-    v-model:pagination="table.pagination"
-    :data="table.datas"
-    row-key="id"
-    :draggable="{ type: 'handle', width: 40 }"
-    @change="handleChange"
-    @reload="getMenus"
-  >
-    <template #headerButton>
-      <a-button type="primary">添加</a-button>
-    </template>
-    <template #name="{ record }">
-      <i :class="['iconfont', record.icon]"></i>
-      <span>&nbsp;{{ record.mark }}{{ record.name }}</span>
-    </template>
-    <template #url="{ record }">
-      <a-typography-paragraph
-        :ellipsis="{
-          rows: 1,
-          showTooltip: true,
-        }"
-      >
-        {{ record.url }}
-      </a-typography-paragraph>
-    </template>
-    <template #node="{ record }">
-      <a-typography-paragraph
-        :ellipsis="{
-          rows: 1,
-          showTooltip: true,
-        }"
-      >
-        {{ record.node }}
-      </a-typography-paragraph>
-    </template>
-    <template #status="{ record }">
-      <a-switch
-        v-model:model-value="record.status"
-        :checked-value="1"
-        :unchecked-value="0"
-        @change="changeStatusFun(record)"
-      />
-    </template>
-    <template #operation="{ record }">
-      <a-typography-text
-        type="primary"
-        @click="editMenu(record)"
-        v-permission="'admin/menu/update'"
-      >
-        编辑
-      </a-typography-text>
-      <a-typography-text
-        type="danger"
-        @click="delMenu(record)"
-        v-permission="'admin/menu/delete'"
-      >
-        删除
-      </a-typography-text>
-    </template>
-  </Table>
+  <a-card>
+    <types
+      v-model:type_id="table.form.parent_id"
+      :types="table.cates"
+      @reload="getDatas"
+    />
+    <Table
+      hideCardBorder
+      :fields="table.fields"
+      :ignoreFields="table.ignoreFields"
+      v-model:columns="table.columns"
+      v-model:pagination="table.pagination"
+      :data="table.datas"
+      row-key="id"
+      :draggable="{ type: 'handle', width: 40 }"
+      @change="handleChange"
+      @reload="getDatas"
+    >
+      <template #headerButton>
+        <a-button
+          type="primary"
+          @click="editMenu()"
+          v-permission="'admin/menu/create'"
+        >
+          新增
+        </a-button>
+      </template>
+      <template #name="{ record }">
+        <i :class="['iconfont', record.icon]"></i>
+        <span>&nbsp;{{ record.mark }}{{ record.name }}</span>
+      </template>
+      <template #url="{ record }">
+        <a-typography-paragraph
+          :ellipsis="{
+            rows: 1,
+            showTooltip: true,
+          }"
+        >
+          {{ record.url }}
+        </a-typography-paragraph>
+      </template>
+      <template #node="{ record }">
+        <a-typography-paragraph
+          :ellipsis="{
+            rows: 1,
+            showTooltip: true,
+          }"
+        >
+          {{ record.node }}
+        </a-typography-paragraph>
+      </template>
+      <template #status="{ record }">
+        <a-switch
+          v-model:model-value="record.status"
+          :checked-value="1"
+          :unchecked-value="0"
+          @change="changeStatusFun(record)"
+        />
+      </template>
+      <template #operation="{ record }">
+        <a-typography-text
+          type="primary"
+          @click="editMenu(record)"
+          v-permission="'admin/menu/update'"
+        >
+          编辑
+        </a-typography-text>
+        <a-typography-text
+          type="danger"
+          @click="delMenu(record)"
+          v-permission="'admin/menu/delete'"
+        >
+          删除
+        </a-typography-text>
+      </template>
+    </Table>
+  </a-card>
   <menu-edit
     v-model:visible="showEdit"
     :data="currentData"
     :menus="table.datas"
-    :type_id="table.form.type_id"
-    @done="getMenus"
+    :parent_id="table.form.parent_id"
+    @done="getDatas"
   />
 </template>
 
@@ -81,29 +94,24 @@ import {
   menuUpdate,
   menuUpdateSort,
 } from "@/api/admin/menu";
-import Types from "@/components/types/index.vue";
 import Table from "@/components/table/index.vue";
+import Types from "@/components/types/index.vue";
 import MenuEdit from "./menu-edit.vue";
 
 onMounted(() => {
-  getMenus();
+  getDatas();
 });
 
 // 数据
 const table = reactive({
   form: {
-    type_id: 0,
+    parent_id: 0,
   },
-  pagination: {
-    total: 1,
-    page: 1,
-    limit: 15,
-  },
-  types: [], // 类别
+  cates: [], // 类别
   datas: [], // 表数据
-  fields: [],
   ignoreFields: ["operation"],
   columns: [
+    { dataIndex: "id", title: "ID", width: 50 },
     { dataIndex: "name", title: "菜单名称", width: 200, slotName: "name" },
     { dataIndex: "url", title: "链接", width: 180, slotName: "url" },
     { dataIndex: "node", title: "权限节点", width: 180, slotName: "node" },
@@ -134,16 +142,13 @@ const changeStatusFun = (record) => {
   });
 };
 
-const getMenus = async () => {
+const getDatas = async () => {
   const {
-    data: { fields, data, types },
-  } = await menuQuery({
-    ...table.form,
-    ...table.pagination,
-  });
-  table.types = types;
-  table.datas = data;
+    data: { fields, data, cate },
+  } = await menuQuery(table.form);
   table.fields = fields;
+  table.datas = data;
+  table.cates = cate;
 };
 
 const editMenu = (row) => {
@@ -154,7 +159,7 @@ const editMenu = (row) => {
 const delMenu = (row) => {
   menuDelete(row).then((res) => {
     Message.success("删除成功");
-    getMenus();
+    getDatas();
   });
 };
 const handleChange = (data) => {
@@ -173,3 +178,8 @@ const handleChange = (data) => {
   table.datas = data;
 };
 </script>
+<style scoped>
+.arco-typography {
+  margin-bottom: 0;
+}
+</style>

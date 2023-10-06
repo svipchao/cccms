@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace cccms\model;
@@ -33,8 +34,8 @@ class SysMenu extends Model
         return (int)$value;
     }
 
-    public function searchMenuIdAttr($query, $value)
+    public function searchParentIdAttr($query, $value)
     {
-        $query->where('menu_id', '=', $value);
+        $query->where('parent_id', '=', $value);
     }
 }
