@@ -140,8 +140,8 @@ const { setUserInfo } = useUser();
 const userinfo = reactive({
   username: "admin",
   password: "admin",
-  captcha: "admin",
-  captchaToken: "admin",
+  captcha: "",
+  captchaToken: "",
 });
 
 const isOpenCaptcha = ref(true);

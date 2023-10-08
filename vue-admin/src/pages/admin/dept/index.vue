@@ -89,17 +89,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { Message } from "@arco-design/web-vue";
-import Header from "@/components/table/header.vue";
-import Table from "@/components/table/index.vue";
-import Popconfirm from "@/components/popconfirm/index.vue";
-import DeptInfo from "./components/info.vue";
-import UserList from "./user/index.vue";
-import Panel from "@/components/panel/index.vue";
-import { deptQuery, deptUpdate, deptDelete } from "@/api/admin/dept.js";
-import { useFormEdit } from "@/hooks/form.js";
-import { detectDeviceType } from "@/utils/browser.js";
+import { ref, reactive, onMounted } from 'vue';
+import { Message } from '@arco-design/web-vue';
+import Header from '@/components/table/header.vue';
+import Table from '@/components/table/index.vue';
+import Popconfirm from '@/components/popconfirm/index.vue';
+import DeptInfo from './components/info.vue';
+import UserList from './user/index.vue';
+import Panel from '@/components/panel/index.vue';
+import { deptQuery, deptUpdate, deptDelete } from '@/api/admin/dept.js';
+import { useFormEdit } from '@/hooks/form.js';
+import { detectDeviceType } from '@/utils/browser.js';
 
 onMounted(() => {
   getDatas();
@@ -123,7 +123,7 @@ const getDatas = async () => {
 // 切换状态
 const changeStatusFun = (record) => {
   deptUpdate({ id: record.id, status: record.status }).then((res) => {
-    Message.success("更新成功");
+    Message.success('更新成功');
   });
 };
 
@@ -135,7 +135,7 @@ const editData = (row) => {
 
 const delData = (row) => {
   deptDelete(row).then((res) => {
-    Message.success("删除成功");
+    Message.success('删除成功');
     getDatas();
   });
 };
@@ -149,9 +149,9 @@ const selectDept = (selectedKeys) => {
   }
 };
 
-const paneSplitSize = ref("300px");
+const paneSplitSize = ref('300px');
 const demoFun = () => {
-  paneSplitSize.value = paneSplitSize.value === "300px" ? "0px" : "300px";
+  paneSplitSize.value = paneSplitSize.value === '300px' ? '0px' : '300px';
 };
 </script>
 <style lang="less">

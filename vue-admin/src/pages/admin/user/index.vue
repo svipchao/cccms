@@ -12,22 +12,10 @@
 import { ref, reactive, onMounted } from 'vue';
 import CPanel from '@/components/panel/index.vue';
 import CIcon from '@/components/icons/index.vue';
-import datas from '../../../components/icons/icon.json';
+import data from '@arco-design/web-vue';
 
-const showIcon = ref(true);
+console.log(data);
+
+const showIcon = ref(false);
 const icon = ref('ri-home-line');
-let aa = datas;
-function demo() {
-  for (let i in aa) {
-    for (let j in aa[i]) {
-      if (aa[i][j].indexOf('333') == -1) {
-        delete aa[i][j];
-        // aa[i].splice(j, 1);
-      }
-      console.log(j);
-    }
-  }
-  console.log(aa);
-}
-// demo();
 </script>

@@ -12,8 +12,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, useAttrs, onMounted } from "vue";
-import config from "@/config";
+import { ref, reactive, useAttrs, onMounted } from 'vue';
+import config from '@/config';
 const attrs = useAttrs();
 
 const props = defineProps({
@@ -24,7 +24,7 @@ const okButtonPropsObj = ref();
 
 onMounted(() => {
   // 更新弹窗按钮状态
-  if (attrs["ok-button-props"] === undefined) {
+  if (attrs['ok-button-props'] === undefined) {
     okButtonPropsObj.value = {
       status: attrs.type,
     };
