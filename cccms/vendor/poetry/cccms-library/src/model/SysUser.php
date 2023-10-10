@@ -26,7 +26,7 @@ class SysUser extends Model
     public function getUserMenus(array $userInfo = []): array
     {
         $menus = SysMenu::mk()->where('status', 1)->cache('86400')
-            ->column('id,icon,menu_id,name,node,sort,url,status', 'id');
+            ->column('id,parent_id,menu_id,name,node,icon,sort,url,status', 'id');
         foreach ($menus as $mKey => &$mVal) {
             if (isset($menus[$mVal['menu_id']]) && $mVal['menu_id'] !== 0) $menus[$mVal['menu_id']]['url'] = '#';
             if (!empty($mVal['node']) && $mVal['node'] !== '#' && !in_array($mVal['node'], $userInfo['nodes'])) unset($menus[$mKey]);

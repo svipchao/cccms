@@ -94,14 +94,14 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
-import config from "@/config";
-import Userinfo from "./components/userinfo.vue";
-import SiderMenu from "./components/sider-menu.vue";
-import { useUser } from "@/store/admin/user.js";
-import { useMenu } from "@/store/admin/menu.js";
-import { useTabs } from "@/store/admin/tabs.js";
-import { useTheme } from "@/store/admin/theme.js";
+import { ref, watch } from 'vue';
+import config from '@/config';
+import Userinfo from './components/userinfo.vue';
+import SiderMenu from './components/sider-menu.vue';
+import { useUser } from '@/store/admin/user.js';
+import { useMenu } from '@/store/admin/menu.js';
+import { useTabs } from '@/store/admin/tabs.js';
+import { useTheme } from '@/store/admin/theme.js';
 
 const userStore = useUser();
 const menuStore = useMenu();

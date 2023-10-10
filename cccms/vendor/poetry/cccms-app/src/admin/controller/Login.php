@@ -48,6 +48,7 @@ class Login extends Base
         } else {
             // 这个append的顺序不能变 accessToken->nodes->menus
             $userInfo = $userInfo->append(['accessToken', 'nodes', 'menus'])->toArray();
+            $userInfo['home_url'] = 'admin/index/index';
             _result(['code' => 200, 'msg' => '登录成功', 'data' => $userInfo], _getEnCode());
         }
     }
