@@ -14,10 +14,12 @@
     <div class="icons">
       <div class="icons-search">
         <a-input-search
+          v-model="iconValue"
           size="large"
           placeholder="请输入关键词进行搜索图标"
           button-text="搜索图标"
           search-button
+          @press-enter="searchIcons"
           @search="searchIcons"
         />
         <div class="icons-tip">{{ iconTip }}</div>
@@ -103,22 +105,19 @@ const props = defineProps({
   icon: undefined,
 });
 
-const okDrawer = async () => {
-  emit('update:visible');
-};
-
 const iconTip = ref('');
 const setCurrentHoverData = (value, keyword) => {
   iconTip.value = value + '——' + keyword;
 };
 
 const iconData = ref(datas);
-const searchIcons = (searchWord) => {
+const iconValue = ref('');
+const searchIcons = () => {
   let temporaryData = deepClone(datas);
   for (let i in temporaryData) {
     for (let j in temporaryData[i]) {
       let str = j + ',' + temporaryData[i][j];
-      if (str.indexOf(searchWord) == -1) {
+      if (str.indexOf(iconValue.value) == -1) {
         delete temporaryData[i][j];
       }
     }
@@ -129,9 +128,16 @@ const searchIcons = (searchWord) => {
   iconData.value = temporaryData;
 };
 
+const emit = defineEmits(['update:visible', 'update:icon']);
+
 const currentIcon = ref('');
 const setCurrentIconData = (value) => {
   currentIcon.value = value;
+};
+
+const okDrawer = async () => {
+  emit('update:visible');
+  emit('update:icon', currentIcon.value);
 };
 </script>
 

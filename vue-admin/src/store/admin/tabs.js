@@ -50,8 +50,6 @@ export const useTabs = defineStore({
       if (menu) {
         // 重新赋值 有可能传进来的不是id 而是node
         id = menu.id;
-        console.log(menu);
-        console.log(menuStore.showApps);
         router.push("/" + menu.url);
         if (menuStore.showApps) {
           // 如果选择的是应用 则切换Menu数据

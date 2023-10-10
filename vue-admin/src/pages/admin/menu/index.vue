@@ -86,17 +86,17 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from "vue";
-import { Message } from "@arco-design/web-vue";
+import { reactive, ref, onMounted } from 'vue';
+import { Message } from '@arco-design/web-vue';
 import {
   menuQuery,
   menuDelete,
   menuUpdate,
   menuUpdateSort,
-} from "@/api/admin/menu";
-import Table from "@/components/table/index.vue";
-import Types from "@/components/types/index.vue";
-import MenuEdit from "./menu-edit.vue";
+} from '@/api/admin/menu';
+import Table from '@/components/table/index.vue';
+import Types from '@/components/types/index.vue';
+import MenuEdit from './menu-edit.vue';
 
 onMounted(() => {
   getDatas();
@@ -109,22 +109,22 @@ const table = reactive({
   },
   cates: [], // 类别
   datas: [], // 表数据
-  ignoreFields: ["operation"],
+  ignoreFields: ['operation'],
   columns: [
-    { dataIndex: "id", title: "ID", width: 50 },
-    { dataIndex: "name", title: "菜单名称", width: 200, slotName: "name" },
-    { dataIndex: "url", title: "链接", width: 180, slotName: "url" },
-    { dataIndex: "node", title: "权限节点", width: 180, slotName: "node" },
-    { dataIndex: "sort", title: "排序", width: 80 },
-    { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
-    { dataIndex: "create_time", title: "创建时间", width: 180 },
-    { dataIndex: "update_time", title: "更新时间", width: 180 },
+    { dataIndex: 'id', title: 'ID', width: 50 },
+    { dataIndex: 'name', title: '菜单名称', width: 200, slotName: 'name' },
+    { dataIndex: 'url', title: '链接', width: 180, slotName: 'url' },
+    { dataIndex: 'node', title: '权限节点', width: 180, slotName: 'node' },
+    { dataIndex: 'sort', title: '排序', width: 80 },
+    { dataIndex: 'status', title: '状态', width: 80, slotName: 'status' },
+    { dataIndex: 'create_time', title: '创建时间', width: 180 },
+    { dataIndex: 'update_time', title: '更新时间', width: 180 },
     {
-      dataIndex: "operation",
-      title: "操作",
+      dataIndex: 'operation',
+      title: '操作',
       width: 100,
-      fixed: "right",
-      slotName: "operation",
+      fixed: 'right',
+      slotName: 'operation',
     },
   ],
 });
@@ -138,7 +138,7 @@ const currentData = ref();
 // 切换状态
 const changeStatusFun = (record) => {
   menuUpdate(record).then((res) => {
-    Message.success("更新成功");
+    Message.success('更新成功');
   });
 };
 
@@ -158,7 +158,7 @@ const editMenu = (row) => {
 
 const delMenu = (row) => {
   menuDelete(row).then((res) => {
-    Message.success("删除成功");
+    Message.success('删除成功');
     getDatas();
   });
 };
@@ -166,14 +166,15 @@ const handleChange = (data) => {
   let sortData = [];
   let sortIndex = data.length;
   for (let i = 0; i < data.length; i++) {
-    data[i]["sort"] = sortIndex--;
+    data[i]['sort'] = sortIndex--;
     sortData.push({
-      id: data[i]["id"],
-      sort: data[i]["sort"],
+      id: data[i]['id'],
+      sort: data[i]['sort'],
     });
   }
   menuUpdateSort({ data: sortData }).then(() => {
-    Message.success("更改排序成功");
+    getDatas();
+    Message.success('更改排序成功');
   });
   table.datas = data;
 };

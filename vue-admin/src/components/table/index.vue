@@ -56,9 +56,6 @@ const { proxy } = getCurrentInstance();
 onMounted(() => {
   // 关闭分页时
   if (!props.pagination) page = false;
-  proxy.$refs.tableRef.expandAll([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-  console.log(proxy);
-  // tableRef.value.expandAll(true);
 });
 
 // 分页配置

@@ -37,7 +37,7 @@
             <i :class="form.icon"></i>
           </template>
         </a-input>
-        <a-button type="primary">选择图标</a-button>
+        <a-button type="primary" @click="switchIcon">选择图标</a-button>
       </a-form-item>
       <a-form-item field="url">
         <a-input v-model="form.url" placeholder="请输入菜单链接...">
@@ -50,13 +50,15 @@
         </a-input>
       </a-form-item>
     </a-form>
+    <CIcon v-model:visible="showIcon" v-model:icon="form.icon"></CIcon>
   </a-modal>
 </template>
 <script setup>
-import { ref, reactive, watch } from "vue";
-import { Message } from "@arco-design/web-vue";
-import { menuCreate, menuUpdate } from "@/api/admin/menu.js";
-import { assignObject } from "@/utils/utils.js";
+import { ref, reactive, watch } from 'vue';
+import { Message } from '@arco-design/web-vue';
+import { menuCreate, menuUpdate } from '@/api/admin/menu.js';
+import { assignObject } from '@/utils/utils.js';
+import CIcon from '@/components/icons/index.vue';
 
 const props = defineProps({
   visible: false,
@@ -81,27 +83,32 @@ const resetForm = () => {
   Object.assign(form, getFormInit());
 };
 
-const emit = defineEmits(["update:visible", "done"]);
+const showIcon = ref(false);
+const switchIcon = () => {
+  showIcon.value = !showIcon.value;
+};
+
+const emit = defineEmits(['update:visible', 'done']);
 
 const isUpdate = ref(true);
 
 const cancelModal = () => {
-  emit("update:visible", false);
+  emit('update:visible', false);
 };
 
 const okModal = async () => {
   form.parent_id = props.parent_id;
   if (isUpdate.value) {
     await menuUpdate(form).then((res) => {
-      Message.success("修改成功");
+      Message.success('修改成功');
     });
   } else {
     await menuCreate(form).then((res) => {
-      Message.success("添加成功");
+      Message.success('添加成功');
     });
   }
-  emit("done");
-  emit("update:visible");
+  emit('done');
+  emit('update:visible');
 };
 
 watch(

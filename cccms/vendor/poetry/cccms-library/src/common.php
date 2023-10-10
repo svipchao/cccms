@@ -121,7 +121,7 @@ if (!function_exists('_validate')) {
                         } else {
                             unset($rule['require']);
                             // 可选参数不设置默认值 如不传值则不获取
-                            $isTableFields && $optionalParams[] = $field;
+                            $isTableFields && $optionalParams[$field] = 0;
                         }
                         $validateRule[$field]['rule'] = array_keys($rule);
                     }

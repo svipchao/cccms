@@ -55,7 +55,8 @@ class Menu extends Base
      */
     public function update()
     {
-        $this->model->update(_validate('put', 'sys_menu|id|true'));
+        $this->model->update(_validate('put.sys_menu.true', 'id'));
+        _result(['code' => 200, 'msg' => '更新成功'], _getEnCode());
     }
 
     /**
