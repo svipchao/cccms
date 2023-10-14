@@ -5,24 +5,32 @@
  * @param {*} format
  * @returns
  */
-export const timestamp = (time, format = "yyyy-MM-dd HH:mm:ss") => {
+export const timestamp = (time, format = 'yyyy-MM-dd HH:mm:ss') => {
   time = time || Date.parse(new Date()) / 1000;
 
-  if (typeof time === "number" && String(time).length === 10) {
+  if (typeof time === 'number' && String(time).length === 10) {
     time = time * 1e3;
   }
   const digit = function (value, length = 2) {
-    if (typeof value === "undefined" || value === null) {
-      return "";
+    if (typeof value === 'undefined' || value === null) {
+      return '';
     }
     if (String(value).length >= length) {
       return String(value);
     }
-    return (Array(length).join("0") + value).slice(-length);
+    return (Array(length).join('0') + value).slice(-length);
   };
   const date = new Date(time);
-  const ymd = [digit(date.getFullYear(), 4), digit(date.getMonth() + 1), digit(date.getDate())];
-  const hms = [digit(date.getHours()), digit(date.getMinutes()), digit(date.getSeconds())];
+  const ymd = [
+    digit(date.getFullYear(), 4),
+    digit(date.getMonth() + 1),
+    digit(date.getDate()),
+  ];
+  const hms = [
+    digit(date.getHours()),
+    digit(date.getMinutes()),
+    digit(date.getSeconds()),
+  ];
   return format
     .replace(/yyyy/g, ymd[0])
     .replace(/MM/g, ymd[1])
@@ -37,7 +45,7 @@ export const timestamp = (time, format = "yyyy-MM-dd HH:mm:ss") => {
  * @param {*} format
  * @returns
  */
-export const toTimestamp = (format = "") => {
+export const toTimestamp = (format = '') => {
   return new Date(format).getTime() / 1000;
 };
 
@@ -60,7 +68,7 @@ export const getMonthDays = () => {
  */
 export const timeAgo = (time, onlyDate) => {
   if (!time) {
-    return "";
+    return '';
   }
   const arr = [[], []];
   const stamp = new Date().getTime() - new Date(time).getTime();
@@ -74,18 +82,18 @@ export const timeAgo = (time, onlyDate) => {
       arr[1][1] = digit(date.getMinutes());
       arr[1][2] = digit(date.getSeconds());
     }
-    return arr[0].join("-") + " " + arr[1].join(":");
+    return arr[0].join('-') + ' ' + arr[1].join(':');
   }
   if (stamp >= 1e3 * 60 * 60 * 24) {
-    return ((stamp / 1e3 / 60 / 60 / 24) | 0) + "\u5929\u524D";
+    return ((stamp / 1e3 / 60 / 60 / 24) | 0) + '\u5929\u524D';
   }
   if (stamp >= 1e3 * 60 * 60) {
-    return ((stamp / 1e3 / 60 / 60) | 0) + "\u5C0F\u65F6\u524D";
+    return ((stamp / 1e3 / 60 / 60) | 0) + '\u5C0F\u65F6\u524D';
   }
   if (stamp >= 1e3 * 60 * 3) {
-    return ((stamp / 1e3 / 60) | 0) + "\u5206\u949F\u524D";
+    return ((stamp / 1e3 / 60) | 0) + '\u5206\u949F\u524D';
   }
-  return "\u521A\u521A";
+  return '\u521A\u521A';
 };
 
 /**
@@ -144,7 +152,7 @@ export const isBeforeDate = (dateA, dateB) => dateA < dateB;
 export const tomorrow = () => {
   let t = new Date();
   t.setDate(t.getDate() + 1);
-  return t.toISOString().split("T")[0];
+  return t.toISOString().split('T')[0];
 };
 
 /**
@@ -167,7 +175,7 @@ export const nTime = (callback, time = 5000) => {
  * @returns
  */
 export const getWeek = () => {
-  return "日一二三四五六".charAt(new Date().getDay());
+  return '日一二三四五六'.charAt(new Date().getDay());
 };
 
 /**
@@ -178,18 +186,18 @@ export const getDateState = () => {
   var now = new Date();
   var hour = now.getHours();
   if (hour > 5 && hour < 9) {
-    return "早上";
+    return '早上';
   } else if (hour < 12) {
-    return "上午";
+    return '上午';
   } else if (hour < 14) {
-    return "中午";
+    return '中午';
   } else if (hour < 17) {
-    return "下午";
+    return '下午';
   } else if (hour < 19) {
-    return "傍晚";
+    return '傍晚';
   } else if (hour < 22) {
-    return "晚上";
+    return '晚上';
   } else {
-    return "深夜";
+    return '深夜';
   }
 };

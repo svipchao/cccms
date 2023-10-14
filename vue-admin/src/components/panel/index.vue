@@ -1,5 +1,5 @@
 <template>
-  <div class="cc-panel">
+  <div class="cc-panel" v-waterMarker="{ text: '诗无尽头', textTime: true }">
     <div
       class="cc-panel-left"
       :style="{
@@ -32,14 +32,14 @@
   </div>
 </template>
 <script setup>
-import { ref, reactive, onMounted, watch } from "vue";
+import { ref, reactive, onMounted, watch } from 'vue';
 
 const props = defineProps({
   size: undefined,
 });
 
 const data = reactive({
-  size: "300px",
+  size: '300px',
 });
 
 onMounted(() => {
