@@ -27,28 +27,15 @@
         </a-button>
       </template>
       <template #name="{ record }">
-        <i :class="['iconfont', record.icon]"></i>
+        <i :class="record.icon"></i>
         <span>&nbsp;{{ record.mark }}{{ record.name }}</span>
       </template>
       <template #url="{ record }">
-        <a-typography-paragraph
-          :ellipsis="{
-            rows: 1,
-            showTooltip: true,
-          }"
-        >
-          {{ record.url }}
-        </a-typography-paragraph>
-      </template>
-      <template #node="{ record }">
-        <a-typography-paragraph
-          :ellipsis="{
-            rows: 1,
-            showTooltip: true,
-          }"
-        >
-          {{ record.node }}
-        </a-typography-paragraph>
+        <a-tooltip :content="record.url">
+          <a-link :href="record.url" target="_blank" :hoverable="false">
+            打开
+          </a-link>
+        </a-tooltip>
       </template>
       <template #status="{ record }">
         <a-switch
@@ -59,20 +46,31 @@
         />
       </template>
       <template #operation="{ record }">
-        <a-typography-text
-          type="primary"
+        <a-button
+          type="text"
+          size="mini"
           @click="editMenu(record)"
           v-permission="'admin/menu/update'"
         >
-          编辑
-        </a-typography-text>
-        <a-typography-text
-          type="danger"
+          <template #icon>
+            <i class="ri-edit-line"></i>
+          </template>
+        </a-button>
+        <Popconfirm
+          content="确定要删除吗？"
+          type="warning"
+          position="left"
           @click="delMenu(record)"
-          v-permission="'admin/menu/delete'"
         >
-          删除
-        </a-typography-text>
+          <a-button type="text" size="mini" v-permission="'admin/menu/delete'">
+            <template #icon>
+              <i
+                class="ri-delete-bin-line"
+                style="color: rgb(var(--danger-6))"
+              ></i>
+            </template>
+          </a-button>
+        </Popconfirm>
       </template>
     </Table>
   </a-card>
@@ -94,6 +92,7 @@ import {
   menuUpdate,
   menuUpdateSort,
 } from '@/api/admin/menu';
+import Popconfirm from '@/components/popconfirm/index.vue';
 import Table from '@/components/table/index.vue';
 import Types from '@/components/types/index.vue';
 import MenuEdit from './menu-edit.vue';
@@ -111,18 +110,49 @@ const table = reactive({
   datas: [], // 表数据
   ignoreFields: ['operation'],
   columns: [
-    { dataIndex: 'id', title: 'ID', width: 50 },
-    { dataIndex: 'name', title: '菜单名称', width: 200, slotName: 'name' },
-    { dataIndex: 'url', title: '链接', width: 180, slotName: 'url' },
-    { dataIndex: 'node', title: '权限节点', width: 180, slotName: 'node' },
-    { dataIndex: 'sort', title: '排序', width: 80 },
+    {
+      dataIndex: 'name',
+      title: '菜单名称',
+      width: 200,
+      slotName: 'name',
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      dataIndex: 'url',
+      title: '链接',
+      width: 80,
+      slotName: 'url',
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      dataIndex: 'node',
+      title: '权限节点',
+      width: 200,
+      slotName: 'node',
+      ellipsis: true,
+      tooltip: true,
+    },
     { dataIndex: 'status', title: '状态', width: 80, slotName: 'status' },
-    { dataIndex: 'create_time', title: '创建时间', width: 180 },
-    { dataIndex: 'update_time', title: '更新时间', width: 180 },
+    {
+      dataIndex: 'create_time',
+      title: '创建时间',
+      width: 180,
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      dataIndex: 'update_time',
+      title: '更新时间',
+      width: 180,
+      ellipsis: true,
+      tooltip: true,
+    },
     {
       dataIndex: 'operation',
       title: '操作',
-      width: 100,
+      width: 50,
       fixed: 'right',
       slotName: 'operation',
     },

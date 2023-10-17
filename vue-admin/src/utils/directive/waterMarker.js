@@ -1,4 +1,5 @@
 import { timestamp } from '../time';
+
 function addWaterMarker(options, parentNode) {
   if (options.text.indexOf('./') > -1) {
     options.text = '';
@@ -35,7 +36,7 @@ function WaterMark(node, options) {
   this._init(node, options);
   this._resizeSpace();
   this._fillContent();
-  this._bindEvent();
+  this._bindEvent(node);
 }
 WaterMark.prototype = {
   /* 初始化 */
@@ -45,7 +46,7 @@ WaterMark.prototype = {
       text: options.text ? options.text : '', // 水印文字内容
       textTime: options.textTime ? options.textTime : false, // 水印文字是否添加时间戳
       timestamp: options.timestamp ? options.timestamp : 'yyyy-MM-dd HH:mm:ss', // 水印文字时间戳格式
-      opacity: options.opacity ? options.opacity : 0.2, // 水印透明度
+      opacity: options.opacity ? options.opacity : 0.1, // 水印透明度
       startX: options.startX ? options.startX : 0, // X轴开始位置
       startY: options.startY ? options.startY : 15, // Y轴开始位置
       xSpace: 100, // 横向间隔
@@ -59,6 +60,7 @@ WaterMark.prototype = {
       color: options.color ? options.color : '#000', // 字体颜色
       fontFamily: options.fontFamily ? options.fontFamily : '微软雅黑', // 字体
       imageSrc: options.imageSrc ? options.imageSrc : '', // 图片地址
+      timer: () => {}, // 监听水印变化防抖
     };
     node.style.overflow = 'hidden';
   },
@@ -118,7 +120,6 @@ WaterMark.prototype = {
     this.markContainer.style.height = '100%';
     this.markContainer.style.zIndex = '99999';
     this.markContainer.style.pointerEvents = 'none';
-    console.log(this.markContainer);
     this.options.node.appendChild(this.markContainer);
   },
   /* 构造每个水印节点 */
@@ -163,14 +164,36 @@ WaterMark.prototype = {
     return markDiv;
   },
   /* 事件监听 */
-  _bindEvent: function () {
+  _bindEvent: function (node) {
     var that = this;
     // 监听浏览器大小变化事件 动态调整水印
     window.onresize = function () {
       that.refresh();
     };
+    // 在 onMounted 里边创建一个 MutationObserver 来进行监控
+    // 一旦某个东西有变化就会运行这个回调函数
+    var timer;
+    let ob = new MutationObserver((records) => {
+      if (timer) clearTimeout(timer);
+      if (
+        ['water-mark-container', 'water-mark-item'].indexOf(
+          records[0]?.removedNodes[0]?.className
+        ) > -1
+      ) {
+        timer = setTimeout(() => {
+          // 并把变化记录下来传递给我们
+          that.refresh();
+        }, 100);
+      }
+    });
+    // 创建好监听器之后，告诉监听器需要监听的元素
+    ob.observe(node, {
+      // 监听的时候需要加一些配置
+      childList: true, // 元素内容有没有发生变化
+      attributes: true, // 元素本身的属性有没有发生变化
+      subtree: true, // 告诉它监控的是整个子树，就是包含整个子元素
+    });
   },
-
   /* 刷新水印 水印容器大小发生变化是调用 */
   refresh: function () {
     if (this.markContainer) {

@@ -238,8 +238,8 @@ VALUES (1, 0, 0, '基础系统', 'ri-stack-line', '#', '#', 0, 1),
        (5, 1, 3, '角色管理', '', 'admin/role/index', 'admin/role/index', 0, 1),
        (6, 1, 3, '用户管理', '', 'admin/user/index', 'admin/user/index', 0, 1),
        (7, 1, 1, '系统配置', 'ri-settings-line', '#', '#', 0, 1),
-       (8, 1, 7, '菜单管理', '', 'admin/menu/index', 'admin/menu/index', 0, 1),
-       (9, 1, 7, '配置管理', '', 'admin/config/index', 'admin/config/index', 0, 1),
+       (8, 1, 7, '系统设置', '', 'admin/config/index', 'admin/config/index', 0, 1),
+       (9, 1, 7, '菜单管理', '', 'admin/menu/index', 'admin/menu/index', 0, 1),
        (10, 1, 7, '路由管理', '', 'admin/route/index', 'admin/route/index', 0, 1),
        (11, 1, 7, '附件管理', '', 'admin/file/index', 'admin/file/index', 0, 1),
        (12, 1, 7, '日志管理', '', 'admin/log/index', 'admin/log/index', 0, 1),
@@ -284,7 +284,8 @@ INSERT INTO `sys_config_cate` (`id`, `config_name`, `config_desc`)
 VALUES (1, 'site', '网站配置'),
        (2, 'captcha', '验证码配置'),
        (3, 'log', '日志配置'),
-       (4, 'storage', '存储配置');
+       (4, 'storage', '存储配置'),
+       (5, 'watermark', '水印配置');
 
 CREATE TABLE `sys_config`
 (
@@ -314,9 +315,10 @@ VALUES (1, 'site', 'siteName', '网站名称', '诗无尽头i', '{"type":"input"
        (10, 'log', 'logClose', '日志状态', 1, '{"type":"switch","default":1,"description":"日志状态","options":{"checked":1,"unchecked":0}}'),
        (11, 'log', 'logMethods', '监控类型', 'put,post,delete', '{"type":"multiple-select","placeholder":"请选择需要监控的类型","default":["POST","PUT","DELETE"],"description":"参考：https://www.runoob.com/http/http-methods.html","options":[{"value":"GET","label":"GET"},{"value":"POST","label":"POST"},{"value":"PUT","label":"PUT"},{"value":"DELETE","label":"DELETE"},{"value":"HEAD","label":"HEAD"},{"value":"CONNECT","label":"CONNECT"},{"value":"OPTIONS","label":"OPTIONS"},{"value":"TRACE","label":"TRACE"},{"value":"PATCH","label":"PATCH"}]}'),
        (12, 'log', 'logNoParams', '不记录的参数', 'v,page,limit,field,order,encode', '{"type":"textarea","placeholder":"请输入不需要记录的参数名","default":"page,limit","description":"每个参数使用英文逗号隔开，例如：page,limit"}'),
-       (13, 'storage', 'uploadExt', '上传文件类型', 'jpg,png,gif', '{"type":"textarea","placeholder":"请输入上传文件支持的后缀名","default":"page,limit","description":"每个后缀名使用英文逗号隔开，例如：jpg,png,gif"}'),
-       (14, 'storage', 'uploadSize', '上传文件大小限制', 20, '{"type":"input-number","placeholder":"请输入上传文件大小限制","default":20,"description":"请输入上传文件限制(MB)"}'),
-       (15, 'storage', 'diskType', '磁盘类型', 'local', '{"type":"select","placeholder":"请选择磁盘类型","default":"local","description":"请选择磁盘类型","options":[{"value":"local","label":"本地存储"},{"value":"alioss","label":"阿里云"},{"value":"qiniu","label":"七牛云"},{"value":"txoss","label":"腾讯云"},{"value":"uposs","label":"又拍云"}]}');
+       (13, 'storage', 'diskType', '磁盘类型', 'local', '{"type":"select","placeholder":"请选择磁盘类型","default":"local","description":"请选择磁盘类型","options":[{"value":"local","label":"本地存储"},{"value":"alioss","label":"阿里云"},{"value":"qiniu","label":"七牛云"},{"value":"txoss","label":"腾讯云"},{"value":"uposs","label":"又拍云"}]}'),
+       (14, 'storage', 'uploadExt', '上传文件类型', 'jpg,png,gif', '{"type":"textarea","placeholder":"请输入上传文件支持的后缀名","default":"page,limit","description":"每个后缀名使用英文逗号隔开，例如：jpg,png,gif"}'),
+       (15, 'storage', 'uploadSize', '上传文件大小限制', 20, '{"type":"input-number","placeholder":"请输入上传文件大小限制","default":20,"description":"请输入上传文件限制(MB)"}'),
+       (16, 'watermark', 'open', '是否启用水印', 1, '{"type":"switch","placeholder":"是否启用水印","options":{"checked":1,"unchecked":0}}');
 
 CREATE TABLE `sys_route_cate`
 (
