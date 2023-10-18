@@ -152,7 +152,7 @@ const table = reactive({
     {
       dataIndex: 'operation',
       title: '操作',
-      width: 50,
+      width: 80,
       fixed: 'right',
       slotName: 'operation',
     },

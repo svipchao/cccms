@@ -1,9 +1,9 @@
 import { timestamp } from '../time';
 
-function addWaterMarker(options, parentNode) {
+function addWaterMarker(parentNode, options) {
   if (options.text.indexOf('./') > -1) {
-    options.text = '';
     options.imageSrc = options.text;
+    options.text = '';
   } else {
     options.text = options.text;
     options.imageSrc = '';
@@ -20,7 +20,7 @@ function addWaterMarker(options, parentNode) {
 
 const waterMarker = {
   mounted: function (el, binding) {
-    addWaterMarker(binding.value, el);
+    addWaterMarker(el, binding.value);
   },
 };
 
@@ -34,7 +34,6 @@ function WaterMark(node, options) {
     options = {};
   }
   this._init(node, options);
-  this._resizeSpace();
   this._fillContent();
   this._bindEvent(node);
 }
@@ -46,122 +45,90 @@ WaterMark.prototype = {
       text: options.text ? options.text : '', // 水印文字内容
       textTime: options.textTime ? options.textTime : false, // 水印文字是否添加时间戳
       timestamp: options.timestamp ? options.timestamp : 'yyyy-MM-dd HH:mm:ss', // 水印文字时间戳格式
-      opacity: options.opacity ? options.opacity : 0.1, // 水印透明度
+      opacity: options.opacity ? options.opacity : 0.2, // 水印透明度
       startX: options.startX ? options.startX : 0, // X轴开始位置
       startY: options.startY ? options.startY : 15, // Y轴开始位置
-      xSpace: 100, // 横向间隔
-      ySpace: 50, // 纵向间隔
-      rows: 0, // 行数
-      cols: 0, // 列数
-      markWidth: options.markWidth ? options.markWidth : 200, // 水印宽度
-      markHeight: options.markHeight ? options.markHeight : 50, // 水印高度
+      xSpace: options.xSpace ? options.xSpace : 100, // 横向间隔
+      ySpace: options.ySpace ? options.ySpace : 50, // 纵向间隔
+      markWidth: options.markWidth ? options.markWidth : 0, // 水印宽度
+      markHeight: options.markHeight ? options.markHeight : 0, // 水印高度
       angle: options.angle ? options.angle : 20, // 倾斜角度
-      fontSize: options.fontSize ? options.fontSize : 12, // 字体大小
+      fontSize: options.fontSize ? options.fontSize : 16, // 字体大小
       color: options.color ? options.color : '#000', // 字体颜色
       fontFamily: options.fontFamily ? options.fontFamily : '微软雅黑', // 字体
       imageSrc: options.imageSrc ? options.imageSrc : '', // 图片地址
-      timer: () => {}, // 监听水印变化防抖
     };
     node.style.overflow = 'hidden';
   },
-  /* 自动调整每个水印间距 使其可以填充整个页面 */
-  _resizeSpace: function () {
-    this.pageWidth = Math.max(
-      this.options.node.scrollWidth,
-      this.options.node.clientWidth
-    );
-    this.pageHeight =
-      1 +
-      Math.max(this.options.node.scrollHeight, this.options.node.clientHeight);
-    // 计算旋转后的元素所占宽度和高度
-    // var radian = this.options.angle / 180 * Math.PI;
-    // var newMarkHeight = this.options.markHeight * Math.cos(radian) + this.options.markWidth * Math.sin(radian);
-
-    // 获取水印行数 并根据行数调整间距使水印填满屏幕
-    this.options.rows = Math.ceil(
-      (this.pageHeight - this.options.startY) /
-        (this.options.markHeight + this.options.ySpace)
-    );
-    this.options.ySpace = Math.floor(
-      (this.pageHeight - this.options.startY) / this.options.rows -
-        this.options.markHeight
-    );
-    // 获取水印列数 并根据列数调整间距使水印填满屏幕
-    this.options.cols =
-      1 +
-      Math.ceil(
-        (this.pageWidth - this.options.startX) /
-          (this.options.markWidth + this.options.xSpace)
-      );
-    this.options.xSpace = Math.floor(
-      (this.pageWidth - this.options.startX) / this.options.cols -
-        this.options.markWidth
-    );
-  },
   /* 填充水印 */
   _fillContent: function () {
-    var domTemp = document.createDocumentFragment();
-    for (var i = 0; i < this.options.rows; i++) {
-      var posY =
-        i * (this.options.markHeight + this.options.ySpace) +
-        this.options.startY;
-      for (var j = 0; j < this.options.cols; j++) {
-        var posX =
-          j * (this.options.markWidth + this.options.xSpace) +
-          this.options.startX;
-        domTemp.appendChild(this._createWaterMark(posX, posY));
-      }
+    let imageSrc = '';
+    if (this.options.imageSrc) {
+      imageSrc = this.options.imageSrc;
+    } else {
+      let tempElement = document.createElement('span');
+      // 设置你需要测量的字体样式
+      tempElement.style.font = `100 ${this.options.fontSize}px ${this.options.fontFamily}`;
+      // 使用一个字符来测量字体宽度
+      tempElement.innerText = this.options.text;
+      // 将临时元素添加到文档中
+      document.body.appendChild(tempElement);
+      // 获取临时元素的宽度
+      let fontWidth1 = tempElement.offsetWidth;
+      // 获取临时元素的宽度
+      let fontHeight1 = tempElement.offsetHeight;
+      // 使用一个字符来测量字体宽度
+      tempElement.innerText = this.options.textTime;
+      // 将临时元素添加到文档中
+      document.body.appendChild(tempElement);
+
+      // 获取临时元素的宽高
+      let fontWidth2 = tempElement.offsetWidth;
+      let fontHeight2 = tempElement.offsetHeight;
+      // 将临时元素从文档中移除
+      document.body.removeChild(tempElement);
+      // 定义
+      let strLength = Math.max(
+        this.options.text.length,
+        this.options.textTime.length
+      );
+      let fontWidth = Math.max(fontWidth1, fontWidth2);
+      let fontHeight = Math.max(fontHeight1, fontHeight2);
+
+      let canvas = document.createElement('canvas');
+      canvas.width = this.options.markWidth || fontWidth + 20;
+      canvas.height =
+        this.options.markHeight || fontHeight * 2 + strLength * 1.2;
+      let watermarker = canvas.getContext('2d');
+      // 描边
+      watermarker.strokeRect(0, 0, canvas.width, canvas.height);
+      // watermarker.translate(canvas.width / 2, canvas.height / 2);
+      watermarker.rotate(-this.options.angle / Math.PI);
+      watermarker.fillStyle = this.options.color;
+      watermarker.font = `100 ${this.options.fontSize}px ${this.options.fontFamily}`;
+      watermarker.fillText(
+        this.options.text,
+        5,
+        fontHeight + this.options.text.length * 1.2
+      );
+      watermarker.fillText(
+        this.options.textTime,
+        5,
+        fontHeight * 2 + this.options.text.length * 1.2
+      );
+      imageSrc = canvas.toDataURL('image/png');
+      console.log(canvas);
     }
     this.markContainer = document.createElement('div');
+    this.markContainer.style.opacity = this.options.opacity;
     this.markContainer.className = 'water-mark-container';
-    this.markContainer.appendChild(domTemp);
     this.markContainer.style.position = 'absolute';
     this.markContainer.style.width = '100%';
     this.markContainer.style.height = '100%';
     this.markContainer.style.zIndex = '99999';
     this.markContainer.style.pointerEvents = 'none';
+    this.markContainer.style.backgroundImage = `url('${imageSrc}')`;
     this.options.node.appendChild(this.markContainer);
-  },
-  /* 构造每个水印节点 */
-  _createWaterMark: function (x, y) {
-    var markDiv = document.createElement('div');
-    markDiv.className = 'water-mark-item';
-    if (this.options.imageSrc) {
-      markDiv.innerHTML =
-        '<div>' +
-        this.options.text +
-        "</div><img src='" +
-        this.options.imageSrc +
-        "'/>";
-    } else {
-      let text = this.options.text;
-      if (this.options.textTime) {
-        text = text + '\n' + this.options.textTime;
-      }
-      markDiv.appendChild(document.createTextNode(text));
-    }
-    //设置水印div倾斜显示
-    markDiv.style.webkitTransform = 'rotate(-' + this.options.angle + 'deg)';
-    markDiv.style.MozTransform = 'rotate(-' + this.options.angle + 'deg)';
-    markDiv.style.msTransform = 'rotate(-' + this.options.angle + 'deg)';
-    markDiv.style.OTransform = 'rotate(-' + this.options.angle + 'deg)';
-    markDiv.style.transform = 'rotate(-' + this.options.angle + 'deg)';
-    markDiv.style.position = 'absolute';
-    markDiv.style.whiteSpace = 'pre-line';
-    markDiv.style.left = x + 'px';
-    markDiv.style.top = y + 'px';
-    markDiv.style.overflow = 'hidden';
-    markDiv.style.zIndex = '99999';
-    markDiv.style.width = this.options.markWidth + 'px';
-    markDiv.style.height = this.options.markHeight + 'px';
-    markDiv.style.display = 'block';
-    markDiv.style.pointerEvents = 'none';
-    markDiv.style.opacity = this.options.opacity;
-    markDiv.style.textAlign = 'center';
-    markDiv.style.fontFamily = this.options.fontFamily;
-    markDiv.style.fontSize = this.options.fontSize;
-    markDiv.style.color = this.options.color;
-    return markDiv;
   },
   /* 事件监听 */
   _bindEvent: function (node) {
@@ -197,10 +164,9 @@ WaterMark.prototype = {
   /* 刷新水印 水印容器大小发生变化是调用 */
   refresh: function () {
     if (this.markContainer) {
-      this.markContainer.innerHTML = '';
+      this.markContainer.remove();
     }
     this._init(this.options.node, this.options);
-    this._resizeSpace();
     this._fillContent();
   },
   /* 显示水印图层 */
