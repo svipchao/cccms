@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="cc-panel"
-    v-waterMarker="{ text: '诗无尽头诗', textTime: true }"
-  >
+  <div class="cc-panel">
     <div
       class="cc-panel-left"
       :style="{

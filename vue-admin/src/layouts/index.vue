@@ -1,5 +1,5 @@
 <template>
-  <a-layout class="cccms-layout">
+  <a-layout class="cccms-layout" v-waterMarker="water">
     <a-layout-sider
       :style="{ display: themeStore.getShowSider ? 'block' : 'none' }"
     >
@@ -35,14 +35,22 @@
 </template>
 
 <script setup>
-import Header from "./header/index.vue";
-import Sider from "./sider/index.vue";
-import Tabs from "./content/tabs.vue";
-import { useTabs } from "@/store/admin/tabs.js";
-import { useTheme } from "@/store/admin/theme.js";
+import { ref, reactive, onMounted, watch } from 'vue';
+import Header from './header/index.vue';
+import Sider from './sider/index.vue';
+import Tabs from './content/tabs.vue';
+import { useTabs } from '@/store/admin/tabs.js';
+import { useUser } from '@/store/admin/user.js';
+import { useTheme } from '@/store/admin/theme.js';
 
 const tabsStore = useTabs();
+const userStore = useUser();
 const themeStore = useTheme();
+
+const water = reactive({
+  text: '',
+});
+water.text = `@ID:${userStore.id} ${userStore.nickname}(${userStore.username})`;
 </script>
 
 <style lang="less">

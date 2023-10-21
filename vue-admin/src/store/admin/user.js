@@ -4,7 +4,7 @@ import { useMenu } from './menu.js';
 import { useTabs } from './tabs.js';
 import { useTheme } from './theme.js';
 import { useSystem } from './system.js';
-import { login, refreshToken } from '@/api/admin/login.js';
+import { refreshToken } from '@/api/admin/login.js';
 import { Message } from '@arco-design/web-vue';
 
 export const useUser = defineStore({
