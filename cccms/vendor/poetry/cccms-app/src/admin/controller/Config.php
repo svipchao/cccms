@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use app\admin\model\SysConfig;
+use cccms\model\SysConfig;
 use cccms\Base;
 use cccms\services\{AuthService, TypesService};
 
