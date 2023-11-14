@@ -246,28 +246,6 @@ VALUES (1, 0, 0, '基础系统', 'ri-stack-line', '#', '#', 0, 1),
        (13, 0, 0, '测试系统', 'ri-stack-line', '#', '#', 0, 1),
        (14, 13, 13, '控制台', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1);
 
-INSERT INTO `sys_menu` (`parent_id`, `menu_id`, `name`, `icon`, `url`, `node`, `sort`, `status`)
-VALUES (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1),
-       (1, 1, '测试', 'ri-home-line', 'admin/index/index', 'admin/index/index', 0, 1);
-
 CREATE TABLE `sys_config_cate`
 (
     `id`          int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
