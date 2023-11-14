@@ -26,6 +26,8 @@ export const useUser = defineStore({
     nodes: [],
     // 是否注册路由
     isRegisterRouteFresh: true,
+    // 系统配置
+    configs: [],
   }),
   getters: {
     getFirstNickname() {

@@ -18,7 +18,7 @@ class SysMenu extends Model
     // 删除前
     public static function onBeforeDelete($model): void
     {
-        if (!empty(MenuService::instance()->getMenuChildren((int)$model['id'], false))) {
+        if (count(MenuService::instance()->isMenuChildren((int)$model['id'])) > 1) {
             _result(['code' => 403, 'msg' => '存在子级菜单，禁止删除'], _getEnCode());
         }
     }
@@ -27,7 +27,7 @@ class SysMenu extends Model
     {
         if (empty($value) && UserService::instance()->isAdmin()) return 0;
         if (isset($data['id'])) {
-            if (in_array($value, MenuService::instance()->getMenuChildren((int)$data['id'], false))) {
+            if (in_array($value, MenuService::instance()->isMenuChildren((int)$data['id']))) {
                 _result(['code' => 403, 'msg' => '不能选择自己的子菜单'], _getEnCode());
             }
         }

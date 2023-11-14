@@ -145,43 +145,21 @@ class ArrExtend
     }
 
     /**
-     * 读取指定节点的所有孩子节点
-     * @param array $array
-     * @param mixed|null $value 当前主键值
-     * @param string $cKey 当前主键
-     * @param string $pKey 父级主键
+     * 获取数据树子ID集合
+     * @param array $list 数据列表
+     * @param mixed $value 起始有效ID值
+     * @param string $ckey 当前主键ID名称
+     * @param string $pkey 上级主键ID名称
      * @return array
      */
-    public static function toChildren(array $array = [], mixed $value = null, string $cKey = 'id', string $pKey = 'pid'): array
+    public static function toChildrenIds(array $array = [], $value = 0, string $cKey = 'id', string $pKey = 'pid'): array
     {
-        $call = function (callable $call, array $array = [], array &$data = [], bool $isSon = false) use ($cKey, $value) {
-            foreach ($array as &$val) {
-                $son = $val['children'] ?? [];
-                unset($val['children']);
-                if ($isSon || $val[$cKey] == $value) {
-                    $isSon = true;
-                    $data[] = $val;
-                }
-                if (empty($son)) continue;
-                $call($call, $son, $data, $isSon);
+        $ids = [intval($value)];
+        foreach ($array as $vo) {
+            if (intval($vo[$pKey]) > 0 && intval($vo[$pKey]) === intval($value)) {
+                $ids = array_merge($ids, static::toChildrenIds($array, intval($vo[$cKey]), $cKey, $pKey));
             }
-            return $data;
-        };
-        return $call($call, static::toTreeArray($array, $cKey, $pKey));
-    }
-
-    /**
-     * 读取指定节点的所有孩子节点ID
-     * @param array $array
-     * @param mixed|null $value 当前主键值
-     * @param string $cKey 当前主键
-     * @param string $pKey 父级主键
-     * @return array
-     */
-    public static function toChildrenIds(array $array = [], mixed $value = null, string $cKey = 'id', string $pKey = 'pid'): array
-    {
-        return array_map(function ($item) use ($cKey) {
-            return $item[$cKey];
-        }, self::toChildren($array, $value, $cKey, $pKey));
+        }
+        return $ids;
     }
 }

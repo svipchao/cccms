@@ -1,6 +1,9 @@
 import { timestamp } from '../time';
 
 function addWaterMarker(parentNode, options) {
+  if (!options.open) {
+    return false;
+  }
   if (options.text.indexOf('./') > -1) {
     options.imageSrc = options.text;
     options.text = '';
@@ -33,6 +36,7 @@ WaterMark.prototype = {
   /* 初始化 */
   _init: function (node, options) {
     this.options = {
+      open: true,
       node: node, // 添加水印的节点
       text: options.text ? options.text : '', // 水印文字内容
       textTime: options.textTime ? options.textTime : true, // 水印文字是否添加时间戳

@@ -15,14 +15,12 @@ class MenuService extends Service
     }
 
     /**
-     * 获取菜单子集菜单
+     * 判断指定菜单是否有子菜单
      * @param int $menu_id 菜单ID
-     * @param bool $isId 是否返回ID
      * @return array
      */
-    public function getMenuChildren(int $menu_id = 0, bool $isId = true): array
+    public function isMenuChildren(int $menu_id = 0): array
     {
-        $menu = ArrExtend::toChildren($this->getAllMenus(), $menu_id, 'id', 'menu_id');
-        return $isId ? array_column($menu, 'id') : $menu;
+        return ArrExtend::toChildrenIds($this->getAllMenus(), $menu_id, 'id', 'menu_id');
     }
 }

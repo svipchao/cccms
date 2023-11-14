@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace cccms\services;
 
+use cccms\model\SysConfigCate;
 use think\Request;
 use cccms\Service;
 use cccms\model\SysConfig;
@@ -47,5 +48,10 @@ class ConfigService extends Service
             }
         }
         return $configs;
+    }
+
+    public function getConfigCate()
+    {
+        return SysConfigCate::mk()->_list();
     }
 }

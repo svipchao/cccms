@@ -5,7 +5,7 @@ namespace cccms;
 
 use stdClass;
 use think\{App, Request};
-use cccms\services\{NodeService, UserService};
+use cccms\services\{NodeService, LogService, ConfigService, UserService};
 
 /**
  * 基础类
@@ -39,7 +39,7 @@ abstract class Base extends stdClass
         $this->request = $this->app->request;
 
         // 权限拦截
-        // $this->check();
+        $this->check();
 
         // 控制器初始化
         $this->init();
@@ -78,6 +78,10 @@ abstract class Base extends stdClass
             // 判断是否需要验证权限 检查用户是否拥有权限
             if ($node['auth'] && !UserService::instance()->isAuth()) {
                 _result(['code' => 403, 'msg' => '权限不足，请申请【' . $node['currentPath'] . '】节点权限！']);
+            }
+            // 记录日志
+            if (ConfigService::instance()->getConfig('log.logClose')) {
+                LogService::instance()->log($node);
             }
         }
     }

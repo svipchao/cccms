@@ -9,7 +9,7 @@
     <a-tab-pane
       v-for="(type, index) in props.types"
       :key="index"
-      :title="type.name"
+      :title="type[props.fieldNames.title]"
     />
   </a-tabs>
 </template>
@@ -19,20 +19,23 @@ import { onUpdated } from 'vue';
 
 // 接收参数
 const props = defineProps({
-  type_id: 0,
+  key: 0,
   types: undefined, // 所有类别数据
+  fieldNames: { key: 'key', title: 'title' },
 });
 
-const emits = defineEmits(['reload', 'update:type_id']);
+const emits = defineEmits(['reload', 'update:key']);
 
 onUpdated(() => {
-  if (props.type_id === 0 && props.types.length > 0) {
-    emits('update:type_id', props.types[0]['id'] || 0);
+  if (props.key === 0 && props.types.length > 0) {
+    emits('update:key', props.types[0][props.fieldNames.key] || 0);
   }
 });
 
 const changeType = (key) => {
-  emits('update:type_id', props.types[key]['id']);
+  console.log(props)
+  console.log(props.types[key][props.fieldNames.key])
+  emits('update:key', props.types[key][props.fieldNames.key]);
   emits('reload');
 };
 </script>

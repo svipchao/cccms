@@ -1,43 +1,40 @@
 <template>
-  <a-watermark :content="watermarkText" :zIndex="99999" :gap="[50, 50]">
-    <a-layout class="cccms-layout">
-      <a-layout-sider
-        :style="{ display: themeStore.getShowSider ? 'block' : 'none' }"
-      >
-        <Sider />
-      </a-layout-sider>
+  <a-layout class="cccms-layout" v-waterMarker="watermark">
+    <a-layout-sider
+      :style="{ display: themeStore.getShowSider ? 'block' : 'none' }"
+    >
+      <Sider />
+    </a-layout-sider>
+    <a-layout>
+      <a-layout-header v-show="!themeStore.contentFullscreen">
+        <Header />
+      </a-layout-header>
       <a-layout>
-        <a-layout-header v-show="!themeStore.contentFullscreen">
-          <Header />
-        </a-layout-header>
-        <a-layout>
-          <a-layout-content>
-            <div class="cccms-tabs">
-              <Tabs />
-            </div>
-            <router-view v-slot="{ Component }">
-              <Transition duration="500" name="nested">
-                <div class="cccms-content" v-if="!tabsStore.isRefresh">
-                  <keep-alive :include="tabsStore.getCacheTabs">
-                    <component :is="Component" />
-                  </keep-alive>
-                </div>
-              </Transition>
-            </router-view>
-          </a-layout-content>
-          <div
-            class="cccms-mark"
-            @click="themeStore.switchShowSider()"
-            v-show="themeStore.showSider"
-          />
-        </a-layout>
+        <a-layout-content>
+          <div class="cccms-tabs">
+            <Tabs />
+          </div>
+          <router-view v-slot="{ Component }">
+            <Transition duration="500" name="nested">
+              <div class="cccms-content" v-if="!tabsStore.isRefresh">
+                <keep-alive :include="tabsStore.getCacheTabs">
+                  <component :is="Component" />
+                </keep-alive>
+              </div>
+            </Transition>
+          </router-view>
+        </a-layout-content>
+        <div
+          class="cccms-mark"
+          @click="themeStore.switchShowSider()"
+          v-show="themeStore.showSider"
+        />
       </a-layout>
     </a-layout>
-  </a-watermark>
+  </a-layout>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
 import Header from './header/index.vue';
 import Sider from './sider/index.vue';
 import Tabs from './content/tabs.vue';
@@ -50,14 +47,10 @@ const tabsStore = useTabs();
 const userStore = useUser();
 const themeStore = useTheme();
 
-const watermarkText = [
-  `@ID:${userStore.id} ${userStore.nickname}(${userStore.username})`,
-  timestamp(),
-];
-// const water = reactive({
-//   text: '',
-// });
-// water.text = `@ID:${userStore.id} ${userStore.nickname}(${userStore.username})`;
+const watermark = {
+  open: userStore.configs.watermark.open == 1,
+  text: `@ID:${userStore.id} ${userStore.nickname}(${userStore.username})`,
+};
 </script>
 
 <style lang="less">

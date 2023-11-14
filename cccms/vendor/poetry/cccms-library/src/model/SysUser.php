@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace cccms\model;
 
 use cccms\Model;
+use cccms\services\ConfigService;
 use cccms\services\UserService;
 use cccms\extend\{ArrExtend, JwtExtend};
 use think\model\relation\HasOne;
@@ -76,6 +77,17 @@ class SysUser extends Model
         $data['login_expire'] = time() + config('session.expire', 86400);
         $this->data($data, true);
         return JwtExtend::getToken($data);
+    }
+
+    /**
+     * 获取配置项
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function getConfigsAttr($value, $data): array
+    {
+        return ConfigService::instance()->getConfig();
     }
 
     /**

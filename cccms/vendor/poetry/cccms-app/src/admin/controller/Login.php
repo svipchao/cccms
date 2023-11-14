@@ -47,7 +47,7 @@ class Login extends Base
             _result(['code' => 401, 'msg' => '账号或密码错误'], _getEnCode());
         } else {
             // 这个append的顺序不能变 accessToken->nodes->menus
-            $userInfo = $userInfo->append(['accessToken', 'nodes', 'menus'])->toArray();
+            $userInfo = $userInfo->append(['accessToken', 'nodes', 'menus', 'configs'])->toArray();
             $userInfo['home_url'] = 'admin/index/index';
             _result(['code' => 200, 'msg' => '登录成功', 'data' => $userInfo], _getEnCode());
         }
@@ -66,7 +66,7 @@ class Login extends Base
             ->field('id,nickname,username')
             ->where('status', 1)
             ->findOrEmpty(UserService::instance()->getUserInfo('id'))
-            ->append(['accessToken', 'nodes', 'menus'])
+            ->append(['accessToken', 'nodes', 'menus', 'configs'])
             ->toArray();
         _result(['code' => 200, 'msg' => '缓存清除成功', 'data' => $userInfo], _getEnCode());
     }

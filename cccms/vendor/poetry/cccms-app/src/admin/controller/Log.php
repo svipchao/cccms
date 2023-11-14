@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use app\admin\model\SysLog;
 use cccms\Base;
+use cccms\model\SysLog;
 use cccms\services\AuthService;
 
 /**
@@ -44,14 +44,14 @@ class Log extends Base
      */
     public function index()
     {
-        $params = _validate('get', ['sys_log', '', [
+        $params = _validate('get.sys_log', [
             'page' => 1,
             'limit' => 15,
-            'user' => '',
-        ]]);
+            'user' => null,
+        ]);
         $data = $this->model->with(['user'])->_withSearch('user', [
             'user' => $params['user']
-        ])->order('log.id desc')->_page($params);
+        ])->order('id desc')->_page($params);
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_log'),
             'total' => $data['total'],

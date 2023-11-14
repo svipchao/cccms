@@ -128,26 +128,26 @@
 </template>
 
 <script setup>
-import config from "@/config";
-import router from "@/router";
-import { onMounted, reactive, ref } from "vue";
-import { Message } from "@arco-design/web-vue";
-import { login, getCaptcha } from "@/api/admin/login.js";
-import { useUser } from "@/store/admin/user.js";
+import config from '@/config';
+import router from '@/router';
+import { onMounted, reactive, ref } from 'vue';
+import { Message } from '@arco-design/web-vue';
+import { login, getCaptcha } from '@/api/admin/login.js';
+import { useUser } from '@/store/admin/user.js';
 
 const { setUserInfo } = useUser();
 
 const userinfo = reactive({
-  username: "admin",
-  password: "admin",
-  captcha: "",
-  captchaToken: "",
+  username: '',
+  password: '',
+  captcha: '',
+  captchaToken: '',
 });
 
 const isOpenCaptcha = ref(true);
 
 const captcha = ref(
-  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
 );
 
 onMounted(() => {
@@ -166,7 +166,7 @@ const doLogin = () => {
     if (res.code == 200) {
       setUserInfo(res.data);
     } else {
-      Message.error("验证码错误");
+      Message.error('验证码错误');
       getCaptchaFun();
     }
   });
@@ -183,7 +183,7 @@ const doLogin = () => {
   background-size: 100%;
   background-position: center 100px;
   background-repeat: no-repeat;
-  background-image: url("@/assets/login/bg.svg");
+  background-image: url('@/assets/login/bg.svg');
   .login-body {
     width: 920px;
     height: 460px;

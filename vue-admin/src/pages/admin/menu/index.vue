@@ -1,10 +1,19 @@
 <template>
   <a-card>
-    <types
-      v-model:type_id="table.form.parent_id"
-      :types="table.cates"
-      @reload="getDatas"
-    />
+    <a-tabs
+      :active-key="table.form.parent_id"
+      @change="switchMenu"
+      hide-content
+      editable
+      show-add-button
+      style="padding-bottom: 10px"
+    >
+      <a-tab-pane
+        v-for="(cate, index) in table.cates"
+        :key="cate.id"
+        :title="cate.name"
+      />
+    </a-tabs>
     <Table
       hideCardBorder
       :fields="table.fields"
@@ -60,7 +69,7 @@
           content="确定要删除吗？"
           type="warning"
           position="left"
-          @click="delMenu(record)"
+          @ok="delMenu(record)"
         >
           <a-button type="text" size="mini" v-permission="'admin/menu/delete'">
             <template #icon>
@@ -94,7 +103,6 @@ import {
 } from '@/api/admin/menu';
 import Popconfirm from '@/components/popconfirm/index.vue';
 import Table from '@/components/table/index.vue';
-import Types from '@/components/types/index.vue';
 import MenuEdit from './menu-edit.vue';
 
 onMounted(() => {
@@ -104,7 +112,7 @@ onMounted(() => {
 // 数据
 const table = reactive({
   form: {
-    parent_id: 0,
+    parent_id: 1,
   },
   cates: [], // 类别
   datas: [], // 表数据
@@ -192,6 +200,7 @@ const delMenu = (row) => {
     getDatas();
   });
 };
+
 const handleChange = (data) => {
   let sortData = [];
   let sortIndex = data.length;
@@ -208,7 +217,13 @@ const handleChange = (data) => {
   });
   table.datas = data;
 };
+
+const switchMenu = (key) => {
+  table.form.parent_id = key;
+  getDatas();
+};
 </script>
+
 <style scoped>
 .arco-typography {
   margin-bottom: 0;

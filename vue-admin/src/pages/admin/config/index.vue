@@ -1,10 +1,19 @@
 <template>
   <a-card>
-    <types
-      v-model:type_id="configInfo.type_id"
-      :types="configInfo.types"
-      @reload="getConfigs"
-    />
+    <a-tabs
+      default-active-key="site"
+      @change="switchConfigCate"
+      hide-content
+      editable
+      show-add-button
+      style="padding-bottom: 10px"
+    >
+      <a-tab-pane
+        v-for="(cate, index) in configInfo.cates"
+        :key="cate.config_name"
+        :title="cate.config_desc"
+      />
+    </a-tabs>
     <a-row justify="center" :style="{ padding: '20px 0 30px 0' }">
       <a-col :xs="24" :sm="24" :md="14" :lg="12" :xl="10" :xxl="8">
         <dynamic-form
@@ -34,14 +43,17 @@ import { configQuery, configDelete, configUpdate } from '@/api/admin/config';
 import Types from '@/components/types/index.vue';
 import DynamicForm from '@/components/form/dynamic-form.vue';
 import ConfigEdit from './config-edit.vue';
+import { useUser } from '@/store/admin/user.js';
+
+const userStore = useUser();
 
 onMounted(() => {
   getConfigs();
 });
 
 const configInfo = reactive({
-  type_id: 0,
-  types: [],
+  config_name: 'site',
+  cates: [],
   datas: [],
 });
 
@@ -53,9 +65,9 @@ const currentData = ref();
 
 const getConfigs = async () => {
   const {
-    data: { data, types },
-  } = await configQuery({ type_id: configInfo.type_id });
-  configInfo.types = types;
+    data: { data, cates },
+  } = await configQuery({ config_name: configInfo.config_name });
+  configInfo.cates = cates;
   configInfo.datas = data;
   // 重新渲染子组件
   dynamicFormKey.value++;
@@ -67,11 +79,17 @@ const dynamicFormKey = ref(1);
 const updateConfig = () => {
   configUpdate(dynamicFormRef.value.getDynamicDatas()).then((res) => {
     Message.success('修改成功');
+    userStore.setAccessToken();
   });
 };
 
 const createConfig = (row) => {
   Message.success('待完善');
+};
+
+const switchConfigCate = (key) => {
+  configInfo.config_name = key;
+  getConfigs();
 };
 /**
 type

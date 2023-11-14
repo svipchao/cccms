@@ -36,7 +36,8 @@ class LogService extends Service
             'node' => $node['currentNode'],
             'req_ip' => $this->app->request->ip(),
             'req_method' => $method,
-            'req_param' => json_encode($request_param, JSON_UNESCAPED_UNICODE),
+            'req_params' => json_encode($request_param, JSON_UNESCAPED_UNICODE),
+            'req_result' => json_encode([], JSON_UNESCAPED_UNICODE),
             'req_ua' => $this->app->request->server('HTTP_USER_AGENT'),
         ];
         return SysLog::mk()->save($data);
