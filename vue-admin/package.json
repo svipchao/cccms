@@ -9,18 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arco-design/web-vue": "^2.53.0",
-    "axios": "^1.6.0",
+    "@arco-design/web-vue": "^2.53.2",
+    "axios": "^1.6.2",
     "less": "^4.2.0",
     "lodash": "^4.17.21",
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "3.2.0",
     "remixicon": "^3.5.0",
-    "vue": "^3.3.7",
+    "vue": "^3.3.8",
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^4.4.0",
+    "@vitejs/plugin-vue": "^4.4.1",
     "vite": "^4.5.0"
   }
 }
