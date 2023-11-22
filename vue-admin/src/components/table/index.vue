@@ -20,7 +20,7 @@
       default-expand-all-rows
       :loading="loading"
       :pagination="page"
-      :scroll="{ minWidth: 320 }"
+      :scroll="{ minWidth: 320, maxHeight: 'calc(100vh - 220px)' }"
       @page-change="handlePageChange"
       @page-size-change="handleSizeChange"
       v-bind="$attrs"
@@ -41,10 +41,10 @@ import {
   ref,
   nextTick,
   getCurrentInstance,
-} from "vue";
-import Header from "./header.vue";
+} from 'vue';
+import Header from './header.vue';
 const attrs = useAttrs();
-const emits = defineEmits(["reload", "update:pagination"]);
+const emits = defineEmits(['reload', 'update:pagination']);
 
 const props = defineProps({
   hideCardBorder: false,
@@ -108,20 +108,20 @@ watch(
 const handlePageChange = (current) => {
   props.pagination.page = current;
   props.pagination.current = current;
-  emits("update:pagination", props.pagination);
-  emits("reload");
+  emits('update:pagination', props.pagination);
+  emits('reload');
 };
 
 // 数据条数改变时触发
 const handleSizeChange = (pageSize) => {
   props.pagination.limit = pageSize;
   props.pagination.pageSize = pageSize;
-  emits("update:pagination", props.pagination);
-  emits("reload");
+  emits('update:pagination', props.pagination);
+  emits('reload');
 };
 
 const reloadData = () => {
-  emits("reload");
+  emits('reload');
 };
 </script>
 

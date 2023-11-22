@@ -21,6 +21,14 @@
         @change="changeStatusFun(record)"
       />
     </template>
+    <template #userId="{ record }">
+      <a-switch
+        v-model:model-value="record.status"
+        :checked-value="1"
+        :unchecked-value="0"
+        @change="changeStatusFun(record)"
+      />
+    </template>
     <template #operation="{ record }">
       <a-button
         type="text"
@@ -52,14 +60,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from "vue";
-import { Message } from "@arco-design/web-vue";
-import Header from "@/components/table/header.vue";
-import Table from "@/components/table/index.vue";
-import Popconfirm from "@/components/popconfirm/index.vue";
-import { userQuery, userUpdate, userDelete } from "@/api/admin/user.js";
-import { useFormEdit } from "@/hooks/form.js";
-import { detectDeviceType } from "@/utils/browser.js";
+import { ref, reactive, onMounted, watch } from 'vue';
+import { Message } from '@arco-design/web-vue';
+import Header from '@/components/table/header.vue';
+import Table from '@/components/table/index.vue';
+import Popconfirm from '@/components/popconfirm/index.vue';
+import { userQuery, userUpdate, userDelete } from '@/api/admin/user.js';
+import { useFormEdit } from '@/hooks/form.js';
+import { detectDeviceType } from '@/utils/browser.js';
 
 onMounted(() => {
   getDatas();
@@ -93,7 +101,7 @@ const getDatas = async () => {
 // 切换状态
 const changeStatusFun = (record) => {
   userUpdate({ id: record.id, status: record.status }).then((res) => {
-    Message.success("更新成功");
+    Message.success('更新成功');
   });
 };
 
@@ -105,7 +113,7 @@ const editData = (row) => {
 
 const delData = (row) => {
   userDelete(row).then((res) => {
-    Message.success("删除成功");
+    Message.success('删除成功');
     getDatas();
   });
 };
@@ -123,59 +131,59 @@ const table = reactive({
   },
   datas: [],
   fields: [],
-  ignoreFields: ["operation"],
+  ignoreFields: ['operation'],
   columns: [
-    { dataIndex: "id", title: "ID", width: 60 },
+    { dataIndex: 'id', title: 'ID', width: 60 },
     {
-      dataIndex: "nickname",
-      title: "用户昵称",
+      dataIndex: 'nickname',
+      title: '用户昵称',
       width: 130,
       ellipsis: true,
       tooltip: true,
       filterable: {
-        slotName: "nicknameFilter",
+        slotName: 'nicknameFilter',
       },
     },
     {
-      dataIndex: "username",
-      title: "用户账号",
+      dataIndex: 'username',
+      title: '用户账号',
       width: 130,
       ellipsis: true,
       tooltip: true,
       filterable: {
-        slotName: "usernameFilter",
+        slotName: 'usernameFilter',
       },
     },
     {
-      dataIndex: "user_id",
-      title: "邀请人",
+      dataIndex: 'user_id',
+      title: '邀请人',
       width: 130,
       ellipsis: true,
       tooltip: true,
-      slotName: "userId",
+      slotName: 'userId',
     },
-    { dataIndex: "status", title: "状态", width: 80, slotName: "status" },
+    { dataIndex: 'status', title: '状态', width: 80, slotName: 'status' },
     {
-      dataIndex: "create_time",
-      title: "创建时间",
+      dataIndex: 'create_time',
+      title: '创建时间',
       width: 180,
       ellipsis: true,
       tooltip: true,
     },
     {
-      dataIndex: "update_time",
-      title: "更新时间",
+      dataIndex: 'update_time',
+      title: '更新时间',
       width: 180,
       ellipsis: true,
       tooltip: true,
     },
     {
-      dataIndex: "operation",
-      title: "操作",
+      dataIndex: 'operation',
+      title: '操作',
       width: 80,
-      align: "center",
-      fixed: "right",
-      slotName: "operation",
+      align: 'center',
+      fixed: 'right',
+      slotName: 'operation',
     },
   ],
 });

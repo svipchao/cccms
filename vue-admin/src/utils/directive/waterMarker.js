@@ -11,18 +11,21 @@ function addWaterMarker(parentNode, options) {
     options.text = options.text;
     options.imageSrc = '';
   }
-  // 水印文字，父元素，字体，文字颜色
   new WaterMark(parentNode, options);
 }
+
 const waterMarker = {
   mounted: function (el, binding) {
     addWaterMarker(el, binding.value);
   },
 };
-/*
+
+/**
  * 水印
  * 说明: 可以添加图片水印和文字水印
  * 当水印容器大小发生变化时需要调用refresh方法重新填充水印
+ * @param {*} node 
+ * @param {*} options 
  */
 function WaterMark(node, options) {
   if (!options) {
@@ -32,6 +35,7 @@ function WaterMark(node, options) {
   this._fillContent();
   this._bindEvent(node);
 }
+
 WaterMark.prototype = {
   /* 初始化 */
   _init: function (node, options) {
@@ -186,5 +190,5 @@ WaterMark.prototype = {
     this.markContainer.style.display = 'none';
   },
 };
-// 水印
+
 export default waterMarker;

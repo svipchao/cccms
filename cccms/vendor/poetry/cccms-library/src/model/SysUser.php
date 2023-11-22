@@ -4,15 +4,22 @@ declare(strict_types=1);
 namespace cccms\model;
 
 use cccms\Model;
-use cccms\services\ConfigService;
-use cccms\services\UserService;
 use cccms\extend\{ArrExtend, JwtExtend};
+use cccms\services\{UserService, ConfigService};
 use think\model\relation\HasOne;
 
 class SysUser extends Model
 {
     /**
      * 用户详细信息
+     */
+    public function info(): HasOne
+    {
+        return $this->hasOne(SysUserInfo::class, 'user_id', 'id');
+    }
+
+    /**
+     * 邀请信息
      */
     public function info(): HasOne
     {

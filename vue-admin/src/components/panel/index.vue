@@ -60,6 +60,7 @@ const switchSiderFun = () => {
   display: flex;
   height: 100%;
   overflow: hidden;
+  box-shadow: 0 2px 5px 0 var(--color-border);
   .cc-panel-left {
     flex: 0 0 300px;
     padding: 10px;
