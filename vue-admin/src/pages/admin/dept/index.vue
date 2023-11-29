@@ -91,7 +91,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { Message } from '@arco-design/web-vue';
-import Header from '@/components/table/header.vue';
 import Table from '@/components/table/index.vue';
 import Popconfirm from '@/components/popconfirm/index.vue';
 import DeptInfo from './components/info.vue';
