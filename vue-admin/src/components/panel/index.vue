@@ -4,7 +4,7 @@
       class="cc-panel-left"
       :style="{
         width: data.size,
-        flex: '0 0 ' + data.size,
+        flex: '0 0 calc(' + data.size + ' - 20px)',
         marginLeft: show ? '0px' : '-' + data.size,
       }"
     >
@@ -17,8 +17,8 @@
         marginLeft: show ? 'calc(' + data.size + ' - 2px)' : '10px',
       }"
     >
-      <i class="ri-arrow-left-double-line" v-if="show"></i>
-      <i class="ri-arrow-right-double-line" v-else></i>
+      <i class="iconfont icon-left" v-if="show"></i>
+      <i class="iconfont icon-right" v-else></i>
     </div>
     <div
       class="cc-panel-right"
@@ -91,6 +91,7 @@ const switchSiderFun = () => {
       border-radius: 10px;
       margin: 10px 0 0 -10px;
       border: 1px solid var(--color-border);
+      padding-top: 2px;
     }
   }
   .cc-panel-right {
