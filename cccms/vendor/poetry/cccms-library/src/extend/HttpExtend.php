@@ -51,7 +51,7 @@ class HttpExtend
         [$line, $boundary] = [[], StrExtend::random(18)];
         foreach ($data as $key => $value) {
             $line[] = '--' . $boundary;
-            $line[] = 'Content-Disposition: form-data; name="' . $key . '}"';
+            $line[] = 'Content-Disposition: form-data; name="' . $key . '"';
             $line[] = '';
             $line[] = $value;
         }

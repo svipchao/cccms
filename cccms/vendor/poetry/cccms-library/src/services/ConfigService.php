@@ -3,10 +3,9 @@ declare(strict_types=1);
 
 namespace cccms\services;
 
-use cccms\model\SysConfigCate;
 use think\Request;
 use cccms\Service;
-use cccms\model\SysConfig;
+use cccms\model\{SysConfig, SysConfigCate};
 
 class ConfigService extends Service
 {
@@ -52,6 +51,6 @@ class ConfigService extends Service
 
     public function getConfigCate()
     {
-        return SysConfigCate::mk()->_list();
+        return SysConfigCate::mk()->cache('SysConfigCate')->_list();
     }
 }

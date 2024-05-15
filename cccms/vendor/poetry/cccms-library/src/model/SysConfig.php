@@ -7,6 +7,10 @@ use cccms\Model;
 
 class SysConfig extends Model
 {
+    protected $json = ['configure'];
+
+    protected $jsonAssoc = true;
+
     public function searchConfigNameAttr($query, $value)
     {
         $query->where('config_name', '=', $value);

@@ -110,7 +110,7 @@ class StrExtend
     }
 
     /**
-     * 数据解密处理
+     * 数据加密处理
      * @param mixed $data 加密数据
      * @param string $sKey 安全密钥
      * @return string
@@ -123,7 +123,7 @@ class StrExtend
     }
 
     /**
-     * 数据加密处理
+     * 数据解密处理
      * @param string $data 解密数据
      * @param string $sKey 安全密钥
      * @return mixed

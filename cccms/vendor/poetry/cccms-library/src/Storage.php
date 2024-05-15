@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace cccms;
 
+use think\{App, Container, Validate};
 use cccms\model\SysFile;
-use think\{App, Container};
+use cccms\model\SysFileCate;
+use cccms\services\ConfigService;
 
 /**
  * 文件存储
@@ -42,7 +44,7 @@ abstract class Storage
     {
         if (is_null($class)) {
             $type = ucfirst(strtolower($name ?: 'local'));
-            $class = 'cccms\\storages\\' . $class . 'Storage';
+            $class = 'cccms\\storages\\' . $type . 'Storage';
         }
         if (class_exists($class)) {
             return Container::getInstance()->make($class);
@@ -53,14 +55,12 @@ abstract class Storage
 
     /**
      * 获取类别别名
-     * @param int $type_id 类别ID
+     * @param int $cate_id 类别ID
      * @return string
      */
-    public function getTypePath(int $type_id = 0): string
+    public function getCatePath(int $cate_id = 0): string
     {
-        if (empty($type_id)) return '';
-        $types = TypesService::instance()->getTypes(4, 'id');
-        return isset($types[$type_id]) ? $types[$type_id]['alias'] : '';
+        return SysFileCate::mk()->where('id', $cate_id)->value('name') ?: 'default';
     }
 
     /**
@@ -88,10 +88,14 @@ abstract class Storage
         if ($file->status === 0) {
             _result(['code' => 403, 'msg' => '禁止访问附件'], _getEnCode());
         }
+        $pass = $this->app->request->param('pass', '');
+        if ($pass !== $file->extract_code) {
+            _result(['code' => 403, 'msg' => '提取码错误'], _getEnCode());
+        }
         // 获取磁盘类型
-        $diskPath = _getConfig('storage.diskType', 'local');
+        $diskPath = ConfigService::instance()->getConfig('storage.diskType', 'local');
         if ($diskPath === 'local') $diskPath = $this->getLocalPath();
-        $diskPath = str_replace(['\\', '//'], ['/', '/'], $diskPath . $this->getTypePath() . '/' . $file['file_url']);
+        $diskPath = str_replace(['\\', '//'], ['/', '/'], $diskPath . '/' . $file['file_url']);
         // 判断附件是否在磁盘中
         if (!$resFile = @readfile($diskPath)) {
             _result(['code' => 404, 'msg' => '无法访问附件'], _getEnCode());
@@ -112,20 +116,28 @@ abstract class Storage
         if (empty($files)) {
             _result(['code' => 404, 'msg' => '上传文件不存在'], _getEnCode());
         }
-        $storage = _getConfig('storage');
-        $rule = ['file' => 'fileSize:' . ($storage['uploadSize'] * 1024 * 1024) . '|fileExt:' . implode(',', $storage['uploadExt'])];
+        $storage = ConfigService::instance()->getConfig('storage');
+        $fileSize = $storage['uploadSize'] * 1024 * 1024;
+        $fileExt = implode(',', $storage['uploadExt']);
+        $rules = ['file' => 'fileSize:' . $fileSize . '|fileExt:' . $fileExt];
+        $validate = new Validate;
+        if (!$validate->rule($rules)->check(['file' => $files])) {
+            _result(['code' => 412, 'msg' => $validate->getError()], _getEnCode());
+        }
+        // $rule = ['file' => 'fileSize:' . $fileSize . '|fileExt:' . $fileExt];
+        // validate($rule)->check(['file' => $files]);
         $res = [];
         // 判断是否多文件上传
         if (is_array($files)) {
             // 多文件
             foreach ($files as $val) {
                 $this->safeFile($val);
-                $res[] = _validate(['file' => $val], '', $rule)['file'];
+                $res[] = $val;
             }
         } else {
             // 单文件
             $this->safeFile($files);
-            $res[] = _validate(['file' => $files], '', $rule)['file'];
+            $res[] = $files;
         }
         return $res;
     }

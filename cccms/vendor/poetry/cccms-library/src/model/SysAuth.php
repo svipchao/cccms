@@ -32,11 +32,4 @@ class SysAuth extends Pivot
     {
         return $this->hasOne(SysDept::class, 'id', 'dept_id');
     }
-
-    public function post(): HasOne
-    {
-        return $this->hasOne(SysPost::class, 'id', 'post_id')->bind([
-            'range'
-        ]);
-    }
 }

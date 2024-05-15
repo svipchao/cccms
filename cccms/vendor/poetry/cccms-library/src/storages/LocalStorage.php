@@ -34,21 +34,25 @@ class LocalStorage extends Storage
                     'file_size' => $val->getSize(),
                     'file_ext' => $val->getOriginalExtension(),
                     'file_mime' => $val->getOriginalMime(),
+                    'file_md5' => $val->md5(),
+                    'file_sha1' => $val->sha1(),
                 ];
             }
         } else {
             $user_id = UserService::instance()->getUserInfo('id');
-            $path = $this->getTypePath((int)$pathOrId);
+            $path = $this->getCatePath((int)$pathOrId);
             foreach ($res as $val) {
                 $file_url = str_replace('\\', '/', Filesystem::putFile($path, $val, 'date("Y-m-d")'));
                 $saveName[] = [
                     'user_id' => $user_id,
-                    'type_id' => $pathOrId,
+                    'cate_id' => $pathOrId,
                     'file_url' => $file_url,
                     'file_name' => $val->getoriginalName(),
                     'file_size' => $val->getSize(),
                     'file_ext' => $val->getOriginalExtension(),
                     'file_mime' => $val->getOriginalMime(),
+                    'file_md5' => $val->md5(),
+                    'file_sha1' => $val->sha1(),
                     'file_code' => md5(mt_rand($user_id, time()) . $val->hashName() . $val->getPathname()),
                 ];
             }
@@ -69,7 +73,7 @@ class LocalStorage extends Storage
             $filePath = $this->getLocalPath() . strtr($pathOrId, '..', '');
         } else {
             if (empty($pathOrId)) return false;
-            $fileInfo = $this->model->with('type')->auth()->findOrEmpty($pathOrId);
+            $fileInfo = $this->model->with('cate')->findOrEmpty($pathOrId);
             if (!$fileInfo->isEmpty()) {
                 $fileInfo->delete();
             }

@@ -6,13 +6,13 @@
   "authors": [
     {
       "name": "诗无尽头i",
-      "email": "admin@cccms.cc"
+      "email": "svipchao@qq.com"
     }
   ],
   "minimum-stability": "dev",
   "require": {
-    "php": ">=8.0.0",
-    "poetry/cccms-library": "dev-main"
+    "php": ">=7.4",
+    "poetry/cccms-library": "^1.0.0"
   },
   "autoload": {
     "psr-4": {

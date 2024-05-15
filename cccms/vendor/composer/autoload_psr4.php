@@ -8,7 +8,6 @@ $baseDir = dirname($vendorDir);
 return array(
     'think\\view\\driver\\' => array($vendorDir . '/topthink/think-view/src'),
     'think\\trace\\' => array($vendorDir . '/topthink/think-trace/src'),
-    'think\\captcha\\' => array($vendorDir . '/topthink/think-captcha/src'),
     'think\\' => array($vendorDir . '/topthink/framework/src/think', $vendorDir . '/topthink/think-filesystem/src', $vendorDir . '/topthink/think-helper/src', $vendorDir . '/topthink/think-orm/src', $vendorDir . '/topthink/think-template/src'),
     'cccms\\' => array($vendorDir . '/poetry/cccms-library/src'),
     'app\\' => array($baseDir . '/app', $vendorDir . '/poetry/cccms-app/src'),

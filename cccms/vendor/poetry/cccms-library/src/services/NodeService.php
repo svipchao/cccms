@@ -12,7 +12,7 @@ use cccms\extend\{StrExtend, ArrExtend};
 class NodeService extends Service
 {
     /**
-     * 所有框架父级节点 应用节点、类节点、无需授权的节点
+     * 所有框架父级节点 应用节点、类节点
      * @return array
      */
     public function getFrameNodes(): array
@@ -21,7 +21,7 @@ class NodeService extends Service
         if (empty($data)) {
             $data = $this->getNodesInfo();
             foreach ($data as $key => $val) {
-                if (($val['auth'] ?? false) && isset($val['encode'], $val['methods'])) {
+                if (isset($val['encode'], $val['methods'])) {
                     unset($data[$key]);
                 }
             }
@@ -37,8 +37,7 @@ class NodeService extends Service
      */
     public function setFrameNodes(array $nodes): array
     {
-        $frameNodes = $this->getFrameNodes();
-        $nodes = array_merge($frameNodes, array_intersect_key($this->getNodesInfo(), array_flip($nodes)));
+        $nodes = array_merge($this->getFrameNodes(), array_intersect_key($this->getNodesInfo(), array_flip($nodes)));
         $tree = ArrExtend::toTreeArray($nodes, 'currentNode', 'parentNode');
         $call = function (callable $call, array $tree = [], array &$data = []) {
             foreach ($tree as $val) {
@@ -53,7 +52,15 @@ class NodeService extends Service
             }
             return $data;
         };
-        return $call($call, $tree);
+        $data = $call($call, $tree);
+        // 去除没有子节点的框架节点
+        $parentNodes = array_column($data, 'parentNode');
+        foreach ($data as $key => $val) {
+            if ($val['parentNode'] == '#' && !in_array($val['currentNode'], $parentNodes)) {
+                unset($data[$key]);
+            }
+        }
+        return $data;
     }
 
     /**
@@ -83,7 +90,22 @@ class NodeService extends Service
             foreach ($nodes as $node) {
                 if ($node['auth'] ?? false) $data[] = $node['currentNode'];
             }
+            $data = $this->setFrameNodes($data);
             $this->app->cache->set('SysAuthNodes', $data);
+        }
+        return $data;
+    }
+
+    /**
+     * 获取所有授权的节点
+     * @return array
+     */
+    public function getAuthNodesTree(): array
+    {
+        $data = $this->app->cache->get('SysAuthNodesTree', []);
+        if (empty($data)) {
+            $data = ArrExtend::toTreeArray($this->getAuthNodes(), 'currentNode', 'parentNode');
+            $this->app->cache->set('SysAuthNodesTree', $data);
         }
         return $data;
     }
@@ -134,7 +156,7 @@ class NodeService extends Service
             $ignores = get_class_methods('\cccms\Base');
             foreach ($toScanFileArray as $val) {
                 if (!preg_match("/(\w+)[\/\\\\](\w+)[\/\\\\]controller[\/\\\\](.*)\.php/i", $val, $matches)) continue;
-                [,, $appName, $className] = $matches;
+                [, , $appName, $className] = $matches;
                 // 添加应用
                 $title = $appNames[$appName] ?? $appName;
                 $data[$appName] = ['title' => $title, 'sort' => 0, 'currentNode' => $appName, 'parentNode' => '#', 'parentTitle' => '#'];
@@ -162,7 +184,7 @@ class NodeService extends Service
                     // 忽略的方法 || 没有注释 跳出循环
                     if (in_array($metName = StrExtend::humpToUnderline($method->getName()), $ignores) || $method->getDocComment() === false) continue;
                     // 赋值类节点 方便处理Tree
-                    $comment = $this->parseComment($method->getDocComment(), $metName);
+                    $comment = $this->parseComment($method->getDocComment(), $metName, $method->getName());
                     $data[$prefix . '/' . $metName] = array_merge($comment, [
                         'currentNode' => $prefix . '/' . $metName,
                         'currentPath' => $title . '-' . ($data[$prefix]['title'] ?? '#') . '-' . $comment['title'],
@@ -172,6 +194,7 @@ class NodeService extends Service
                 }
             }
             $data = array_change_key_case($data);
+            $data = ArrExtend::toSort($data, 'sort');
             $this->app->cache->set('SysNodesInfo', $data);
         }
         return $data;
@@ -183,7 +206,7 @@ class NodeService extends Service
      * @param string $default 默认标题
      * @return array
      */
-    private function parseComment(string $comment, string $default = ''): array
+    private function parseComment(string $comment, string $defaultTitle = '', $node = ''): array
     {
         $text = strtolower(strtr($comment, "\n", ' '));
         $title = preg_replace('/^\/\*\s*\*\s*\*\s*(.*?)\s*\*.*?$/', '$1', $text);
@@ -195,9 +218,10 @@ class NodeService extends Service
         preg_match('/@methods.(\S+)/i', $text, $methods);
         // 请求返回编码 view|json|jsonp|xml
         // 请求类型详细解释请看 https://www.kancloud.cn/manual/thinkphp6_0/1037520
+        $letters = 'abcdefghijklmnopqrstuvwxyz';
         return [
             'title' => $title ?: $default,
-            'sort' => $sort[1] ?? 0,
+            'sort' => $sort[1] ?? strpos($letters, substr($node, 0, 1)),
             'auth' => (bool)intval(preg_match('/@auth\s*true/i', $text)),
             'login' => (bool)intval(preg_match('/@login\s*true/i', $text)),
             'encode' => isset($enCode[1]) ? explode('|', $enCode[1]) : [],

@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use cccms\model\SysConfig;
+use app\admin\model\SysConfig;
 use cccms\Base;
-use cccms\services\{AuthService, ConfigService, TypesService};
+use cccms\services\{AuthService, TypesService};
 
 /**
  * 配置管理
@@ -75,8 +75,8 @@ class Config extends Base
      */
     public function index()
     {
-        $data = $this->model->_withSearch('config_name', [
-            'config_name' => $this->request->get('config_name', 'site')
+        $data = $this->model->_withSearch('type_id', [
+            'type_id' => $this->request->get('type_id/d', 0)
         ])->_list(null, function ($data) {
             $data = $data->toArray();
             return array_map(function ($item) {
@@ -101,7 +101,7 @@ class Config extends Base
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_config'),
-            'cates' => ConfigService::instance()->getConfigCate(),
+            'types' => TypesService::instance()->getTypes(2),
             'data' => $data
         ]], _getEnCode());
     }

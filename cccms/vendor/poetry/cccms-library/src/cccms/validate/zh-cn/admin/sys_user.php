@@ -19,6 +19,12 @@ return [
     'password.alphaDash' => '%s 只能为字母和数字，下划线_及破折号-',
     'password.length' => '%s 长度至少 5 个字符或不超过 32 个字符',
 
+    'phone|手机号码' => 'mobile',
+    'phone.mobile' => '请输入有效的 %s',
+
+    'email|电子邮箱' => 'email',
+    'email.email' => '请输入有效的 %s',
+
     'status|状态' => 'require|in:0,1',
     'status.require' => '%s 不能为空',
     'status.in' => '请选择正确的 %s',

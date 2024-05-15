@@ -65,8 +65,12 @@ class Library extends Service
      */
     private function setConfig(): void
     {
-        $files = BaseService::instance()->scanDirArray($this->app->getRootPath() . 'vendor/poetry/cccms-library/src/cccms/config/*');
-        foreach ($files as $file) {
+        $rootPath = $this->app->getRootPath();
+        $toScanFileArray = array_merge(
+            BaseService::instance()->scanDirArray($rootPath . 'vendor/poetry/cccms-library/src/cccms/config/*'),
+            BaseService::instance()->scanDirArray($rootPath . 'cccms/config/*')
+        );
+        foreach ($toScanFileArray as $file) {
             $this->app->config->load($file, pathinfo($file, PATHINFO_FILENAME));
         }
     }

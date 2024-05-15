@@ -6,6 +6,7 @@ composer.lock
 Thumbs.db
 /.idea
 /.vscode
+/vendor
 /.settings
 /.buildpath
 /.project

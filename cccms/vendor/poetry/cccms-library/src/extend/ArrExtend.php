@@ -6,6 +6,26 @@ namespace cccms\extend;
 class ArrExtend
 {
     /**
+     * 递归合并多维数组
+     */
+    public static function recursionMergeArray($arr1, $arr2)
+    {
+        $merged = $arr1;
+        foreach ($arr2 as $key => &$value) {
+            if (is_array($value) && isset($merged[$key]) && is_array($merged[$key])) {
+                $merged[$key] = static::recursionMergeArray($merged[$key], $value);
+            } elseif (is_numeric($key)) {
+                if (!in_array($value, $merged)) {
+                    $merged[] = $value;
+                }
+            } else {
+                $merged[$key] = $value;
+            }
+        }
+        return $merged;
+    }
+
+    /**
      * 字符串转数组
      * @param string $text 待转内容
      * @param string $splitStr 分隔字符

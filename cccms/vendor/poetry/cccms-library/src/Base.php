@@ -44,7 +44,7 @@ abstract class Base extends stdClass
         // 控制器初始化
         $this->init();
 
-        // $this->app->cache->clear();
+         $this->app->cache->clear();
     }
 
     // 初始化

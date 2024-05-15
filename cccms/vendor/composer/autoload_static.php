@@ -4,12 +4,11 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit2e6b614f6c2ba57750cf4d85b3283653
+class ComposerStaticInitc2e7d7acb3e3918b0674a3d5789de5d8
 {
     public static $files = array (
         '9b552a3cc426e3287cc811caefa3cf53' => __DIR__ . '/..' . '/topthink/think-helper/src/helper.php',
         '35fab96057f1bf5e7aba31a8a6d5fdde' => __DIR__ . '/..' . '/topthink/think-orm/stubs/load_stubs.php',
-        '1cfd2761b63b0a29ed23657ea394cb2d' => __DIR__ . '/..' . '/topthink/think-captcha/src/helper.php',
         '8ad66601d60ec649695e95e48f9cc7da' => __DIR__ . '/..' . '/poetry/cccms-library/src/common.php',
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
@@ -20,7 +19,6 @@ class ComposerStaticInit2e6b614f6c2ba57750cf4d85b3283653
         array (
             'think\\view\\driver\\' => 18,
             'think\\trace\\' => 12,
-            'think\\captcha\\' => 14,
             'think\\' => 6,
         ),
         'c' => 
@@ -58,10 +56,6 @@ class ComposerStaticInit2e6b614f6c2ba57750cf4d85b3283653
         'think\\trace\\' => 
         array (
             0 => __DIR__ . '/..' . '/topthink/think-trace/src',
-        ),
-        'think\\captcha\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/topthink/think-captcha/src',
         ),
         'think\\' => 
         array (
@@ -125,10 +119,10 @@ class ComposerStaticInit2e6b614f6c2ba57750cf4d85b3283653
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit2e6b614f6c2ba57750cf4d85b3283653::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit2e6b614f6c2ba57750cf4d85b3283653::$prefixDirsPsr4;
-            $loader->fallbackDirsPsr0 = ComposerStaticInit2e6b614f6c2ba57750cf4d85b3283653::$fallbackDirsPsr0;
-            $loader->classMap = ComposerStaticInit2e6b614f6c2ba57750cf4d85b3283653::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitc2e7d7acb3e3918b0674a3d5789de5d8::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitc2e7d7acb3e3918b0674a3d5789de5d8::$prefixDirsPsr4;
+            $loader->fallbackDirsPsr0 = ComposerStaticInitc2e7d7acb3e3918b0674a3d5789de5d8::$fallbackDirsPsr0;
+            $loader->classMap = ComposerStaticInitc2e7d7acb3e3918b0674a3d5789de5d8::$classMap;
 
         }, null, ClassLoader::class);
     }

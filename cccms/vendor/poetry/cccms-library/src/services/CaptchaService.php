@@ -102,6 +102,8 @@ class CaptchaService extends Service
      */
     public function check(string $code, string $accessToken = ''): bool
     {
+        // 调试模式验证码=1234不需要验证
+        if (app()->isDebug() && $code == '1234') return true;
         // 没有启用验证码不需要验证
         if (!$this->open) return true;
         $accessToken = JwtExtend::verifyToken($accessToken);

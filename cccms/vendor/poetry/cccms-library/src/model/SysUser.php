@@ -5,25 +5,55 @@ namespace cccms\model;
 
 use cccms\Model;
 use cccms\extend\{ArrExtend, JwtExtend};
-use cccms\services\{UserService, ConfigService};
-use think\model\relation\HasOne;
+use cccms\services\{NodeService, UserService, ConfigService};
+use think\model\relation\{BelongsToMany, HasMany, HasOne, belongsTo};
 
 class SysUser extends Model
 {
-    /**
-     * 用户详细信息
-     */
-    public function info(): HasOne
+    // 写入后
+    public static function onAfterWrite($model)
     {
-        return $this->hasOne(SysUserInfo::class, 'user_id', 'id');
+        if (isset($model['role_ids']) && !empty($model['role_ids'])) {
+            if (is_string($model['role_ids'])) {
+                $model['role_ids'] = explode(',', $model['role_ids']);
+            }
+            // 删除组织关联权限节点表数据
+            $model->roles()->detach($model->roles()->column('id'));
+            $model->roles()->attach($model['role_ids']);
+        }
+        if (isset($model['dept_ids']) && !empty($model['dept_ids'])) {
+            if (is_string($model['dept_ids'])) {
+                $model['dept_ids'] = explode(',', $model['dept_ids']);
+            }
+            // 删除组织关联权限节点表数据
+            $model->depts()->detach($model->depts()->column('id'));
+            $model->depts()->attach($model['dept_ids']);
+        }
     }
 
     /**
      * 邀请信息
      */
-    public function info(): HasOne
+    public function invite(): HasOne
     {
-        return $this->hasOne(SysUserInfo::class, 'user_id', 'id');
+        return $this->HasOne(SysUser::class, 'id', 'invite_id')->bind([
+            'invite_nickname' => 'nickname'
+        ]);
+    }
+
+    public function auth(): HasMany
+    {
+        return $this->hasMany(SysAuth::class, 'user_id', 'id');
+    }
+
+    public function depts(): BelongsToMany
+    {
+        return $this->belongsToMany(SysDept::class, SysAuth::class, 'dept_id', 'user_id');
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(SysRole::class, SysAuth::class, 'role_id', 'user_id');
     }
 
     /**
@@ -34,10 +64,20 @@ class SysUser extends Model
     public function getUserMenus(array $userInfo = []): array
     {
         $menus = SysMenu::mk()->where('status', 1)->cache('86400')
-            ->column('id,parent_id,menu_id,name,node,icon,sort,url,status', 'id');
+            ->column('id,parent_id,menu_id,name,node,icon,layout_name,target,sort,url,status', 'id');
+        $authNodes = array_keys(NodeService::instance()->getAuthNodes());
         foreach ($menus as $mKey => &$mVal) {
-            if (isset($menus[$mVal['menu_id']]) && $mVal['menu_id'] !== 0) $menus[$mVal['menu_id']]['url'] = '#';
-            if (!empty($mVal['node']) && $mVal['node'] !== '#' && !in_array($mVal['node'], $userInfo['nodes'])) unset($menus[$mKey]);
+            if (isset($menus[$mVal['menu_id']]) && $mVal['menu_id'] !== 0) {
+                $menus[$mVal['menu_id']]['url'] = '#';
+            }
+            $mVal['auth'] = true;
+            if (!in_array($mVal['node'], $authNodes)) {
+                $mVal['auth'] = false;
+            } else {
+                if (!empty($mVal['node']) && $mVal['node'] !== '#' && !in_array($mVal['node'], $userInfo['nodes'])) {
+                    unset($menus[$mKey]);
+                }
+            }
         }
         $pMenuId = array_column($menus, 'menu_id');
         foreach ($menus as $k => $v) {
@@ -97,38 +137,41 @@ class SysUser extends Model
         return ConfigService::instance()->getConfig();
     }
 
-    /**
-     * 获取密码
-     * @return string
-     */
     public function getPassWordAttr(): string
     {
-        return '******';
+        return '';
+    }
+
+    public function getPhoneAttr($value): int
+    {
+        return (int)$value;
+    }
+
+    public function getTagsAttr($value): array
+    {
+        return $value ? explode(',', $value) : [];
+    }
+
+    public function setTagsAttr($value): string
+    {
+        if (is_string($value)) return $value;
+        return $value ? implode(',', $value) : '';
     }
 
     /**
      * 设置密码
      * @param $value
      * @param $data
-     * @return string|SysUser
      */
-    public function setPassWordAttr($value, $data): string|SysUser
-    {
-        if (empty($value)) {
-            unset($data['password']);
-            return $this->data($data, true);
-        }
-        return md5($value);
-    }
-
-    /**
-     * 随机Token
-     * @return string
-     */
-    public function setTokenAttr(): string
-    {
-        return md5(mt_rand(0, time()) . time());
-    }
+    // public function setPassWordAttr($value, $data)
+    // {
+    //     if (empty($value)) {
+    //         unset($data['password']);
+    //         $this->data($data, true);
+    //     } else {
+    //         return md5($value);
+    //     }
+    // }
 
     /**
      * 设置账号状态
@@ -138,6 +181,7 @@ class SysUser extends Model
      */
     public function setStatusAttr($value, $data): mixed
     {
+        // 禁止管理员修改自己状态
         if ($data['id'] == 1) $value = 1;
         if ($data['id'] == UserService::instance()->getUserInfo('id')) {
             _result(['code' => 403, 'msg' => '不能冻结自己的账户'], _getEnCode());
@@ -148,6 +192,18 @@ class SysUser extends Model
     public function searchUserAttr($query, $value): void
     {
         $query->where('nickname|username', 'like', '%' . $value . '%');
+    }
+
+    public function searchTagAttr($query, $value): void
+    {
+        $query->when($value, function ($query) use ($value) {
+            $query->where('tags', 'like', '%' . $value . '%');
+        });
+    }
+
+    public function searchTypeAttr($query, $value): void
+    {
+        $query->where('type', '=', $value);
     }
 
     public function searchDeptIdAttr($query, $value): void

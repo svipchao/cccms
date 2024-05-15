@@ -3,5 +3,6 @@
   "tabWidth": 2,
   "useTabs": false,
   "singleQuote": true,
-  "htmlWhitespaceSensitivity": "ignore"
+  "htmlWhitespaceSensitivity": "ignore",
+  "endOfLine": "auto"
 }

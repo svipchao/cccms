@@ -5,8 +5,8 @@ namespace cccms\model;
 
 use cccms\Model;
 use cccms\extend\ArrExtend;
-use think\db\exception\DbException;
 use think\model\relation\HasMany;
+use think\db\exception\DbException;
 
 class SysRole extends Model
 {
@@ -17,7 +17,7 @@ class SysRole extends Model
             ['role_id', 'find in set', $data['id']]
         ])->column('id,role_ids');
         if ($value !== 0 && in_array($value, array_column($sonRes, 'id'))) {
-            _result(['code' => 202, 'msg' => '不能选择自己的子角色'], _getEnCode());
+            _result(['code' => 403, 'msg' => '不能选择自己的子角色'], _getEnCode());
         }
         // 记录path
         $parentPath = $value ? $this->where('id', $value)->value('role_ids') . ',' : '';
@@ -49,7 +49,7 @@ class SysRole extends Model
         parent::onBeforeDelete($model);
         $sonCount = $model->whereFindInSet('role_id', $model['id'])->count();
         if (!empty($sonCount)) {
-            _result(['code' => 202, 'msg' => '存在子级角色，禁止删除'], _getEnCode());
+            _result(['code' => 403, 'msg' => '存在子级角色，禁止删除'], _getEnCode());
         }
         // 删除所有关联权限数据
         $model->auth()->delete();
@@ -68,8 +68,37 @@ class SysRole extends Model
         ]);
     }
 
+    /**
+     * 获取角色状态开启列表
+     * @param $isTree
+     * @return array
+     */
+    public function getAllOpenRole($isTree = false): array
+    {
+        if ($isTree) {
+            // $data = cache('allRoleOpenTree');
+            // if (empty($data)) {
+            //     $data = $this->where('status', 1)->_list();
+            //     $data = ArrExtend::toTreeArray($data, 'id', 'role_id');
+            //     cache('allRoleOpenTree', $data);
+            // }
+            $data = $this->where('status', 1)->_list();
+            $data = ArrExtend::toTreeArray($data, 'id', 'role_id');
+        } else {
+            // $data = cache('allRoleOpenList');
+            // if (empty($data)) {
+            //     $data = $this->where('status', 1)->_list();
+            //     $data = ArrExtend::toTreeList($data, 'id', 'role_id');
+            //     cache('allRoleOpenList', $data);
+            // }
+            $data = $this->where('status', 1)->_list();
+            $data = ArrExtend::toTreeList($data, 'id', 'role_id');
+        }
+        return $data;
+    }
+
     public function getAllOpenRoleIds(): array
     {
-        return $this->where('status', 1)->cache('allRoleOpenId')->column('id');
+        return array_column($this->getAllOpenRole(), 'id');
     }
 }

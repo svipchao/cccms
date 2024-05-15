@@ -1,33 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use cccms\extend\StrExtend;
 use think\{Response, Validate};
-
-if (!function_exists('_getConfig')) {
-    /**
-     * 获取缓存
-     * @param string $name 配置参数名（支持多级配置.号分割）
-     * @param mixed|null $default 默认值
-     * @return mixed
-     */
-    function _getConfig(string $name = '', mixed $default = null): mixed
-    {
-        $configs = cache('SysConfigs');
-        if (empty($configs)) return $default;
-        if (empty($name)) return $configs;
-        $name = explode('.', $name);
-        // 按.拆分成多维数组进行判断
-        foreach ($name as $val) {
-            if (isset($configs[$val])) {
-                $configs = $configs[$val];
-            } else {
-                return $default;
-            }
-        }
-        return $configs;
-    }
-}
 
 if (!function_exists('_getEnCode')) {
     /**
@@ -52,7 +26,9 @@ if (!function_exists('_xss_safe')) {
     {
         // 将所有 onXxx= 中的字母 o 替换为符号 ο，注意它不是字母
         $rules = ['#<script.*?<\/script>#is' => '', '#(\s)on(\w+=\S)#i' => '$1οn$2'];
-        return preg_replace(array_keys($rules), array_values($rules), trim($text));
+        // trim 会去除\n
+        return preg_replace(array_keys($rules), array_values($rules), $text);
+        // return preg_replace(array_keys($rules), array_values($rules), trim($text));
     }
 }
 
@@ -81,6 +57,7 @@ if (!function_exists('_validate')) {
     function _validate(string $requestInfo = 'post', array|string $filterParams = null, array $rules = []): array
     {
         [$method, $tableName, $isTableFields] = array_pad(explode('.', $requestInfo), 3, '');
+
         [$params, $validateRule] = [[], []];
         if (!empty($filterParams)) {
             if (is_string($filterParams)) {
@@ -126,11 +103,21 @@ if (!function_exists('_validate')) {
                         $validateRule[$field]['rule'] = array_keys($rule);
                     }
                 }
+                $tableFields = \cccms\services\InitService::instance()->getTables($tableName);
+                foreach ($tableFields as $fieldKey => $fieldVal) {
+                    if (isset($requireParams[$fieldKey])) {
+                        $isTableFields && $requireParams[$fieldKey] = 0;
+                    } else {
+                        // 可选参数不设置默认值 如不传值则不获取
+                        $isTableFields && $optionalParams[$fieldKey] = 0;
+                    }
+                }
             }
             $params = array_merge($requireParams, $optionalParams);
         }
         if (is_string($method) && method_exists(request(), $method)) {
-            $params = request()->$method($params);
+            $params = array_intersect_key(request()->$method(), $params);
+            $params = array_merge($requireParams, $params);
         }
         if (empty($params)) {
             _result(['code' => 412, 'msg' => '需要验证的数据为空'], _getEnCode());

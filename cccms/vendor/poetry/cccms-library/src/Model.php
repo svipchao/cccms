@@ -73,11 +73,11 @@ abstract class Model extends \think\Model
      */
     public static function onBeforeWrite($model)
     {
-        $data = DataService::instance()->getUserData($model->name);
-        // 如果主键不存在 则不让更新 或 写入 没有写入权限
-        if (in_array($model->pk, $data['readOnly'])) return false;
-        $readOnly = array_diff_key($model->getData(), array_flip($data['readOnly']));
-        $model->data($readOnly, true);
+        // $data = DataService::instance()->getUserData($model->name);
+        // // 如果主键不存在 则不让更新 或 写入 没有写入权限
+        // if (in_array($model->pk, $data['readOnly'])) return false;
+        // $readOnly = array_diff_key($model->getData(), array_flip($data['readOnly']));
+        // $model->data($readOnly, true);
     }
 
     /**
@@ -95,9 +95,9 @@ abstract class Model extends \think\Model
      */
     public static function onBeforeDelete($model)
     {
-        $data = DataService::instance()->getUserData($model->name);
-        // 如果字段主键只读 数据禁止删除
-        if (in_array($model->pk, $data['readOnly'])) return false;
+        // $data = DataService::instance()->getUserData($model->name);
+        // // 如果字段主键只读 数据禁止删除
+        // if (in_array($model->pk, $data['readOnly'])) return false;
     }
 
     /**
@@ -130,13 +130,13 @@ abstract class Model extends \think\Model
         if (!empty($node) && $node['auth'] && !UserService::instance()->isAdmin()) {
             $fields = $query->getTableFields();
             // 数据权限
-            $this->commonDataAuth($query, $fields);
+            // $this->commonDataAuth($query, $fields);
             // 用户数据范围
             $this->commonUserAuth($query, $fields);
             // 部门数据范围
-            $this->commonDeptAuth($query, $fields);
+            // $this->commonDeptAuth($query, $fields);
             // 角色数据范围
-            $this->commonRoleAuth($query, $fields);
+            // $this->commonRoleAuth($query, $fields);
         }
     }
 

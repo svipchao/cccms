@@ -60,6 +60,12 @@ class Request implements ArrayAccess
     protected $rootDomain = '';
 
     /**
+     * 特殊域名根标识 用于识别com.cn org.cn 这种
+     * @var array
+     */
+    protected $domainSpecialSuffix = ['com', 'net', 'org', 'edu', 'gov', 'mil', 'co', 'info'];
+
+    /**
      * HTTPS代理标识
      * @var string
      */
@@ -377,9 +383,16 @@ class Request implements ArrayAccess
         $root = $this->rootDomain;
 
         if (!$root) {
-            $item  = explode('.', $this->host());
+            $item  = explode('.', $this->host(true));
             $count = count($item);
-            $root  = $count > 1 ? $item[$count - 2] . '.' . $item[$count - 1] : $item[0];
+            if ($count > 1) {
+                $root = $item[$count - 2] . '.' . $item[$count - 1];
+                if ($count > 2 && in_array($item[$count - 2], $this->domainSpecialSuffix)) {
+                    $root = $item[$count - 3] . '.' . $root;
+                }
+            } else {
+                $root  = $item[0];
+            }
         }
 
         return $root;
@@ -835,11 +848,11 @@ class Request implements ArrayAccess
      * 获取当前请求的参数
      * @access public
      * @param  string|array $name 变量名
-     * @param  mixed        $default 默认值
-     * @param  string|array $filter 过滤方法
+     * @param  mixed $default 默认值
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function param($name = '', $default = null, $filter = '')
+    public function param($name = '', $default = null, string|array|null $filter = '')
     {
         if (empty($this->mergeParam)) {
             $method = $this->method(true);
@@ -868,10 +881,10 @@ class Request implements ArrayAccess
      * 获取包含文件在内的请求参数
      * @access public
      * @param  string|array $name 变量名
-     * @param  string|array $filter 过滤方法
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function all(string|array $name = '', string|array $filter = '')
+    public function all(string|array $name = '', string|array|null $filter = '')
     {
         $data = array_merge($this->param(), $this->file() ?: []);
 
@@ -924,10 +937,10 @@ class Request implements ArrayAccess
      * @access public
      * @param  string|array|bool $name 变量名
      * @param  mixed        $default 默认值
-     * @param  string|array $filter 过滤方法
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function route(string|array|bool $name = '', $default = null, string|array $filter = '')
+    public function route(string|array|bool $name = '', $default = null, string|array|null $filter = '')
     {
         if (is_array($name)) {
             return $this->only($name, $this->route, $filter);
@@ -941,10 +954,10 @@ class Request implements ArrayAccess
      * @access public
      * @param  string|array|bool $name 变量名
      * @param  mixed        $default 默认值
-     * @param  string|array $filter 过滤方法
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function get(string|array|bool $name = '', $default = null, string|array $filter = '')
+    public function get(string|array|bool $name = '', $default = null, string|array|null $filter = '')
     {
         if (is_array($name)) {
             return $this->only($name, $this->get, $filter);
@@ -970,10 +983,10 @@ class Request implements ArrayAccess
      * @access public
      * @param  bool|string|array $name 变量名
      * @param  mixed        $default 默认值
-     * @param  string|array $filter 过滤方法
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function post(string|array|bool $name = '', $default = null, string|array $filter = '')
+    public function post(string|array|bool $name = '', $default = null, string|array|null $filter = '')
     {
         if (is_array($name)) {
             return $this->only($name, $this->post, $filter);
@@ -987,10 +1000,10 @@ class Request implements ArrayAccess
      * @access public
      * @param  string|array|bool $name 变量名
      * @param  mixed        $default 默认值
-     * @param  string|array $filter 过滤方法
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function put(string|array|bool $name = '', $default = null, string|array $filter = '')
+    public function put(string|array|bool $name = '', $default = null, string|array|null $filter = '')
     {
         if (is_array($name)) {
             return $this->only($name, $this->put, $filter);
@@ -1017,10 +1030,10 @@ class Request implements ArrayAccess
      * @access public
      * @param  mixed        $name 变量名
      * @param  mixed        $default 默认值
-     * @param  string|array $filter 过滤方法
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function delete(string|array|bool $name = '', $default = null, string|array $filter = '')
+    public function delete(string|array|bool $name = '', $default = null, string|array|null $filter = '')
     {
         return $this->put($name, $default, $filter);
     }
@@ -1030,10 +1043,10 @@ class Request implements ArrayAccess
      * @access public
      * @param  mixed        $name 变量名
      * @param  mixed        $default 默认值
-     * @param  string|array $filter 过滤方法
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function patch(string|array|bool $name = '', $default = null, string|array $filter = '')
+    public function patch(string|array|bool $name = '', $default = null, string|array|null $filter = '')
     {
         return $this->put($name, $default, $filter);
     }
@@ -1043,10 +1056,10 @@ class Request implements ArrayAccess
      * @access public
      * @param  string|array $name 数据名称
      * @param  mixed        $default 默认值
-     * @param  string|array $filter 过滤方法
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function request(string|array|bool $name = '', $default = null, string|array $filter = '')
+    public function request(string|array|bool $name = '', $default = null, string|array|null $filter = '')
     {
         if (is_array($name)) {
             return $this->only($name, $this->request, $filter);
@@ -1090,10 +1103,10 @@ class Request implements ArrayAccess
      * @access public
      * @param  mixed        $name 数据名称
      * @param  string       $default 默认值
-     * @param  string|array $filter 过滤方法
+     * @param  string|array|null $filter 过滤方法
      * @return mixed
      */
-    public function cookie(string $name = '', $default = null, $filter = '')
+    public function cookie(string $name = '', $default = null, string|array|null $filter = '')
     {
         if (!empty($name)) {
             $data = $this->getData($this->cookie, $name, $default);
@@ -1239,13 +1252,13 @@ class Request implements ArrayAccess
     /**
      * 获取变量 支持过滤和默认值
      * @access public
-     * @param  array        $data 数据源
+     * @param  array $data 数据源
      * @param  string|false $name 字段名
-     * @param  mixed        $default 默认值
-     * @param  string|array $filter 过滤函数
+     * @param  mixed $default 默认值
+     * @param  string|array|null $filter 过滤函数
      * @return mixed
      */
-    public function input(array $data = [], string|bool $name = '', $default = null, string|array $filter = '')
+    public function input(array $data = [], string|bool $name = '', $default = null, string|array|null $filter = '')
     {
         if (false === $name) {
             // 获取原始数据
@@ -1449,12 +1462,12 @@ class Request implements ArrayAccess
     /**
      * 获取指定的参数
      * @access public
-     * @param  array        $name 变量名
-     * @param  mixed        $data 数据或者变量类型
-     * @param  string|array $filter 过滤方法
+     * @param  array $name 变量名
+     * @param  mixed $data 数据或者变量类型
+     * @param  string|array|null $filter 过滤方法
      * @return array
      */
-    public function only(array $name, $data = 'param', $filter = ''): array
+    public function only(array $name, $data = 'param', string|array|null $filter = ''): array
     {
         $data = is_array($data) ? $data : $this->$data();
 
