@@ -12,8 +12,10 @@ class SysLog extends Model
 
     public function user(): HasOne
     {
-        return $this->hasOne(SysUser::class, 'id', 'user_id')
-            ->bind(['username', 'nickname']);
+        return $this->hasOne(SysUser::class, 'id', 'user_id')->bind([
+            'username',
+            'nickname'
+        ]);
     }
 
     public function searchUserAttr($query, $value)

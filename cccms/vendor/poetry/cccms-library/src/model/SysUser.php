@@ -150,18 +150,6 @@ class SysUser extends Model
         $query->where('nickname|username', 'like', '%' . $value . '%');
     }
 
-    public function searchTagAttr($query, $value): void
-    {
-        $query->when($value, function ($query) use ($value) {
-            $query->where('tags', 'like', '%' . $value . '%');
-        });
-    }
-
-    public function searchTypeAttr($query, $value): void
-    {
-        $query->where('type', '=', $value);
-    }
-
     public function searchDeptIdAttr($query, $value): void
     {
         $query->when($value, function ($query) use ($value) {

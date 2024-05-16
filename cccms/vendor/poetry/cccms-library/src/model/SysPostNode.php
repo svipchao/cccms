@@ -6,6 +6,6 @@ namespace cccms\model;
 
 use cccms\Model;
 
-class SysFileCate extends Model
+class SysDeptRole extends Model
 {
 }

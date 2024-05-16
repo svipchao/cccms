@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace cccms\model;
 
-use cccms\Model;
+use think\model\Pivot;
 
-class SysFileCate extends Model
+class SysDeptRole extends Pivot
 {
 }

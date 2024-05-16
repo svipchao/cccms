@@ -11,9 +11,9 @@ class SysConfig extends Model
 
     protected $jsonAssoc = true;
 
-    public function searchConfigNameAttr($query, $value)
+    public function searchCateNameAttr($query, $value)
     {
-        $query->where('config_name', '=', $value);
+        $query->where('cate_name', '=', $value);
     }
 
     public function getFileLinkAttr($value, $data): string
