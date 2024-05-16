@@ -18,8 +18,8 @@ CREATE TABLE `sys_user`
   COLLATE = utf8mb4_general_ci COMMENT = '用户表';
 INSERT INTO `sys_user` (`id`, `nickname`, `username`, `password`, `status`)
 VALUES (1, '超级管理员', 'admin', '21232f297a57a5a743894a0e4a801fc3', 1),
-       (2, '测试用户', 'admin888', '7fef6171469e80d32c0559f88b377245', 1),
-       (3, '用户测试数据3', 'admin3', '7fef6171469e80d32c0559f88b377245', 1);
+       (2, '测试用户1', 'admin888', '21232f297a57a5a743894a0e4a801fc3', 1),
+       (3, '测试用户2', 'admin999', '21232f297a57a5a743894a0e4a801fc3', 1);
 
 CREATE TABLE `sys_user_dept_post`
 (
@@ -62,16 +62,6 @@ CREATE TABLE `sys_dept_role`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '部门角色表';
 
-CREATE TABLE `sys_dept_post`
-(
-    `dept_id` int unsigned NOT NULL DEFAULT 0 COMMENT '部门ID',
-    `post_id` int unsigned NOT NULL DEFAULT 0 COMMENT '岗位ID',
-    INDEX `idx_post_id` (`post_id`) USING BTREE,
-    UNIQUE INDEX `uk_dept_post` (`dept_id`, `post_id`)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '部门岗位表';
-
 CREATE TABLE `sys_post`
 (
     `id`          int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -87,6 +77,15 @@ CREATE TABLE `sys_post`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '岗位表';
+
+CREATE TABLE `sys_post_node`
+(
+    `post_id` int unsigned NOT NULL DEFAULT 0 COMMENT '岗位ID',
+    `node`    varchar(255) NOT NULL DEFAULT '' COMMENT '权限节点',
+    UNIQUE INDEX `uk_post_node` (`post_id`, `node`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '岗位权限表';
 
 CREATE TABLE `sys_role`
 (

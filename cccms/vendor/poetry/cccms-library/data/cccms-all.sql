@@ -55,6 +55,15 @@ CREATE TABLE `sys_user_node`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '用户权限表';
 
+CREATE TABLE `sys_user_node_group`
+(
+    `user_id`  int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
+    `group_id` int unsigned NOT NULL DEFAULT 0 COMMENT '权限组ID',
+    UNIQUE INDEX `uk_user_node_group` (`user_id`, `group_id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '用户权限组表';
+
 CREATE TABLE `sys_dept`
 (
     `id`          int unsigned  NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -95,8 +104,9 @@ CREATE TABLE `sys_dept_post`
 
 CREATE TABLE `sys_dept_node`
 (
-    `dept_id` int unsigned NOT NULL DEFAULT 0 COMMENT '部门ID',
-    `node_id` int unsigned NOT NULL DEFAULT 0 COMMENT '权限ID',
+    `dept_id`  int unsigned NOT NULL DEFAULT 0 COMMENT '部门ID',
+    `node_id`  int unsigned NOT NULL DEFAULT 0 COMMENT '权限ID',
+    `is_group` tinyint      NOT NULL DEFAULT 1 COMMENT '是否权限组【0:否,1:是】',
     UNIQUE INDEX `uk_dept_node` (`dept_id`, `node_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
