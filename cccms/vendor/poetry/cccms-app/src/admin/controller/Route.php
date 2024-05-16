@@ -3,13 +3,13 @@ declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use app\admin\model\SysRoute;
 use cccms\Base;
-use cccms\services\{AuthService, TypesService};
+use cccms\model\SysRoute;
+use cccms\services\{AuthService, ConfigService};
 
 /**
  * 路由管理
- * @sort 999
+ * @sort 992
  */
 class Route extends Base
 {
@@ -27,7 +27,7 @@ class Route extends Base
      */
     public function create()
     {
-        $this->model->create(_validate('post', 'sys_route|type_id,alias,url,name|true'));
+        $this->model->create(_validate('post.sys_route.true', 'route_name'));
         _result(['code' => 200, 'msg' => '添加成功'], _getEnCode());
     }
 
@@ -53,7 +53,7 @@ class Route extends Base
      */
     public function update()
     {
-        $this->model->update(_validate('put', 'sys_route|id|true'));
+        $this->model->update(_validate('put.sys_route.true', 'id'));
         _result(['code' => 200, 'msg' => '更新成功'], _getEnCode());
     }
 
@@ -66,14 +66,13 @@ class Route extends Base
      */
     public function index()
     {
-        $data = $this->model->with('type')->_withSearch('type_id', [
-            'type_id' => $this->request->get('type_id/d', 0)
-        ])->_page($this->request->get(['page' => 1, 'limit' => 10]));
+        $data = $this->model->_withSearch('route_name', [
+            'route_name' => $this->request->get('route_name', 'default')
+        ])->_list();
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_route'),
-            'types' => TypesService::instance()->getTypes(3),
-            'total' => $data['total'],
-            'data' => $data['data']
+            'cates' => $this->model->getRouteCate(),
+            'data' => $data
         ]], _getEnCode());
     }
 }

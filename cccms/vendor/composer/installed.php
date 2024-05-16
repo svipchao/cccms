@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'topthink/think',
-        'pretty_version' => 'dev-main',
-        'version' => 'dev-main',
-        'reference' => '9366d73bf4dbf609bee2bd6c0ce50c75ae55a827',
+        'pretty_version' => '1.0.0+no-version-set',
+        'version' => '1.0.0.0',
+        'reference' => NULL,
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -110,9 +110,9 @@
             'dev_requirement' => false,
         ),
         'topthink/think' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
-            'reference' => '9366d73bf4dbf609bee2bd6c0ce50c75ae55a827',
+            'pretty_version' => '1.0.0+no-version-set',
+            'version' => '1.0.0.0',
+            'reference' => NULL,
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

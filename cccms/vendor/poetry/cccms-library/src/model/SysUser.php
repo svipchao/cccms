@@ -6,54 +6,18 @@ namespace cccms\model;
 use cccms\Model;
 use cccms\extend\{ArrExtend, JwtExtend};
 use cccms\services\{NodeService, UserService, ConfigService};
-use think\model\relation\{BelongsToMany, HasMany, HasOne, belongsTo};
+use think\model\relation\BelongsToMany;
 
 class SysUser extends Model
 {
     // 写入后
     public static function onAfterWrite($model)
     {
-        if (isset($model['role_ids']) && !empty($model['role_ids'])) {
-            if (is_string($model['role_ids'])) {
-                $model['role_ids'] = explode(',', $model['role_ids']);
-            }
-            // 删除组织关联权限节点表数据
-            $model->roles()->detach($model->roles()->column('id'));
-            $model->roles()->attach($model['role_ids']);
-        }
-        if (isset($model['dept_ids']) && !empty($model['dept_ids'])) {
-            if (is_string($model['dept_ids'])) {
-                $model['dept_ids'] = explode(',', $model['dept_ids']);
-            }
-            // 删除组织关联权限节点表数据
-            $model->depts()->detach($model->depts()->column('id'));
-            $model->depts()->attach($model['dept_ids']);
-        }
     }
 
-    /**
-     * 邀请信息
-     */
-    public function invite(): HasOne
+    public function deptRelation(): BelongsToMany
     {
-        return $this->HasOne(SysUser::class, 'id', 'invite_id')->bind([
-            'invite_nickname' => 'nickname'
-        ]);
-    }
-
-    public function auth(): HasMany
-    {
-        return $this->hasMany(SysAuth::class, 'user_id', 'id');
-    }
-
-    public function depts(): BelongsToMany
-    {
-        return $this->belongsToMany(SysDept::class, SysAuth::class, 'dept_id', 'user_id');
-    }
-
-    public function roles(): BelongsToMany
-    {
-        return $this->belongsToMany(SysRole::class, SysAuth::class, 'role_id', 'user_id');
+        return $this->belongsToMany(SysDept::class, SysUserDeptPost::class, 'dept_id', 'user_id');
     }
 
     /**
@@ -63,7 +27,9 @@ class SysUser extends Model
      */
     public function getUserMenus(array $userInfo = []): array
     {
-        $menus = SysMenu::mk()->where('status', 1)->cache('86400')
+        $menus = SysMenu::mk()
+            ->where('status', 1)
+            ->cache('86400')
             ->column('id,parent_id,menu_id,name,node,icon,layout_name,target,sort,url,status', 'id');
         $authNodes = array_keys(NodeService::instance()->getAuthNodes());
         foreach ($menus as $mKey => &$mVal) {
@@ -130,7 +96,7 @@ class SysUser extends Model
      * 获取配置项
      * @param $value
      * @param $data
-     * @return string
+     * @return array
      */
     public function getConfigsAttr($value, $data): array
     {
@@ -147,31 +113,21 @@ class SysUser extends Model
         return (int)$value;
     }
 
-    public function getTagsAttr($value): array
-    {
-        return $value ? explode(',', $value) : [];
-    }
-
-    public function setTagsAttr($value): string
-    {
-        if (is_string($value)) return $value;
-        return $value ? implode(',', $value) : '';
-    }
-
     /**
      * 设置密码
      * @param $value
      * @param $data
+     * @return string|void
      */
-    // public function setPassWordAttr($value, $data)
-    // {
-    //     if (empty($value)) {
-    //         unset($data['password']);
-    //         $this->data($data, true);
-    //     } else {
-    //         return md5($value);
-    //     }
-    // }
+    public function setPassWordAttr($value, $data)
+    {
+        if (empty($value)) {
+            unset($data['password']);
+            $this->data($data, true);
+        } else {
+            return md5($value);
+        }
+    }
 
     /**
      * 设置账号状态
@@ -184,7 +140,7 @@ class SysUser extends Model
         // 禁止管理员修改自己状态
         if ($data['id'] == 1) $value = 1;
         if ($data['id'] == UserService::instance()->getUserInfo('id')) {
-            _result(['code' => 403, 'msg' => '不能冻结自己的账户'], _getEnCode());
+            _result(['code' => 403, 'msg' => '不能禁用自己的账户'], _getEnCode());
         }
         return $value;
     }
@@ -210,7 +166,7 @@ class SysUser extends Model
     {
         $query->when($value, function ($query) use ($value) {
             $query->where('id', 'in', function ($query) use ($value) {
-                $query->table('sys_auth')->where('dept_id', '=', $value)->field('user_id');
+                $query->table('sys_user_dept_post')->where('dept_id', '=', $value)->field('user_id');
             });
         });
     }

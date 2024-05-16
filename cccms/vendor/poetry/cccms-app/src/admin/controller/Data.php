@@ -1,10 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use app\admin\model\SysData;
 use cccms\Base;
+use cccms\model\SysData;
 use cccms\services\{AuthService, InitService};
 
 /**
@@ -20,7 +21,7 @@ class Data extends Base
 
     /**
      * 添加权限
-     * @auth true
+     * @auth false
      * @login true
      * @encode json|jsonp|xml
      * @methods POST
@@ -33,7 +34,7 @@ class Data extends Base
 
     /**
      * 删除权限
-     * @auth true
+     * @auth false
      * @login true
      * @encode json|jsonp|xml
      * @methods DELETE
@@ -47,7 +48,7 @@ class Data extends Base
 
     /**
      * 修改权限
-     * @auth true
+     * @auth false
      * @login true
      * @encode json|jsonp|xml
      * @methods PUT
@@ -60,7 +61,7 @@ class Data extends Base
 
     /**
      * 查看权限
-     * @auth true
+     * @auth false
      * @login true
      * @encode json|jsonp|xml
      * @methods GET
@@ -88,7 +89,7 @@ class Data extends Base
             return $data;
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
-            'roles' => AuthService::instance()->getUserRoles(),
+            'roles' => [],
             'table' => $tableInfo,
             'data' => $data['data'],
             'total' => $data['total']

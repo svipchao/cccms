@@ -3,17 +3,16 @@ declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use app\admin\model\SysLog;
 use cccms\Base;
+use cccms\model\SysLog;
 use cccms\services\AuthService;
 
 /**
  * 日志管理
- * @sort 999
+ * @sort 990
  */
 class Log extends Base
 {
-
     public function init()
     {
         $this->model = SysLog::mk();
@@ -45,18 +44,14 @@ class Log extends Base
      */
     public function index()
     {
-        $params = _validate('get', ['sys_log', '', [
+        $params = _validate('get.sys_log', [
             'page' => 1,
             'limit' => 15,
-            'user' => '',
-            'req_method' => null,
-            'req_param' => null,
-        ]]);
-        $data = $this->model->with(['user'])->_withSearch('user,req_method,req_param', [
-            'user' => $params['user'],
-            'req_method' => $params['req_method'] ?: null,
-            'req_param' => $params['req_param'] ?: null,
-        ])->order('log.id desc')->_page($params);
+            'user' => null,
+        ]);
+        $data = $this->model->with(['user'])->_withSearch('user', [
+            'user' => $params['user']
+        ])->order('id desc')->_page($params);
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_log'),
             'total' => $data['total'],

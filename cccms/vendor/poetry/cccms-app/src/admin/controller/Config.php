@@ -3,13 +3,13 @@ declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use app\admin\model\SysConfig;
 use cccms\Base;
-use cccms\services\{AuthService, TypesService};
+use cccms\model\SysConfig;
+use cccms\services\{AuthService, ConfigService};
 
 /**
  * 配置管理
- * @sort 999
+ * @sort 994
  */
 class Config extends Base
 {
@@ -27,7 +27,7 @@ class Config extends Base
      */
     public function create()
     {
-        $this->model->create(_validate('post', 'sys_config|type_id,key,val|desc,false'));
+        $this->model->create(_validate('post.sys_config', 'type_id,key,val|desc'));
         _result(['code' => 200, 'msg' => '添加成功'], _getEnCode());
     }
 
@@ -75,12 +75,11 @@ class Config extends Base
      */
     public function index()
     {
-        $data = $this->model->_withSearch('type_id', [
-            'type_id' => $this->request->get('type_id/d', 0)
+        $data = $this->model->_withSearch('config_name', [
+            'config_name' => $this->request->get('config_name', 'site')
         ])->_list(null, function ($data) {
             $data = $data->toArray();
             return array_map(function ($item) {
-                $item['configure'] = json_decode($item['configure'], true);
                 if (empty($item['configure'])) {
                     return true;
                 } else {
@@ -101,7 +100,7 @@ class Config extends Base
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_config'),
-            'types' => TypesService::instance()->getTypes(2),
+            'cates' => ConfigService::instance()->getConfigCate(),
             'data' => $data
         ]], _getEnCode());
     }

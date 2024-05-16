@@ -3,13 +3,13 @@ declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use app\admin\model\SysFile;
 use cccms\{Base, Storage};
-use cccms\services\{AuthService, TypesService};
+use cccms\model\{SysFile, SysFileCate};
+use cccms\services\{AuthService, UploadService};
 
 /**
  * 附件管理
- * @sort 999
+ * @sort 991
  */
 class File extends Base
 {
@@ -27,15 +27,11 @@ class File extends Base
      */
     public function create()
     {
-        $file = $this->request->file('file');
-        if (empty($file)) {
-            _result(['code' => 403, 'msg' => '请选择文件'], _getEnCode());
-        }
-        $type_id = $this->request->post('type_id/d', 0);
+        $cate_id = $this->request->post('cate_id/d', 0);
         _result([
             'code' => 200,
             'msg' => '添加成功',
-            'data' => Storage::instance()->upload($file, $type_id)
+            'data' => UploadService::instance()->upload($cate_id)
         ], _getEnCode());
     }
 
@@ -61,12 +57,8 @@ class File extends Base
      */
     public function update()
     {
-        $this->model->update(_validate('put', ['sys_file', 'id', [
-            'file_name',
-            'file_desc',
-            'extract_code',
-            'status' => 1,
-        ]]));
+        $params = _validate('put.sys_file.false', 'id|file_name,file_desc,extract_code,status');
+        $this->model->update($params);
         _result(['code' => 200, 'msg' => '更新成功'], _getEnCode());
     }
 
@@ -79,19 +71,16 @@ class File extends Base
      */
     public function index()
     {
-        $params = _validate('get', ['sys_file', '', [
-            'page' => 1,
-            'limit' => 15,
-            'type_id' => 0,
-            'user' => ''
-        ]]);
-        $data = $this->model->with(['type', 'user'])->_withSearch('type_id,user', [
-            'type_id' => $params['type_id'],
-            'user' => $params['user']
+        $cates = SysFileCate::mk()->_list();
+        $cate_id = $this->request->get('cate_id/d', null);
+        $cate_id = $cate_id ?: ($cates[0]['id'] ?? 0);
+        $params = _validate('get.sys_file.true', 'page,limit|cate_id');
+        $data = $this->model->with(['cate', 'user'])->_withSearch('cate_id', [
+            'cate_id' => $params['cate_id'],
         ])->order('id desc')->_page($params);
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_file'),
-            'types' => TypesService::instance()->getTypes(4),
+            'cates' => $cates,
             'total' => $data['total'],
             'data' => $data['data']
         ]], _getEnCode());

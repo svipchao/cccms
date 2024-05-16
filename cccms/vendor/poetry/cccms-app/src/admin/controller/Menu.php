@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace app\admin\controller;
 
-use app\admin\model\SysMenu;
 use cccms\Base;
+use cccms\model\SysMenu;
 use cccms\extend\ArrExtend;
-use cccms\services\{AuthService, TypesService};
+use cccms\services\AuthService;
 
 /**
  * 菜单管理
- * @sort 999
+ * @sort 993
  */
 class Menu extends Base
 {
@@ -29,7 +29,7 @@ class Menu extends Base
      */
     public function create()
     {
-        $this->model->create(_validate('post', 'sys_menu|type_id,name,url|true'));
+        $this->model->create(_validate('post.sys_menu.true', 'parent_id,name,url'));
         _result(['code' => 200, 'msg' => '添加成功'], _getEnCode());
     }
 
@@ -55,25 +55,17 @@ class Menu extends Base
      */
     public function update()
     {
-        $this->model->update(_validate('put', 'sys_menu|id|true'));
-        _result(['code' => 200, 'msg' => '修改成功'], _getEnCode());
-    }
-
-    /**
-     * 菜单排序
-     * @auth true
-     * @login true
-     * @encode json|jsonp|xml
-     * @methods PUT
-     */
-    public function sortUpdate()
-    {
-        $data = $this->request->put('data');
-        foreach ($data as &$d) {
-            $d = ['id' => $d['id'], 'sort' => $d['sort']];
+        $params = _validate('put.sys_menu.true', 'id|type,data');
+        if (isset($params['type']) && $params['type'] == 'sort') {
+            $data = $this->request->put('data');
+            foreach ($data as &$d) {
+                $d = ['id' => $d['id'], 'sort' => $d['sort']];
+            }
+            $this->model->saveAll($data);
+        } else {
+            $this->model->update($params);
         }
-        $this->model->saveAll($data);
-        _result(['code' => 200, 'msg' => '修改排序成功'], _getEnCode());
+        _result(['code' => 200, 'msg' => '更新成功'], _getEnCode());
     }
 
     /**
@@ -85,12 +77,15 @@ class Menu extends Base
      */
     public function index()
     {
-        $data = $this->model->with('type')->_withSearch('type_id', [
-            'type_id' => $this->request->get('type_id/d', 0)
+        $cates = $this->model->where(['parent_id' => 0, 'menu_id' => 0])->_list();
+        $parent_id = $this->request->get('parent_id/d', null);
+        $parent_id = $parent_id ?: ($cates[0]['id'] ?? 0);
+        $data = $this->model->_withSearch('parent_id', [
+            'parent_id' => $parent_id
         ])->order('sort desc')->_list();
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_menu'),
-            'types' => TypesService::instance()->getTypes(1),
+            'cates' => $cates,
             'data' => ArrExtend::toTreeList($data, 'id', 'menu_id')
         ]], _getEnCode());
     }
