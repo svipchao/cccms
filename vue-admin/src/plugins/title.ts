@@ -4,14 +4,14 @@ useTitle(
   () => {
     const { path, meta } = router.currentRoute.value;
     if (meta.title) {
-      return `· ${meta.title}`;
+      return `${meta.title}`;
     }
     if (path === '/') {
-      return '· home';
+      return 'home';
     }
     return path.replaceAll('/', ' · ');
   },
   {
-    titleTemplate: `${import.meta.env.VITE_APP_TITLE} %s`,
+    titleTemplate: `%s - ${import.meta.env.VITE_APP_TITLE}`,
   },
 );
