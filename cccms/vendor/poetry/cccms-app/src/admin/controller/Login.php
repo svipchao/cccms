@@ -95,10 +95,13 @@ class Login extends Base
     public function refreshToken(): void
     {
         $this->app->cache->clear();
+        if (empty(UserService::instance()->getUserInfo('id', 0))) {
+            _result(['code' => 401, 'msg' => '登陆已过期 请重新登陆'], _getEnCode());
+        }
         $userInfo = SysUser::mk()->withoutGlobalScope()
             ->field('id,invite_id,nickname,username,avatar,phone,email,range')
             ->where('status', 1)
-            ->findOrEmpty(UserService::instance()->getUserInfo('id'))
+            ->findOrEmpty(UserService::instance()->getUserInfo('id', 0))
             ->append(['accessToken', 'nodes', 'menus', 'configs'])
             ->toArray();
         _result(['code' => 200, 'msg' => '缓存清除成功', 'data' => $userInfo], _getEnCode());

@@ -4,9 +4,7 @@ declare(strict_types=1);
 namespace app\admin\controller;
 
 use cccms\Base;
-use cccms\model\SysDept;
-use cccms\model\SysRole;
-use cccms\model\SysUser;
+use cccms\model\{SysUser, SysRole, SysDept};
 use cccms\services\{UserService, AuthService};
 
 /**
