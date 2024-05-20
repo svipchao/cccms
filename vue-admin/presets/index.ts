@@ -98,12 +98,12 @@ export default function () {
       dts: r('presets/types/type-router.d.ts'),
       extensions: ['.md', '.vue', '.tsx', '.jsx'],
       // modify routes before writing
-      async extendRoute(route) {
-        console.log('route', route);
-      },
-      async beforeWriteFiles(rootRoute) {
-        console.log('rootRoute', rootRoute);
-      },
+      // async extendRoute(route) {
+      //   console.log('route', route);
+      // },
+      // async beforeWriteFiles(rootRoute) {
+      //   console.log('rootRoute', rootRoute);
+      // },
     }),
     /**
      * 自动安装 vue 插件

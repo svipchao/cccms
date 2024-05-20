@@ -41,9 +41,7 @@ const fileRoutes = [
 
 // 重定向 BASE_URL
 fileRoutes.flat(Infinity).forEach((route) => {
-  console.log(route);
   route.path = safeResolve(route.path);
-  console.log(route);
 });
 
 // const myRoutes = [

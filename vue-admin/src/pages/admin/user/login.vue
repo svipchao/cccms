@@ -13,13 +13,13 @@
           class="login-banner"
         >
           <a-carousel-item>
-            <img src="@/assets/login/banner-1.png" />
+            <img :src="safeResolve('/assets/login/banner-1.png')" />
           </a-carousel-item>
           <a-carousel-item>
-            <img src="@/assets/login/banner-2.png" />
+            <img :src="safeResolve('/assets/login/banner-2.png')" />
           </a-carousel-item>
           <a-carousel-item>
-            <img src="@/assets/login/banner-3.png" />
+            <img :src="safeResolve('/assets/login/banner-3.png')" />
           </a-carousel-item>
         </a-carousel>
       </a-col>
@@ -215,14 +215,13 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import config from '@/config';
 import { onMounted, reactive, ref } from 'vue';
 import { Message } from '@arco-design/web-vue';
 import { login, register, getCaptcha } from '@/api/admin/user.js';
-import { useUserStore } from '@/store/admin/user.js';
 
-const { setUserInfo } = useUserStore();
+const { setUserInfo } = userStore();
 
 const loginUserinfo = reactive({
   username: '',
@@ -234,7 +233,7 @@ const loginUserinfo = reactive({
 const isOpenCaptcha = ref(true);
 
 const captcha = ref(
-  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
 );
 
 onMounted(() => {
@@ -309,8 +308,10 @@ const doRegister = () => {
     border-radius: 8px;
     overflow: hidden;
     background-color: #fff;
-    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
-      0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+    box-shadow:
+      0 6px 16px 0 rgba(0, 0, 0, 0.08),
+      0 3px 6px -4px rgba(0, 0, 0, 0.12),
+      0 9px 28px 8px rgba(0, 0, 0, 0.05);
     @media screen and (max-width: 930px) {
       max-width: 400px;
       box-shadow: none;
