@@ -14,10 +14,16 @@ declare module 'vue-router' {
 // console.log(fileRoutes);
 const fileRoutes = [
   {
+    name: '/login',
+    path: '/login',
+    meta: { title: '登录', layout: 'notFound' },
+    component: () => import('@/pages/admin/user/login.vue'),
+  },
+  {
     name: '/[...notFound]',
     path: '/:notFound(.*)',
     meta: { title: '404', layout: 'notFound' },
-    component: () => import('@/pages/[...notFound].vue'),
+    component: () => import('@/layouts/[...notFound].vue'),
   },
   {
     name: '/admin/index/index',
@@ -26,10 +32,10 @@ const fileRoutes = [
     component: () => import('@/pages/admin/index/index.vue'),
   },
   {
-    name: '/login',
-    path: '/login',
-    meta: { title: '登录', layout: 'notFound' },
-    component: () => import('@/pages/admin/user/login.vue'),
+    name: '/admin/index/aaa',
+    path: '/admin/index/aaa',
+    meta: { title: '控制台', layout: 'default' },
+    component: () => import('@/pages/admin/index/aaa.md'),
   },
 ];
 
