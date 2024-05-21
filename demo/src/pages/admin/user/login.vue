@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { useUserStore } from '@/stores/modules/admin/user.js';
+import { useUserStore } from '@/stores/admin/user.js';
 const userStore = useUserStore();
 
 const demo = () => {

@@ -1,7 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import { useTabsStore } from '@/stores/modules/admin/tabs.js';
-import { useMenuStore } from '@/stores/modules/admin/menu.js';
-import { useUserStore } from '@/stores/modules/admin/user.js';
+import { useTabsStore } from '@/stores/admin/tabs.js';
+import { useMenuStore } from '@/stores/admin/menu.js';
+import { useUserStore } from '@/stores/admin/user.js';
 import { expandArray } from '@/utils/array.js';
 import NProgress from 'nprogress';
 import config from '@/config';

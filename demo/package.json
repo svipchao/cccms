@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@arco-design/web-vue": "^2.55.2",
+    "@vueuse/core": "^10.9.0",
     "axios": "^1.7.0",
     "less": "^4.2.0",
     "nprogress": "^0.2.0",
