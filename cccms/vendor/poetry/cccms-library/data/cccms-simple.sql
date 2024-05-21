@@ -134,18 +134,18 @@ CREATE TABLE `sys_menu`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '菜单表';
 INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_id`, `name`, `icon`, `url`, `node`, `layout_name`, `target`, `sort`, `status`)
-VALUES (1, 0, 0, '基础系统', 'ri-stack-line', '#', '#', 'layouts', '_self', 0, 1),
-       (2, 1, 1, '控制台', 'ri-home-line', 'admin/index/index', 'admin/index/index', 'layouts', '_self', 0, 1),
-       (3, 1, 1, '权限配置', 'ri-shield-check-line', '#', '#', 'layouts', '_self', 0, 1),
-       (4, 1, 3, '部门管理', '', 'admin/dept/index', 'admin/dept/index', 'layouts', '_self', 0, 1),
-       (5, 1, 3, '角色管理', '', 'admin/role/index', 'admin/role/index', 'layouts', '_self', 0, 1),
-       (6, 1, 3, '用户管理', '', 'admin/user/index', 'admin/user/index', 'layouts', '_self', 0, 1),
-       (7, 1, 1, '系统配置', 'ri-settings-line', '#', '#', 'layouts', '_self', 0, 1),
-       (8, 1, 7, '系统设置', '', 'admin/config/index', 'admin/config/index', 'layouts', '_self', 0, 1),
-       (9, 1, 7, '菜单管理', '', 'admin/menu/index', 'admin/menu/index', 'layouts', '_self', 0, 1),
-       (10, 1, 7, '路由管理', '', 'admin/route/index', 'admin/route/index', 'layouts', '_self', 0, 0),
-       (11, 1, 7, '附件管理', '', 'admin/file/index', 'admin/file/index', 'layouts', '_self', 0, 1),
-       (12, 1, 7, '日志管理', '', 'admin/log/index', 'admin/log/index', 'layouts', '_self', 0, 1);
+VALUES (1, 0, 0, '基础系统', 'ri-stack-line', '#', '#', 'default', '_self', 0, 1),
+       (2, 1, 1, '控制台', 'ri-home-line', 'admin/index/index', 'admin/index/index', 'default', '_self', 0, 1),
+       (3, 1, 1, '权限配置', 'ri-shield-check-line', '#', '#', 'default', '_self', 0, 1),
+       (4, 1, 3, '部门管理', '', 'admin/dept/index', 'admin/dept/index', 'default', '_self', 0, 1),
+       (5, 1, 3, '角色管理', '', 'admin/role/index', 'admin/role/index', 'default', '_self', 0, 1),
+       (6, 1, 3, '用户管理', '', 'admin/user/index', 'admin/user/index', 'default', '_self', 0, 1),
+       (7, 1, 1, '系统配置', 'ri-settings-line', '#', '#', 'default', '_self', 0, 1),
+       (8, 1, 7, '系统设置', '', 'admin/config/index', 'admin/config/index', 'default', '_self', 0, 1),
+       (9, 1, 7, '菜单管理', '', 'admin/menu/index', 'admin/menu/index', 'default', '_self', 0, 1),
+       (10, 1, 7, '路由管理', '', 'admin/route/index', 'admin/route/index', 'default', '_self', 0, 0),
+       (11, 1, 7, '附件管理', '', 'admin/file/index', 'admin/file/index', 'default', '_self', 0, 1),
+       (12, 1, 7, '日志管理', '', 'admin/log/index', 'admin/log/index', 'default', '_self', 0, 1);
 
 CREATE TABLE `sys_config_cate`
 (

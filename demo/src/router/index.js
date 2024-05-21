@@ -1,18 +1,18 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import config from '@/config';
-import { useTabsStore } from '@/store/admin/tabs.js';
-import { useMenuStore } from '@/store/admin/menu.js';
-import { useUserStore } from '@/store/admin/user.js';
-import { useSystemStore } from '@/store/admin/system.js';
+import { useTabsStore } from '@/stores/modules/admin/tabs.js';
+import { useMenuStore } from '@/stores/modules/admin/menu.js';
+import { useUserStore } from '@/stores/modules/admin/user.js';
 import { expandArray } from '@/utils/array.js';
+import NProgress from 'nprogress';
+import config from '@/config';
 
 const router = createRouter({
   routes: [
     {
-      name: 'layouts',
+      name: 'default',
       path: '/',
       redirect: '/admin/index/index',
-      component: () => import('@/layouts/index.vue'),
+      component: () => import('@/layouts/default.vue'),
       children: [
         {
           path: '/:pathMatch(.*)*',
@@ -24,7 +24,7 @@ const router = createRouter({
     {
       name: 'login',
       path: '/login',
-      component: () => import('@/pages/admin/login/index.vue'),
+      component: () => import('@/pages/admin/user/login.vue'),
       meta: { title: '登录' },
     },
   ],
@@ -34,9 +34,11 @@ const router = createRouter({
 let modules = import.meta.glob('../pages/**/*.vue');
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  NProgress.start();
   // 判断是否需要登录
   const userStore = useUserStore();
+  console.log(userStore.accessToken);
   if (!userStore.accessToken) {
     if (to.name == 'login') {
       next();
@@ -46,10 +48,10 @@ router.beforeEach((to, from, next) => {
     }
   } else {
     // 解决刷新页面路由不生效问题
-    const systemStore = useSystemStore();
-    if (systemStore.isRegisterRouteFresh) {
+    if (userStore.isRegisterRouteFresh) {
       const menuStore = useMenuStore();
       const menus = expandArray(menuStore.menus || []);
+      console.log(menus);
       menus.forEach((item) => {
         if (item.node !== '#') {
           router.addRoute(item.layout_name, {
@@ -73,7 +75,7 @@ router.beforeEach((to, from, next) => {
         }
       });
       next({ ...to, replace: true });
-      systemStore.setRegisterRouteFresh();
+      userStore.setRegisterRouteFresh();
     } else {
       // keep-alive 实现
       const tabsStore = useTabsStore();
@@ -85,12 +87,19 @@ router.beforeEach((to, from, next) => {
     }
   }
   // 更新浏览器标题
-  document.title =
-    (to.meta.title || '未命名') + ' - ' + (config.title || '标题');
+  document.title = (to.meta.title || '未命名') + ' - ' + config.name;
   // 解决部分页面不需要side header栏 会出现闪屏问题
   setTimeout(() => {
     document.getElementById('cccms-loader-home').style.display = 'none';
   }, 500);
+});
+
+router.afterEach((to) => {
+  if (NProgress.isStarted()) {
+    setTimeout(() => {
+      NProgress.done(true);
+    }, 100);
+  }
 });
 
 export default router;
