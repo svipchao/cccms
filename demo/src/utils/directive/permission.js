@@ -1,4 +1,4 @@
-import { useUserStore } from '@/store/admin/user.js';
+import { useUserStore } from '@/stores/admin/user.js';
 
 const permission = {
   mounted(el, binding) {

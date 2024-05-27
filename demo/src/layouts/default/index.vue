@@ -38,9 +38,9 @@
 import Header from './header/index.vue';
 import Sider from './sider/index.vue';
 import Tabs from './content/tabs.vue';
-import { useTabsStore } from '@/store/admin/tabs.js';
-import { useUserStore } from '@/store/admin/user.js';
-import { useThemeStore } from '@/store/admin/theme.js';
+import { useTabsStore } from '@/stores/admin/tabs.js';
+import { useUserStore } from '@/stores/admin/user.js';
+import { useThemeStore } from '@/stores/admin/theme.js';
 
 const tabsStore = useTabsStore();
 const userStore = useUserStore();

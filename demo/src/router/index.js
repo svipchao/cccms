@@ -12,11 +12,11 @@ const router = createRouter({
       name: 'default',
       path: '/',
       redirect: '/admin/index/index',
-      component: () => import('@/layouts/default.vue'),
+      component: () => import('@/layouts/default/index.vue'),
       children: [
         {
           path: '/:pathMatch(.*)*',
-          component: () => import('@/layouts/result/404.vue'),
+          component: () => import('@/components/result/404.vue'),
           meta: { title: '404' },
         },
       ],
@@ -38,7 +38,6 @@ router.beforeEach(async (to, from, next) => {
   NProgress.start();
   // 判断是否需要登录
   const userStore = useUserStore();
-  console.log(userStore.accessToken);
   if (!userStore.accessToken) {
     if (to.name == 'login') {
       next();
@@ -51,7 +50,6 @@ router.beforeEach(async (to, from, next) => {
     if (userStore.isRegisterRouteFresh) {
       const menuStore = useMenuStore();
       const menus = expandArray(menuStore.menus || []);
-      console.log(menus);
       menus.forEach((item) => {
         if (item.node !== '#') {
           router.addRoute(item.layout_name, {

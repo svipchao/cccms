@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 
-export const useMenuStore = defineStore({
-  id: 'menu',
+export const useMenuStore = defineStore('menu', {
   state: () => ({
     // 应用列表
     menus: undefined,

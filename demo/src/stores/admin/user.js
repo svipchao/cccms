@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia';
 import { useMenuStore } from './menu.js';
+import { useTabsStore } from './tabs.js';
+import { useThemeStore } from './theme.js';
+import { Message } from '@arco-design/web-vue';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -32,9 +35,22 @@ export const useUserStore = defineStore('user', {
     },
   },
   actions: {
-    setUserInfo() {
+    setUserInfo(userInfo = {}) {
       const menuStore = useMenuStore();
       menuStore.setMenus(userInfo.menus);
+      delete userInfo.menus;
+      delete userInfo.is_admin;
+      this.$patch(userInfo);
+      Message.success({
+        content: '登录成功',
+        onClose: () => {
+          const tabsStore = useTabsStore();
+          tabsStore.switchTab(userInfo.home_url);
+        },
+      });
+    },
+    setRegisterRouteFresh() {
+      this.isRegisterRouteFresh = !this.isRegisterRouteFresh;
     },
   },
   persist: true,
