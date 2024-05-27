@@ -3,7 +3,7 @@ import { ref, reactive, toRaw } from 'vue';
 import { assignObject } from '@/utils/utils.js';
 
 export const useResetForm = (initialValues) => {
-  let form = reactive({ ...initialValues });
+  let form = ref(initialValues);
 
   const getFormInit = () => {
     const oldData = reactive({ ...initialValues });
@@ -20,10 +20,8 @@ export const useResetForm = (initialValues) => {
     // console.log(getFormInit());
     // console.log(form);
     // console.log('==================');
-    console.log(form);
-    console.log(getFormInit());
+    form.value = initialValues;
     // form = getFormInit();
-    console.log(form);
   };
   return { form, setForm, resetForm };
   // 这里有可能修改角色Nodes有问题 上方代码暂且保留
