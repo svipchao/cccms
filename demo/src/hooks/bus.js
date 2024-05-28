@@ -35,7 +35,13 @@ export default new Bus();
 
 // 发布
 // Bus.$emit('onReloadTaskData', data);
+
 // 接收
 // Bus.$on('onReloadTaskData', (data) => {
 //   console.log(data);
 // });
+
+// 取消订阅
+// Bus.$off('onReloadTaskData');
+
+// vue3不建议使用bus 可以尝试使用pinia状态库替代
