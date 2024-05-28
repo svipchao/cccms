@@ -217,6 +217,10 @@
       placeholder="请输入注册账号"
       v-model="demoForm.form.dept_name"
     ></a-input>
+    <a-input
+      placeholder="请输入注册账号11"
+      v-model="demoForm.form.nodes[0].name"
+    ></a-input>
     <a-button @click="demo">重置</a-button>
   </div>
 </template>
@@ -263,6 +267,7 @@ const demoForm = useResetForm({
     },
   ],
 });
+console.log(demoForm);
 
 const demo = () => {
   demoForm.resetForm();
