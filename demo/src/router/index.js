@@ -85,7 +85,7 @@ router.beforeEach(async (to, from, next) => {
     }
   }
   // 更新浏览器标题
-  document.title = (to.meta.title || '未命名') + ' - ' + config.name;
+  document.title = (to.meta.title || '未命名') + ' - ' + config.title;
   // 解决部分页面不需要side header栏 会出现闪屏问题
   setTimeout(() => {
     document.getElementById('cccms-loader-home').style.display = 'none';

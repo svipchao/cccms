@@ -212,16 +212,6 @@
         </div>
       </a-col>
     </a-row>
-    {{ demoForm.form }}
-    <a-input
-      placeholder="请输入注册账号"
-      v-model="demoForm.form.dept_name"
-    ></a-input>
-    <a-input
-      placeholder="请输入注册账号11"
-      v-model="demoForm.form.nodes[0].name"
-    ></a-input>
-    <a-button @click="demo">重置</a-button>
   </div>
 </template>
 
@@ -231,47 +221,6 @@ import { onMounted, reactive, ref } from 'vue';
 import { Message } from '@arco-design/web-vue';
 import { login, register, getCaptcha } from '@/api/admin/user.js';
 import { useUserStore } from '@/stores/admin/user.js';
-import { useResetForm } from '@/hooks/form.js';
-
-const demoForm = useResetForm({
-  id: undefined,
-  dept_id: undefined,
-  dept_name: '',
-  nodes: [
-    {
-      name: 'admin',
-      son: [
-        {
-          name: 'admin1',
-          son: [],
-        },
-      ],
-    },
-    {
-      name: 'admin',
-      son: [
-        {
-          name: 'admin1',
-          son: [],
-        },
-      ],
-    },
-    {
-      name: 'admin',
-      son: [
-        {
-          name: 'admin1',
-          son: [],
-        },
-      ],
-    },
-  ],
-});
-console.log(demoForm);
-
-const demo = () => {
-  demoForm.resetForm();
-};
 
 const { setUserInfo } = useUserStore();
 
