@@ -1,4 +1,6 @@
 let config = {
+  // 版本号
+  version: 'v1.0.0',
   // 标题
   title: 'CCCMS',
   // 描述
