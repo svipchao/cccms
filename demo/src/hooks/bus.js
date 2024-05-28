@@ -32,3 +32,10 @@ class Bus {
 }
 
 export default new Bus();
+
+// 发布
+// Bus.$emit('onReloadTaskData', data);
+// 接收
+// Bus.$on('onReloadTaskData', (data) => {
+//   console.log(data);
+// });
