@@ -5,6 +5,7 @@ namespace cccms\support\middleware;
 
 use Closure;
 use think\{Config, Request, Response};
+use cccms\services\ConfigService;
 
 /**
  * 日志记录中间件
@@ -21,45 +22,29 @@ class Log
         // $this->cookieDomain = $config->get('cookie.domain', '');
     }
 
-    public function handle($request, \Closure $next)
+    public function handle(Request $request, Closure $next)
     {
-        dump(1111);
         $response = $next($request);
 
         // 添加中间件执行代码
+        // 请求类型
+        $method = $request->method();
+        $logs = ConfigService::instance()->getConfig('log', []);
+        // 需要监控的请求类型
+        $log_methods = array_map('strtolower', $logs['logMethods']);
+        halt($request->method());
 
         dump($request->secureKey());
         return $response;
     }
 
-    public function end(\think\Response $response)
+    public function end(Response $response)
     {
         // 回调行为
+        dump($response);
+        die;
+        dump($response->getData());
+        dump($response->getVars());
         // dump($response->getContent());
-    }
-
-    /**
-     * 允许跨域请求
-     * @access public
-     * @param Request $request
-     * @param Closure $next
-     * @param array|null $headers
-     * @return Response
-     */
-    public function handle1(Request $request, Closure $next, ?array $headers = []): Response
-    {
-        $headers = !empty($headers) ? array_merge($this->getHeaders(), $headers) : $this->getHeaders();
-
-        if ($this->cors['cors_auto'] || empty($headers['Access-Control-Allow-Origin'])) {
-            $origin = $request->header('origin');
-
-            if ($origin && ('' == $this->cookieDomain || strpos($origin, $this->cookieDomain))) {
-                $headers['Access-Control-Allow-Origin'] = $origin;
-            } else {
-                $headers['Access-Control-Allow-Origin'] = '*';
-            }
-        }
-
-        return $next($request)->header($headers);
     }
 }

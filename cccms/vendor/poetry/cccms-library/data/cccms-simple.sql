@@ -246,9 +246,6 @@ CREATE TABLE `sys_log`
     `user_id`     int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
     `action_desc` varchar(32)  NOT NULL DEFAULT '' COMMENT '行为描述',
     `node`        varchar(255) NOT NULL DEFAULT '' COMMENT '操作节点',
-    `req_params`  text         NOT NULL COMMENT '请求参数',
-    `upd_params`  text         NOT NULL COMMENT '修改参数',
-    `req_result`  text         NOT NULL COMMENT '请求结果',
     `req_ip`      varchar(45)  NOT NULL DEFAULT '' COMMENT '请求IP',
     `req_method`  varchar(7)   NOT NULL DEFAULT '' COMMENT '请求类型',
     `req_ua`      varchar(255) NOT NULL DEFAULT '' COMMENT 'User-Agent',
@@ -258,3 +255,14 @@ CREATE TABLE `sys_log`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci COMMENT = '日志表';
+
+CREATE TABLE `sys_log_info`
+(
+    `log_id`     int unsigned NOT NULL COMMENT 'ID',
+    `req_params` longtext     NOT NULL COMMENT '请求参数',
+    `upd_params` longtext     NOT NULL COMMENT '修改参数',
+    `req_result` longtext     NOT NULL COMMENT '请求结果',
+    PRIMARY KEY (`log_id`) USING BTREE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci COMMENT = '日志详情表';

@@ -19,14 +19,14 @@ class ConfigService extends Service
         $this->configs = $this->app->cache->get('SysConfigs', $this->handle());
     }
 
-    protected function handle()
+    protected function handle(): array
     {
-        [$data, $configs] = [[], SysConfig::mk()->field('config_name,name,value')->_list()];
+        [$data, $configs] = [[], SysConfig::mk()->field('cate_name,name,value')->_list()];
         foreach ($configs as $config) {
             if (str_contains($config['value'], ',')) {
                 $config['value'] = array_filter(explode(',', $config['value']));
             }
-            $data[$config['config_name']][$config['name']] = $config['value'];
+            $data[$config['cate_name']][$config['name']] = $config['value'];
         }
         $this->app->cache->set('SysConfigs', $data);
         return $data;
@@ -49,7 +49,7 @@ class ConfigService extends Service
         return $configs;
     }
 
-    public function getConfigCate()
+    public function getConfigCate(): array
     {
         return SysConfigCate::mk()->cache('SysConfigCate')->_list();
     }
