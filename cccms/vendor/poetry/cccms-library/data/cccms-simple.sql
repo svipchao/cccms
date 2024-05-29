@@ -244,11 +244,12 @@ CREATE TABLE `sys_log`
 (
     `id`          int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
     `user_id`     int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
-    `action_desc` varchar(32)  NOT NULL DEFAULT '' COMMENT '行为描述',
+    `name`        varchar(255) NOT NULL DEFAULT '' COMMENT '行为名称',
     `node`        varchar(255) NOT NULL DEFAULT '' COMMENT '操作节点',
     `req_ip`      varchar(45)  NOT NULL DEFAULT '' COMMENT '请求IP',
     `req_method`  varchar(7)   NOT NULL DEFAULT '' COMMENT '请求类型',
     `req_ua`      varchar(255) NOT NULL DEFAULT '' COMMENT 'User-Agent',
+    `req_key`     char(32)     NOT NULL DEFAULT '' COMMENT '当前请求的安全Key',
     `create_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`) USING BTREE,
     INDEX `idx_user_id` (`user_id`) USING BTREE

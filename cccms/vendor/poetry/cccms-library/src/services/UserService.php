@@ -33,8 +33,7 @@ class UserService extends Service
         $id = 2;
         $userInfo = SysUser::mk()->findOrEmpty($id)->toArray();
         $userInfo['is_admin'] = $userInfo['id'] == 1;
-        return $userInfo;
-        $userInfo = JwtExtend::verifyToken($this->getAccessToken());
+        // $userInfo = JwtExtend::verifyToken($this->getAccessToken());
         if (!$userInfo || !empty($userInfo['exp']) && $userInfo < time()) {
             if ($default !== '') return $default;
             _result(['code' => 401, 'msg' => '登陆状态失效，请重新登陆'], _getEnCode());

@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
+use think\response\View;
 use think\{Response, Validate};
 
 if (!function_exists('_getEnCode')) {
     /**
-     * 获取返回编码类型 (view,json,jsonp,xml)
-     * PS:  view 类型请自行阅读 common.php->_result()
+     * 获取返回编码类型 (json,jsonp,xml)
      * @param string $enCode 默认值
      * @return string
      */
@@ -148,22 +148,48 @@ if (!function_exists('_result')) {
      * @param array $options 输出参数 \think\response\ 下的options输出参数配置
      * @return Response
      */
-    function _result(array $data = [], string $type = '', array $header = [], array $options = []): Response
+    function _result(array $data = [], string $type = 'json', array $header = [], array $options = []): Response
     {
-        $type = $type ?: _getEnCode();
         // OPTIONS请求时全部返回200状态码
         $code = (int)($data['code'] ?? 200);
         // $code = request()->method() == 'OPTIONS' ? 200 : (int)($data['code'] ?? 200);
-        if (in_array(strtolower($type), ['json', 'jsonp', 'xml'])) {
-            $response = Response::create($data, $type, $code)->options($options);
+        if (!in_array(strtolower($type), ['json', 'jsonp', 'xml'])) $type = 'json';
+        $response = Response::create($data, $type, $code)->header($header)->options($options);
+        throw new \think\exception\HttpResponseException($response);
+    }
+}
+
+if (!function_exists('_view')) {
+    /**
+     * 渲染模板输出
+     * @param string $template 模板文件
+     * @param array $vars 模板变量
+     * @param int $code 状态码
+     * @param callable $filter 内容过滤
+     * @return \think\response\View
+     */
+    function _view(string $template = '', $vars = [], $code = 200, $filter = null): View
+    {
+        if (empty($template)) {
+            $template = config('cccms.resultPath');
         } else {
-            if ($type === 'view') {
-                $html = config('cccms.resultPath');
-            } else {
-                $html = '../app/' . strtolower(app('http')->getName()) . '/view/' . $type . '.html';
-            }
-            $response = Response::create($html, 'view', $code)->assign($data);
+            $template = '../app/' . strtolower(app('http')->getName()) . '/view/' . $template . '.html';
         }
-        throw new \think\exception\HttpResponseException($response->header($header));
+        return Response::create($template, 'view', $code)->assign($vars)->filter($filter);
+    }
+}
+
+if (!function_exists('_display')) {
+    /**
+     * 渲染模板输出
+     * @param string $content 渲染内容
+     * @param array $vars 模板变量
+     * @param int $code 状态码
+     * @param callable $filter 内容过滤
+     * @return \think\response\View
+     */
+    function _display(string $content, $vars = [], $code = 200, $filter = null): View
+    {
+        return Response::create($content, 'view', $code)->isContent(true)->assign($vars)->filter($filter);
     }
 }
