@@ -9,32 +9,25 @@ use cccms\model\{SysConfig, SysConfigCate};
 
 class ConfigService extends Service
 {
-    protected $configs = [];
-
-    /**
-     * 初始化服务
-     */
-    protected function initialize(): void
+    protected static function handle(): array
     {
-        $this->configs = $this->app->cache->get('SysConfigs', $this->handle());
-    }
-
-    protected function handle(): array
-    {
-        [$data, $configs] = [[], SysConfig::mk()->field('cate_name,name,value')->_list()];
-        foreach ($configs as $config) {
-            if (str_contains($config['value'], ',')) {
-                $config['value'] = array_filter(explode(',', $config['value']));
+        $data = app()->cache->get('SysConfigs', []);
+        if (empty($data)) {
+            [$data, $configs] = [[], SysConfig::mk()->field('cate_name,name,value')->_list()];
+            foreach ($configs as $config) {
+                if (str_contains($config['value'], ',')) {
+                    $config['value'] = array_filter(explode(',', $config['value']));
+                }
+                $data[$config['cate_name']][$config['name']] = $config['value'];
             }
-            $data[$config['cate_name']][$config['name']] = $config['value'];
+            app()->cache->set('SysConfigs', $data);
         }
-        $this->app->cache->set('SysConfigs', $data);
         return $data;
     }
 
-    public function getConfig(string $name = '', mixed $default = null)
+    public static function getConfig(string $name = '', mixed $default = null)
     {
-        $configs = $this->configs;
+        $configs = self::handle();
         if (empty($configs)) return $default;
         if (empty($name)) return $configs;
         $name = explode('.', $name);

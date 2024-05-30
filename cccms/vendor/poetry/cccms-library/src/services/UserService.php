@@ -17,8 +17,9 @@ class UserService extends Service
      * 注意：GET传进来需要进行 urlDecode (PHP)/encodeURIComponent(JS)加密
      * @return string
      */
-    public function getAccessToken(): string
+    public static function getAccessToken(): string
     {
+        // return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjY2NtcyIsImlhdCI6MTcxNzA1NzI0NSwiZXhwIjoxNzE3MTQzNjQ1LCJuYmYiOjE3MTcwNTcyNDUsInN1YiI6ImNjY21zIiwianRpIjoiYzEzZDZiODAxOGViOTUxYjY4OTg1NTJmNjAzZjZjMmYiLCJpZCI6MSwibmlja25hbWUiOiLotoXnuqfnrqHnkIblkZgiLCJ1c2VybmFtZSI6ImFkbWluIn0.r-z0ul0a6Y0hTFll_YAzpUy-T--VRT75p_Sxy4sIlcU';
         return (string)request()->header('accessToken', request()->param('accessToken', Session('accessToken')));
     }
 
@@ -28,12 +29,9 @@ class UserService extends Service
      * @param mixed $default
      * @return mixed
      */
-    public function getUserInfo(string $key = 'all', mixed $default = null): mixed
+    public static function getUserInfo(string $key = 'all', mixed $default = null): mixed
     {
-        $id = 2;
-        $userInfo = SysUser::mk()->findOrEmpty($id)->toArray();
-        $userInfo['is_admin'] = $userInfo['id'] == 1;
-        // $userInfo = JwtExtend::verifyToken($this->getAccessToken());
+        $userInfo = JwtExtend::verifyToken(static::getAccessToken());
         if (!$userInfo || !empty($userInfo['exp']) && $userInfo < time()) {
             if ($default !== '') return $default;
             _result(['code' => 401, 'msg' => '登陆状态失效，请重新登陆'], _getEnCode());
@@ -43,21 +41,30 @@ class UserService extends Service
     }
 
     /**
+     * 获取后台用户ID
+     * @return integer
+     */
+    public static function getUserId(): int
+    {
+        return static::getUserInfo('id', 0);
+    }
+
+    /**
      * 判断是否登录
      * @return bool
      */
-    public function isLogin(): bool
+    public static function isLogin(): bool
     {
-        return (bool)$this->getUserInfo('id', false);
+        return (bool)static::getUserInfo('id', false);
     }
 
     /**
      * 判断是否是管理员
      * @return bool
      */
-    public function isAdmin(): bool
+    public static function isAdmin(): bool
     {
-        return $this->getUserInfo('is_admin', false);
+        return static::getUserInfo('id', 0) === 1;
     }
 
     /**
@@ -65,10 +72,10 @@ class UserService extends Service
      * @param string $node 权限节点
      * @return bool
      */
-    public function isAuth(string $node = ''): bool
+    public static function isAuth(string $node = ''): bool
     {
         $node = $node ?: NodeService::instance()->getCurrentNode();
-        return in_array($node, $this->getUserNodes());
+        return in_array($node, static::getUserNodes());
     }
 
     /**
@@ -80,7 +87,7 @@ class UserService extends Service
     {
         $userInfo = $userInfo ?: $this->getUserInfo();
         $data = $this->app->cache->get('SysUserAuth_' . $userInfo['id'], []);
-        if (empty($data) && !$userInfo['is_admin']) {
+        if (empty($data) && !$this->isAdmin()) {
             $userData = SysAuth::mk()->where('user_id', $userInfo['id'])->_list();
             $userDeptIds = array_filter(array_column($userData, 'dept_id'));
             $userRoleIds = array_filter(array_column($userData, 'role_id'));
@@ -173,7 +180,7 @@ class UserService extends Service
     public function getUserNodes(array $userInfo = []): array
     {
         $userInfo = $userInfo ?: $this->getUserInfo();
-        if ($userInfo['is_admin']) return NodeService::instance()->getNodes();
+        if ($this->isAdmin()) return NodeService::instance()->getNodes();
         $nodes = array_column($this->getUserAuths($userInfo), 'node');
         return array_keys(NodeService::instance()->setFrameNodes($nodes));
     }

@@ -11,9 +11,18 @@ use cccms\support\middleware\{Cors, MultiApp, Log};
 
 class Library extends Service
 {
+    /**
+     * 静态应用实例
+     * @var App
+     */
+    public static $sapp;
+
     // 启动服务
     public function boot(): void
     {
+        // 静态应用赋值
+        static::$sapp = $this->app;
+
         // 绑定URL类
         $this->app->bind(['think\route\Url' => Url::class]);
     }

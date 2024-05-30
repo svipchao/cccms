@@ -15,7 +15,7 @@ class NodeService extends Service
      * 所有框架父级节点 应用节点、类节点
      * @return array
      */
-    public function getFrameNodes(): array
+    protected function getFrameNodes(): array
     {
         $data = $this->app->cache->get('SysFrameNodes') ?? [];
         if (empty($data)) {
@@ -35,7 +35,7 @@ class NodeService extends Service
      * @param array $nodes
      * @return array
      */
-    public function setFrameNodes(array $nodes): array
+    protected function setFrameNodes(array $nodes): array
     {
         $nodes = array_merge($this->getFrameNodes(), array_intersect_key($this->getNodesInfo(), array_flip($nodes)));
         $tree = ArrExtend::toTreeArray($nodes, 'currentNode', 'parentNode');
@@ -67,12 +67,12 @@ class NodeService extends Service
      * 获取所有节点
      * @return array
      */
-    public function getNodes(): array
+    public static function getNodes(): array
     {
-        $data = $this->app->cache->get('SysNodes', []);
+        $data = static::$app->cache->get('SysNodes', []);
         if (empty($data)) {
-            $data = array_keys($this->getNodesInfo());
-            $this->app->cache->set('SysNodes', $data);
+            $data = array_keys(static::getNodesInfo());
+            static::$app->cache->set('SysNodes', $data);
         }
         return $data;
     }
@@ -81,17 +81,16 @@ class NodeService extends Service
      * 获取所有授权的节点
      * @return array
      */
-    public function getAuthNodes(): array
+    public static function getAuthNodes(): array
     {
-        $data = $this->app->cache->get('SysAuthNodes', []);
+        $data = static::$app->cache->get('SysAuthNodes', []);
         if (empty($data)) {
-            $data = [];
-            $nodes = $this->getNodesInfo();
+            [$data, $nodes] = [[], static::getNodesInfo()];
             foreach ($nodes as $node) {
                 if ($node['auth'] ?? false) $data[] = $node['currentNode'];
             }
-            $data = $this->setFrameNodes($data);
-            $this->app->cache->set('SysAuthNodes', $data);
+            $data = static::setFrameNodes($data);
+            static::$app->cache->set('SysAuthNodes', $data);
         }
         return $data;
     }
@@ -100,12 +99,12 @@ class NodeService extends Service
      * 获取所有授权的节点
      * @return array
      */
-    public function getAuthNodesTree(): array
+    public static function getAuthNodesTree(): array
     {
-        $data = $this->app->cache->get('SysAuthNodesTree', []);
+        $data = static::$app->cache->get('SysAuthNodesTree', []);
         if (empty($data)) {
-            $data = ArrExtend::toTreeArray($this->getAuthNodes(), 'currentNode', 'parentNode');
-            $this->app->cache->set('SysAuthNodesTree', $data);
+            $data = ArrExtend::toTreeArray(static::getAuthNodes(), 'currentNode', 'parentNode');
+            static::$app->cache->set('SysAuthNodesTree', $data);
         }
         return $data;
     }
@@ -114,7 +113,7 @@ class NodeService extends Service
      * 获取当前节点
      * @return string
      */
-    public function getCurrentNode()
+    public static function getCurrentNode()
     {
         return StrExtend::humpToUnderline(app('http')->getName() . '/' . str_replace('.', '/', request()->controller()) . '/' . request()->action());
     }
@@ -124,10 +123,10 @@ class NodeService extends Service
      * @param string $node 权限节点(键)
      * @return array
      */
-    public function getCurrentNodeInfo(string $node = '')
+    public static function getCurrentNodeInfo(string $node = '')
     {
-        $node = $node ?: self::getCurrentNode();
-        return $this->getNodesInfo()[$node] ?? [];
+        $node = $node ?: static::getCurrentNode();
+        return static::getNodesInfo()[$node] ?? [];
     }
 
     /**
@@ -136,14 +135,14 @@ class NodeService extends Service
      * @param bool $isCache
      * @return array
      */
-    public function getNodesInfo(array $toScanFileArray = [], bool $isCache = false): array
+    public static function getNodesInfo(array $toScanFileArray = [], bool $isCache = false): array
     {
-        $data = $this->app->cache->get('SysNodesInfo', []);
+        $data = static::$app->cache->get('SysNodesInfo', []);
         if ($isCache || empty($data)) {
             // 访问控制器层名称
-            $controller_layer = $this->app->config->get('route.controller_layer');
+            $controller_layer = static::$app->config->get('route.controller_layer');
             if (empty($toScanFileArray)) {
-                $rootPath = $this->app->getRootPath();
+                $rootPath = static::$app->getRootPath();
                 // 这里扫描文件路径需要独立出来 有可能会有其他应用扩展
                 $toScanFileArray = array_merge(
                     BaseService::instance()->scanDirArray($rootPath . 'vendor/poetry/cccms-app/src/*/' . $controller_layer . '/*'),
@@ -161,7 +160,7 @@ class NodeService extends Service
                 $title = $appNames[$appName] ?? $appName;
                 $data[$appName] = ['title' => $title, 'sort' => 0, 'currentNode' => $appName, 'parentNode' => '#', 'parentTitle' => '#'];
                 // 默认命名空间
-                $namespace = $this->app->config->get('app.app_namespace') ?: 'app';
+                $namespace = static::$app->config->get('app.app_namespace') ?: 'app';
                 // 类全名
                 $classFullName = $namespace . '\\' . $appName . '\\controller\\' . strtr($className, '/', '\\');
                 if (!class_exists($classFullName)) continue;
@@ -171,7 +170,7 @@ class NodeService extends Service
                 // 前缀 类的命名空间
                 $prefix = StrExtend::humpToUnderline(strtr($appName . '/' . $className, ['\\' => '/', '.' => '/']));
                 // 赋值类节点 方便处理Tree
-                $comment = $this->parseComment($reflect->getDocComment(), $className);
+                $comment = static::parseComment($reflect->getDocComment(), $className);
                 $data[$prefix] = array_merge($comment, [
                     'currentNode' => $prefix,
                     'currentPath' => $title . '-' . ($data[$appName]['title'] ?? '#') . '-' . $comment['title'],
@@ -184,7 +183,7 @@ class NodeService extends Service
                     // 忽略的方法 || 没有注释 跳出循环
                     if (in_array($metName = StrExtend::humpToUnderline($method->getName()), $ignores) || $method->getDocComment() === false) continue;
                     // 赋值类节点 方便处理Tree
-                    $comment = $this->parseComment($method->getDocComment(), $metName, $method->getName());
+                    $comment = static::parseComment($method->getDocComment(), $metName, $method->getName());
                     $data[$prefix . '/' . $metName] = array_merge($comment, [
                         'currentNode' => $prefix . '/' . $metName,
                         'currentPath' => $title . '-' . ($data[$prefix]['title'] ?? '#') . '-' . $comment['title'],
@@ -195,7 +194,7 @@ class NodeService extends Service
             }
             $data = array_change_key_case($data);
             $data = ArrExtend::toSort($data, 'sort');
-            $this->app->cache->set('SysNodesInfo', $data);
+            static::$app->cache->set('SysNodesInfo', $data);
         }
         return $data;
     }
@@ -206,7 +205,7 @@ class NodeService extends Service
      * @param string $default 默认标题
      * @return array
      */
-    private function parseComment(string $comment, string $defaultTitle = '', $node = ''): array
+    private static function parseComment(string $comment, string $defaultTitle = '', $node = ''): array
     {
         $text = strtolower(strtr($comment, "\n", ' '));
         $title = preg_replace('/^\/\*\s*\*\s*\*\s*(.*?)\s*\*.*?$/', '$1', $text);

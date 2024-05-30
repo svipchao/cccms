@@ -15,12 +15,12 @@ abstract class Service
      * 应用实例
      * @var App
      */
-    protected App $app;
+    protected static App $app;
 
     /**
      * @var Request
      */
-    protected Request $request;
+    protected static Request $request;
 
     /**
      * Service constructor.
@@ -28,15 +28,15 @@ abstract class Service
      */
     public function __construct(App $app)
     {
-        $this->app = $app;
-        $this->request = $app->request;
-        $this->initialize();
+        static::$app = $app;
+        static::$request = $app->request;
+        static::initialize();
     }
 
     /**
      * 初始化服务
      */
-    protected function initialize(): void
+    protected static function initialize(): void
     {
     }
 
