@@ -263,7 +263,7 @@ CREATE TABLE `sys_log_info`
     `req_params` longtext     NOT NULL COMMENT '请求参数',
     `upd_params` longtext     NOT NULL COMMENT '修改参数',
     `req_result` longtext     NOT NULL COMMENT '请求结果',
-    PRIMARY KEY (`log_id`) USING BTREE
+    UNIQUE KEY `idx_log_id` (`log_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci COMMENT = '日志详情表';

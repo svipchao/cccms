@@ -17,8 +17,8 @@ class Index extends Base
 {
     /**
      * 首页
-     * @auth true
-     * @login true
+     * @auth false
+     * @login false
      * @encode view
      * @methods GET
      */

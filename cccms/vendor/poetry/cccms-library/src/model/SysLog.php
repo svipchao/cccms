@@ -18,6 +18,11 @@ class SysLog extends Model
         ]);
     }
 
+    public function info(): HasOne
+    {
+        return $this->hasOne(SysLogInfo::class, 'log_id', 'id');
+    }
+
     public function searchUserAttr($query, $value)
     {
         $query->where('user_id', 'in', $value);

@@ -6,6 +6,6 @@ namespace cccms\model;
 
 use cccms\Model;
 
-class SysDeptRole extends Model
+class SysPostNode extends Model
 {
 }

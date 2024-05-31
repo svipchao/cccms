@@ -3,10 +3,10 @@ declare (strict_types=1);
 
 namespace cccms\support\middleware;
 
-use cccms\extend\StrExtend;
 use Closure;
 use think\{Config, Request, Response};
-use cccms\model\SysLog;
+use cccms\extend\StrExtend;
+use cccms\model\{SysLog, SysLogInfo};
 use cccms\services\{NodeService, ConfigService, UserService};
 
 /**
@@ -14,7 +14,9 @@ use cccms\services\{NodeService, ConfigService, UserService};
  */
 class Log
 {
-    protected array $data = [];
+    protected array $logData = [];
+
+    protected array $logInfoData = [];
 
     public function handle(Request $request, Closure $next)
     {
@@ -29,15 +31,18 @@ class Log
         // 请求参数 排除掉不需要记录的参数
         $request_param = $request->except($logs['logNoParams']);
         // 不需要登陆的节点不记录 || 不需要监控的请求类型不记录
-        if ($node['login'] || in_array($method, $log_methods)) {
-            $this->data = [
-                'user_id' => UserService::getUserId(),
+        if (!in_array($method, $log_methods)) {
+            $this->logData = [
+                'user_id' => UserService::isLogin() ? UserService::getUserId() : 0,
                 'name' => ($node['parentTitle'] ?: '空') . '-' . $node['title'],
                 'node' => $node['currentNode'],
                 'req_ip' => $request->ip(),
                 'req_method' => $method,
                 'req_ua' => $request->server('HTTP_USER_AGENT'),
                 'req_key' => $request->reqKey,
+            ];
+            $this->logInfoData = [
+                'log_id' => 0,
                 'req_params' => $request_param,
                 'upd_params' => [],
                 'req_result' => [],
@@ -49,13 +54,14 @@ class Log
     public function end(Response $response)
     {
         // 回调行为
-        if (!empty($this->data)) {
+        if (!empty($this->logData) && $this->logInfoData['log_id'] == 0) {
             if (get_class($response) === 'think\response\View') {
-                $this->data['req_result'] = $response->getVars();
+                $this->logInfoData['req_result'] = $response->getVars();
             } elseif (method_exists(Response::class, 'getData')) {
-                $this->data['req_result'] = $response->getData();
+                $this->logInfoData['req_result'] = $response->getData();
             }
-            SysLog::mk()->save($this->data);
+            $this->logInfoData['log_id'] = SysLog::mk()->insertGetId($this->logData);
+            SysLogInfo::mk()->save($this->logInfoData);
         }
     }
 
