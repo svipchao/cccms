@@ -79,9 +79,8 @@ class User extends Base
     public function index(): void
     {
         $params = _validate('get.sys_user.true', 'page,limit|user,tag,type,dept_id');
-        $users = $this->model->_withSearch('user,tag,dept_id', [
+        $users = $this->model->_withSearch('user,dept_id', [
             'user' => $params['user'] ?? null,
-            'tag' => $params['tag'] ?? null,
             'type' => $params['type'] ?? null,
             'dept_id' => $params['dept_id'] ?? null,
         ])->with(['depts', 'roles'])->_page($params, false, function ($data) {
@@ -168,7 +167,6 @@ class User extends Base
                 'nickname' => '普通用户_' . mt_rand(10000, 99999),
                 'username' => $params['username'],
                 'password' => md5($params['password']),
-                'tags' => ''
             ]);
             _result(['code' => 200, 'msg' => '注册成功'], _getEnCode());
         } else {
