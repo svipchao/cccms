@@ -139,6 +139,19 @@ if (!function_exists('_validate')) {
     }
 }
 
+if (!function_exists('_logUpdateParams')) {
+    /**
+     * 记录日志修改参数信息
+     * @param array $newData 新数据
+     * @param array $oldData 旧数据
+     * @return NULL
+     */
+    function _logUpdateParams(array $newData = [], array $oldData = [])
+    {
+        request()->updResult = array_diff_assoc($newData, $oldData);
+    }
+}
+
 if (!function_exists('_result')) {
     /**
      * 返回数据

@@ -4,6 +4,7 @@ declare (strict_types=1);
 namespace cccms\support\middleware;
 
 use Closure;
+use think\facade\Event;
 use think\{Config, Request, Response};
 use cccms\extend\StrExtend;
 use cccms\model\{SysLog, SysLogInfo};
@@ -39,7 +40,7 @@ class Log
                 'req_ip' => $request->ip(),
                 'req_method' => $method,
                 'req_ua' => $request->server('HTTP_USER_AGENT'),
-                'req_key' => $request->reqKey,
+                'req_key' => $request->reqKey, // 修改数据可以使用此字段更新
             ];
             $this->logInfoData = [
                 'log_id' => 0,
@@ -59,6 +60,14 @@ class Log
                 $this->logInfoData['req_result'] = $response->getVars();
             } elseif (method_exists(Response::class, 'getData')) {
                 $this->logInfoData['req_result'] = $response->getData();
+            }
+            // 记录修改信息
+            // _logUpdateParams(
+            //     ["a" => "red", "b" => "green", "c" => "blue", "d" => "yellow"],
+            //     ["a" => "red", "b" => "green", "c" => "blue1", "d" => "blue", "e" => "blue"]
+            // );
+            if (!empty(request()->updResult)) {
+                $this->logInfoData['upd_params'] = request()->updResult;
             }
             $this->logInfoData['log_id'] = SysLog::mk()->insertGetId($this->logData);
             SysLogInfo::mk()->save($this->logInfoData);
