@@ -32,7 +32,7 @@ class Log
         // 请求参数 排除掉不需要记录的参数
         $request_param = $request->except($logs['logNoParams']);
         // 不需要登陆的节点不记录 || 不需要监控的请求类型不记录
-        if (!in_array($method, $log_methods)) {
+        if (in_array($method, $log_methods)) {
             $this->logData = [
                 'user_id' => UserService::isLogin() ? UserService::getUserId() : 0,
                 'name' => ($node['parentTitle'] ?: '空') . '-' . $node['title'],
