@@ -97,7 +97,7 @@ class User extends Base
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_user'),
             'roles' => SysRole::mk()->getAllOpenRole(true),
-            'depts' => UserService::instance()->getUserDepts('tree'),
+            'depts' => UserService::instance()->getUserDept('tree'),
             'total' => $users['total'] ?? 0,
             'data' => $users['data'] ?? [],
         ]], _getEnCode());

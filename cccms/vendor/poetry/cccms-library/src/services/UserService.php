@@ -6,7 +6,7 @@ namespace cccms\services;
 
 use cccms\Service;
 use cccms\extend\{JwtExtend, ArrExtend};
-use cccms\model\{SysDept, SysPost, SysRole, SysAuth, SysUser};
+use cccms\model\{SysDept, SysPost, SysRole, SysUser};
 
 class UserService extends Service
 {
@@ -19,7 +19,6 @@ class UserService extends Service
      */
     public static function getAccessToken(): string
     {
-        // return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjY2NtcyIsImlhdCI6MTcxNzA1NzI0NSwiZXhwIjoxNzE3MTQzNjQ1LCJuYmYiOjE3MTcwNTcyNDUsInN1YiI6ImNjY21zIiwianRpIjoiYzEzZDZiODAxOGViOTUxYjY4OTg1NTJmNjAzZjZjMmYiLCJpZCI6MSwibmlja25hbWUiOiLotoXnuqfnrqHnkIblkZgiLCJ1c2VybmFtZSI6ImFkbWluIn0.r-z0ul0a6Y0hTFll_YAzpUy-T--VRT75p_Sxy4sIlcU';
         return (string)request()->header('accessToken', request()->param('accessToken', Session('accessToken')));
     }
 
@@ -32,7 +31,7 @@ class UserService extends Service
     public static function getUserInfo(string $key = 'all', mixed $default = null): mixed
     {
         $userInfo = JwtExtend::verifyToken(static::getAccessToken());
-        if (!$userInfo || !empty($userInfo['exp']) && $userInfo < time()) {
+        if (!$userInfo || !empty($userInfo['exp']) && $userInfo['exp'] < time()) {
             if ($default !== '') return $default;
             _result(['code' => 401, 'msg' => '登陆状态失效，请重新登陆'], _getEnCode());
         }
@@ -82,26 +81,51 @@ class UserService extends Service
      * @param array $userInfo
      * @return array
      */
-    public function getUserAuths(array $userInfo = []): array
+    public static function getUserAuths(array $userInfo = []): array
     {
-        $userInfo = $userInfo ?: $this->getUserInfo();
-        $data = $this->app->cache->get('SysUserAuth_' . $userInfo['id'], []);
-        if (empty($data) && !$this->isAdmin()) {
-            $userData = SysAuth::mk()->where('user_id', $userInfo['id'])->_list();
-            $userDeptIds = array_filter(array_column($userData, 'dept_id'));
-            $userRoleIds = array_filter(array_column($userData, 'role_id'));
-
-            // 部门暂时不允许设置角色和权限
-            // $deptData = SysAuth::mk()->where('dept_id', 'in', $userDeptIds)->_list();
-            // $deptRoleIds = array_filter(array_merge(array_column($userData, 'role_id'), array_column($deptData, 'role_id')));
-
-            $roleData = SysAuth::mk()->where('role_id', 'in', $userRoleIds)->_list();
-            $data = array_merge($userData, $roleData);
-            foreach ($data as &$d) $d['key'] = md5(join('|', $d));
-            $data = array_values(array_column($data, null, 'key'));
-            $this->app->cache->set('SysUserAuth_' . $userInfo['id'], $data);
-        }
+        // $userInfo = $userInfo ?: $this->getUserInfo();
+        // $data = $this->app->cache->get('SysUserAuth_' . $userInfo['id'], []);
+        // if (empty($data) && !$this->isAdmin()) {
+        //     $userData = SysAuth::mk()->where('user_id', $userInfo['id'])->_list();
+        //     $userDeptIds = array_filter(array_column($userData, 'dept_id'));
+        //     $userRoleIds = array_filter(array_column($userData, 'role_id'));
+        //
+        //     // 部门暂时不允许设置角色和权限
+        //     // $deptData = SysAuth::mk()->where('dept_id', 'in', $userDeptIds)->_list();
+        //     // $deptRoleIds = array_filter(array_merge(array_column($userData, 'role_id'), array_column($deptData, 'role_id')));
+        //
+        //     $roleData = SysAuth::mk()->where('role_id', 'in', $userRoleIds)->_list();
+        //     $data = array_merge($userData, $roleData);
+        //     foreach ($data as &$d) $d['key'] = md5(join('|', $d));
+        //     $data = array_values(array_column($data, null, 'key'));
+        //     $this->app->cache->set('SysUserAuth_' . $userInfo['id'], $data);
+        // }
+        $data = [];
         return $data;
+    }
+
+    /**
+     * 获取用户拥有的部门ID(权限范围)
+     * @param string $format
+     * @return array
+     */
+    public function getUserDept(string $format = 'default'): array
+    {
+        if (static::isAdmin()) {
+            $data = SysDept::mk()->where('status', 1)->_list();
+        } else {
+            $data = SysDept::mk()->where([
+                ['status', '=', 1],
+                ['id', 'in', $this->getUserDeptIds()]
+            ])->_list();
+        }
+        if ($format == 'tree') {
+            return ArrExtend::toTreeArray($data, 'id', 'dept_id');
+        } elseif ($format == 'list') {
+            return ArrExtend::toTreeList($data, 'id', 'dept_id');
+        } else {
+            return $data;
+        }
     }
 
     /**
@@ -109,11 +133,11 @@ class UserService extends Service
      * @param array $userInfo
      * @return array
      */
-    public function getUserDeptIds(array $userInfo = []): array
+    public static function getUserDeptIds(array $userInfo = []): array
     {
-        $userInfo = $userInfo ?: $this->getUserInfo();
+        $userInfo = $userInfo ?: static::getUserInfo();
         // 0:本人,1:本人及下属,2:本部门,3:本部门及下属部门,4:全部
-        $data = $this->getUserAuths($userInfo);
+        $data = static::getUserAuths($userInfo);
         [$deptIds, $range3Ids] = [[], []];
         foreach ($data as $d) {
             if ($userInfo['range'] == 2) {
@@ -132,30 +156,6 @@ class UserService extends Service
     }
 
     /**
-     * 获取用户拥有的部门ID(权限范围)
-     * @param array $userInfo
-     * @return array
-     */
-    public function getUserDepts($format = 'default'): array
-    {
-        if (UserService::instance()->isAdmin()) {
-            $data = SysDept::mk()->where('status', 1)->_list();
-        } else {
-            $data = SysDept::mk()->where([
-                ['status', '=', 1],
-                ['id', 'in', $this->getUserDeptIds()]
-            ])->_list();
-        }
-        if ($format == 'tree') {
-            return ArrExtend::toTreeArray($data, 'id', 'dept_id');
-        } elseif ($format == 'list') {
-            return ArrExtend::toTreeList($data, 'id', 'dept_id');
-        } else {
-            return $data;
-        }
-    }
-
-    /**
      * 获取用户拥有的角色ID
      * @param array $userInfo
      * @return array
@@ -164,10 +164,10 @@ class UserService extends Service
     {
         $data = $this->getUserAuths($userInfo);
         $roleIds = array_column($data, 'role_id');
-//        $roleChildIds = $roleIds ? SysRole::mk()->whereOr(array_map(function ($item) {
-//            return ['role_ids', 'like', '%,' . $item . ',%'];
-//        }, $roleIds))->column('id') : [];
-//        if (empty($roleIds) && empty($roleChildIds)) return [];
+        //        $roleChildIds = $roleIds ? SysRole::mk()->whereOr(array_map(function ($item) {
+        //            return ['role_ids', 'like', '%,' . $item . ',%'];
+        //        }, $roleIds))->column('id') : [];
+        //        if (empty($roleIds) && empty($roleChildIds)) return [];
         return ArrExtend::toOneUnique($roleIds);
     }
 
@@ -176,11 +176,11 @@ class UserService extends Service
      * @param array $userInfo
      * @return array
      */
-    public function getUserNodes(array $userInfo = []): array
+    public static function getUserNodes(array $userInfo = []): array
     {
-        $userInfo = $userInfo ?: $this->getUserInfo();
-        if ($this->isAdmin()) return NodeService::instance()->getNodes();
-        $nodes = array_column($this->getUserAuths($userInfo), 'node');
+        $userInfo = $userInfo ?: static::getUserInfo();
+        if (static::isAdmin()) return NodeService::instance()->getNodes();
+        $nodes = array_column(static::getUserAuths($userInfo), 'node');
         return array_keys(NodeService::instance()->setFrameNodes($nodes));
     }
 

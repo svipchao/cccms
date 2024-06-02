@@ -35,7 +35,7 @@ class NodeService extends Service
      * @param array $nodes
      * @return array
      */
-    protected function setFrameNodes(array $nodes): array
+    public function setFrameNodes(array $nodes): array
     {
         $nodes = array_merge($this->getFrameNodes(), array_intersect_key($this->getNodesInfo(), array_flip($nodes)));
         $tree = ArrExtend::toTreeArray($nodes, 'currentNode', 'parentNode');
