@@ -74,8 +74,7 @@ class UserService extends Service
      */
     public static function isAuth(string $node = ''): bool
     {
-        $node = $node ?: NodeService::instance()->getCurrentNode();
-        return in_array($node, static::getUserNodes());
+        return in_array($node ?: NodeService::getCurrentNode(), static::getUserNodes());
     }
 
     /**

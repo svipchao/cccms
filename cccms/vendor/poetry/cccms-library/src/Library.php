@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace cccms;
 
+use cccms\services\NodeService;
 use think\{Request, Service};
 use cccms\support\Url;
 use cccms\services\BaseService;
-use cccms\support\middleware\{Cors, MultiApp, Log};
+use cccms\support\middleware\{Cors, MultiApp, Permission, Log};
 
 class Library extends Service
 {
@@ -45,7 +46,7 @@ class Library extends Service
             $this->setDatabaseQuery();
             // 设置全局中间件
             $this->app->middleware->import(array_merge_recursive(
-                [Cors::class, MultiApp::class, Log::class],
+                [Cors::class, MultiApp::class, Permission::class, Log::class],
                 $this->app->config->get('cccms.middleware', [])
             ));
         });

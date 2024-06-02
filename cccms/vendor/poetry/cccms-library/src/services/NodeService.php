@@ -125,8 +125,7 @@ class NodeService extends Service
      */
     public static function getCurrentNodeInfo(string $node = '')
     {
-        $node = $node ?: static::getCurrentNode();
-        return static::getNodesInfo()[$node] ?? [];
+        return static::getNodesInfo()[$node ?: static::getCurrentNode()] ?? [];
     }
 
     /**
