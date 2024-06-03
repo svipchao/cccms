@@ -30,7 +30,8 @@ class UserService extends Service
      */
     public static function getUserInfo(string $key = 'all', mixed $default = null): mixed
     {
-        $userInfo = JwtExtend::verifyToken(static::getAccessToken());
+        // $userInfo = JwtExtend::verifyToken(static::getAccessToken());
+        $userInfo = SysUser::mk()->findOrEmpty(1)->toArray();
         if (!$userInfo || !empty($userInfo['exp']) && $userInfo['exp'] < time()) {
             if ($default !== '') return $default;
             _result(['code' => 401, 'msg' => '登陆状态失效，请重新登陆'], _getEnCode());
@@ -83,23 +84,29 @@ class UserService extends Service
      */
     public static function getUserAuths(array $userInfo = []): array
     {
-        // $userInfo = $userInfo ?: $this->getUserInfo();
-        // $data = $this->app->cache->get('SysUserAuth_' . $userInfo['id'], []);
-        // if (empty($data) && !$this->isAdmin()) {
-        //     $userData = SysAuth::mk()->where('user_id', $userInfo['id'])->_list();
-        //     $userDeptIds = array_filter(array_column($userData, 'dept_id'));
-        //     $userRoleIds = array_filter(array_column($userData, 'role_id'));
-        //
-        //     // 部门暂时不允许设置角色和权限
-        //     // $deptData = SysAuth::mk()->where('dept_id', 'in', $userDeptIds)->_list();
-        //     // $deptRoleIds = array_filter(array_merge(array_column($userData, 'role_id'), array_column($deptData, 'role_id')));
-        //
-        //     $roleData = SysAuth::mk()->where('role_id', 'in', $userRoleIds)->_list();
-        //     $data = array_merge($userData, $roleData);
-        //     foreach ($data as &$d) $d['key'] = md5(join('|', $d));
-        //     $data = array_values(array_column($data, null, 'key'));
-        //     $this->app->cache->set('SysUserAuth_' . $userInfo['id'], $data);
-        // }
+        $userInfo = $userInfo ?: static::getUserInfo();
+        // 查询部门-岗位
+        // 查询部门-角色
+        // 查询岗位-权限
+        // 查询角色-权限
+        $data = static::$app->cache->get('SysUserAuth_' . $userInfo['id'], []);
+        if (true || !empty($data) && !static::isAdmin()) {
+            $userDept = SysDept::mk()->getUserDept($userInfo['id']);
+            halt($userDept);
+            // $userData = SysAuth::mk()->where('user_id', $userInfo['id'])->_list();
+            // $userDeptIds = array_filter(array_column($userData, 'dept_id'));
+            // $userRoleIds = array_filter(array_column($userData, 'role_id'));
+            //
+            // // 部门暂时不允许设置角色和权限
+            // // $deptData = SysAuth::mk()->where('dept_id', 'in', $userDeptIds)->_list();
+            // // $deptRoleIds = array_filter(array_merge(array_column($userData, 'role_id'), array_column($deptData, 'role_id')));
+            //
+            // $roleData = SysAuth::mk()->where('role_id', 'in', $userRoleIds)->_list();
+            // $data = array_merge($userData, $roleData);
+            // foreach ($data as &$d) $d['key'] = md5(join('|', $d));
+            // $data = array_values(array_column($data, null, 'key'));
+            static::$app->cache->set('SysUserAuth_' . $userInfo['id'], $data);
+        }
         $data = [];
         return $data;
     }

@@ -107,6 +107,11 @@ class SysDept extends Model
         ]);
     }
 
+    public function postRelation(): HasMany
+    {
+        return $this->hasMany(SysUserDeptPost::class, 'dept_id', 'id');
+    }
+
     /**
      * 获取组织状态开启列表
      * @param $isTree
@@ -141,5 +146,12 @@ class SysDept extends Model
     public function getAllOpenDeptIds(): array
     {
         return array_column($this->getAllOpenDept(), 'id');
+    }
+
+    public function getUserDept(int $userId)
+    {
+        return $this->hasWhere('postRelation', function ($query) use ($userId) {
+            $query->where('user_id', '=', $userId);
+        })->where('status', 1)->select()->toArray();
     }
 }

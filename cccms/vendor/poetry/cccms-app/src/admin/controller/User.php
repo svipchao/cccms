@@ -205,6 +205,8 @@ class User extends Base
      */
     public function captcha()
     {
+        UserService::getUserAuths();
+        die;
         $node = $this->request->get('node', 'admin/login/index');
         _result(['code' => 200, 'msg' => 'success', 'data' => CaptchaService::instance()->create($node)]);
     }
