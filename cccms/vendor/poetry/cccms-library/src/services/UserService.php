@@ -95,6 +95,7 @@ class UserService extends Service
             $userPost = SysPost::mk()->getUserPost($userInfo['id']);
             dump($userDept);
             halt($userPost);
+            // $sql = `select node from sys_role_node where role_id in `;
             // $userData = SysAuth::mk()->where('user_id', $userInfo['id'])->_list();
             // $userDeptIds = array_filter(array_column($userData, 'dept_id'));
             // $userRoleIds = array_filter(array_column($userData, 'role_id'));

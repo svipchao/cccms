@@ -68,6 +68,7 @@ CREATE TABLE `sys_post`
     `post_name`   varchar(32)  NOT NULL DEFAULT '' COMMENT '岗位名称',
     `post_desc`   varchar(255) NOT NULL DEFAULT '' COMMENT '岗位备注',
     `post_range`  tinyint(4)   NOT NULL DEFAULT 0 COMMENT '权限范围【0:本人,1:本人及下属,2:本部门,3:本部门及下属部门】',
+    `is_default`  tinyint      NOT NULL DEFAULT 0 COMMENT '默认岗位【0:否,1:是】',
     `status`      tinyint      NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
     `delete_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '删除时间',
     `create_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
