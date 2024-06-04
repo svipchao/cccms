@@ -92,15 +92,15 @@ class UserService extends Service
         $data = static::$app->cache->get('SysUserAuth_' . $userInfo['id'], []);
         if (true || !empty($data) && !static::isAdmin()) {
             $userDept = SysDept::mk()->getUserDept($userInfo['id']);
-            halt($userDept);
+            $userPost = SysPost::mk()->getUserPost($userInfo['id']);
+            dump($userDept);
+            halt($userPost);
             // $userData = SysAuth::mk()->where('user_id', $userInfo['id'])->_list();
             // $userDeptIds = array_filter(array_column($userData, 'dept_id'));
             // $userRoleIds = array_filter(array_column($userData, 'role_id'));
-            //
-            // // 部门暂时不允许设置角色和权限
-            // // $deptData = SysAuth::mk()->where('dept_id', 'in', $userDeptIds)->_list();
-            // // $deptRoleIds = array_filter(array_merge(array_column($userData, 'role_id'), array_column($deptData, 'role_id')));
-            //
+            // 部门暂时不允许设置角色和权限
+            // $deptData = SysAuth::mk()->where('dept_id', 'in', $userDeptIds)->_list();
+            // $deptRoleIds = array_filter(array_merge(array_column($userData, 'role_id'), array_column($deptData, 'role_id')));
             // $roleData = SysAuth::mk()->where('role_id', 'in', $userRoleIds)->_list();
             // $data = array_merge($userData, $roleData);
             // foreach ($data as &$d) $d['key'] = md5(join('|', $d));
@@ -171,10 +171,10 @@ class UserService extends Service
     {
         $data = $this->getUserAuths($userInfo);
         $roleIds = array_column($data, 'role_id');
-        //        $roleChildIds = $roleIds ? SysRole::mk()->whereOr(array_map(function ($item) {
-        //            return ['role_ids', 'like', '%,' . $item . ',%'];
-        //        }, $roleIds))->column('id') : [];
-        //        if (empty($roleIds) && empty($roleChildIds)) return [];
+        // $roleChildIds = $roleIds ? SysRole::mk()->whereOr(array_map(function ($item) {
+        //     return ['role_ids', 'like', '%,' . $item . ',%'];
+        // }, $roleIds))->column('id') : [];
+        // if (empty($roleIds) && empty($roleChildIds)) return [];
         return ArrExtend::toOneUnique($roleIds);
     }
 

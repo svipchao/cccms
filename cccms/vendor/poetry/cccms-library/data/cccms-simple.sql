@@ -77,14 +77,14 @@ CREATE TABLE `sys_post`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '岗位表';
 
-CREATE TABLE `sys_post_node`
+CREATE TABLE `sys_post_role`
 (
     `post_id` int unsigned NOT NULL DEFAULT 0 COMMENT '岗位ID',
-    `node`    varchar(255) NOT NULL DEFAULT '' COMMENT '权限节点',
-    UNIQUE INDEX `uk_post_node` (`post_id`, `node`)
+    `role_id` int unsigned NOT NULL DEFAULT 0 COMMENT '角色ID',
+    UNIQUE INDEX `uk_post_role` (`post_id`, `role_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '岗位权限表';
+  COLLATE = utf8mb4_general_ci COMMENT = '岗位角色表';
 
 CREATE TABLE `sys_role`
 (
