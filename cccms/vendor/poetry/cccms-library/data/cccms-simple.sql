@@ -16,9 +16,7 @@ CREATE TABLE `sys_user`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '用户表';
 INSERT INTO `sys_user` (`id`, `nickname`, `username`, `password`, `status`)
-VALUES (1, '超级管理员', 'admin', '21232f297a57a5a743894a0e4a801fc3', 1),
-       (2, '测试用户1', 'admin888', '21232f297a57a5a743894a0e4a801fc3', 1),
-       (3, '测试用户2', 'admin999', '21232f297a57a5a743894a0e4a801fc3', 1);
+VALUES (1, '超级管理员', 'admin', '21232f297a57a5a743894a0e4a801fc3', 1);
 
 CREATE TABLE `sys_user_dept_post`
 (
@@ -48,8 +46,6 @@ CREATE TABLE `sys_dept`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '部门表';
-INSERT INTO `sys_dept` (`id`, `dept_id`, `dept_ids`, `dept_name`, `dept_desc`, `status`)
-VALUES (1, 0, '1', '客服', '客服', 1);
 
 CREATE TABLE `sys_dept_role`
 (
@@ -102,8 +98,6 @@ CREATE TABLE `sys_role`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '角色表';
-INSERT INTO `sys_role` (`id`, `role_id`, `role_ids`, `role_name`, `role_desc`, `status`)
-VALUES (1, 0, '1', '客服', '客服', 1);
 
 CREATE TABLE `sys_role_node`
 (
@@ -113,19 +107,6 @@ CREATE TABLE `sys_role_node`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '角色权限表';
-
-INSERT INTO `sys_role_node` (`role_id`, `node`)
-VALUES (1, 'node_1_1'),
-       (1, 'node_1_2'),
-       (1, 'node_1_3'),
-       (2, 'node_2_1'),
-       (2, 'node_2_2'),
-       (2, 'node_2_3'),
-       (2, 'node_1_3'),
-       (3, 'node_3_1'),
-       (3, 'node_3_2'),
-       (3, 'node_3_3'),
-       (2, 'node_1_3');
 
 CREATE TABLE `sys_menu`
 (
