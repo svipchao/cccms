@@ -94,22 +94,22 @@ class UserService extends Service
             $userDept = SysDept::mk()->getUserDept($userInfo['id']);
             $userPost = SysPost::mk()->getUserPost($userInfo['id']);
             /*
-                EXPLAIN
-                select node from sys_role_node where role_id in (
-                    select role_id from sys_post_role where post_id in (
-                        select post_id from sys_user_dept_post where user_id = 1 and post_id in (
-                            select id from sys_post where `status` = 1
-                        )
-                    )
-                )
-                or
-                role_id in (
-                    select role_id from sys_dept_role where dept_id in (
-                        select dept_id from sys_user_dept_post where user_id = 1 and dept_id in (
-                            select id from sys_dept where `status` = 1
-                        )
-                    )
-                )
+EXPLAIN
+select node from sys_role_node where role_id in (
+    select role_id from sys_post_role where post_id in (
+        select post_id from sys_user_dept_post where user_id = 1 and post_id in (
+            select id from sys_post where `status` = 1
+        )
+    )
+)
+or
+role_id in (
+    select role_id from sys_dept_role where dept_id in (
+        select dept_id from sys_user_dept_post where user_id = 1 and dept_id in (
+            select id from sys_dept where `status` = 1
+        )
+    )
+)
              */
             dump($userDept);
             halt($userPost);

@@ -114,6 +114,19 @@ CREATE TABLE `sys_role_node`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '角色权限表';
 
+INSERT INTO `sys_role_node` (`role_id`, `node`)
+VALUES (1, 'node_1_1'),
+       (1, 'node_1_2'),
+       (1, 'node_1_3'),
+       (2, 'node_2_1'),
+       (2, 'node_2_2'),
+       (2, 'node_2_3'),
+       (2, 'node_1_3'),
+       (3, 'node_3_1'),
+       (3, 'node_3_2'),
+       (3, 'node_3_3'),
+       (2, 'node_1_3');
+
 CREATE TABLE `sys_menu`
 (
     `id`          int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
