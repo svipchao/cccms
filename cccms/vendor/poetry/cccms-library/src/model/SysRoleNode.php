@@ -8,7 +8,7 @@ use cccms\Model;
 
 class SysRoleNode extends Model
 {
-    public function getNodes(int $user_id = 0)
+    public function getNodes(int $user_id = 0): array
     {
         return $this->where('role_id', 'in', function ($query) use ($user_id) {
             $userDeptIds = array_column(SysDept::mk()->getUserDept($user_id), 'id');

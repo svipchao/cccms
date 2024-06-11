@@ -17,7 +17,7 @@ class NodeService extends Service
      */
     protected function getFrameNodes(): array
     {
-        $data = $this->app->cache->get('SysFrameNodes') ?? [];
+        $data = static::$app->cache->get('SysFrameNodes') ?? [];
         if (empty($data)) {
             $data = $this->getNodesInfo();
             foreach ($data as $key => $val) {
@@ -25,7 +25,7 @@ class NodeService extends Service
                     unset($data[$key]);
                 }
             }
-            $this->app->cache->set('SysFrameNodes', $data);
+            static::$app->cache->set('SysFrameNodes', $data);
         }
         return $data;
     }

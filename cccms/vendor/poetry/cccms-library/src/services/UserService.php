@@ -31,7 +31,7 @@ class UserService extends Service
     public static function getUserInfo(string $key = 'all', mixed $default = null): mixed
     {
         // $userInfo = JwtExtend::verifyToken(static::getAccessToken());
-        $userInfo = SysUser::mk()->findOrEmpty(1)->toArray();
+        $userInfo = SysUser::mk()->findOrEmpty(2)->toArray();
         if (!$userInfo || !empty($userInfo['exp']) && $userInfo['exp'] < time()) {
             if ($default !== '') return $default;
             _result(['code' => 401, 'msg' => '登陆状态失效，请重新登陆'], _getEnCode());
@@ -87,7 +87,7 @@ class UserService extends Service
         if (static::isAdmin()) return NodeService::instance()->getNodes();
         $user_id = $user_id ?: static::getUserId();
         $data = static::$app->cache->get('SysUserAuth_' . $user_id, []);
-        if (!empty($data) && !static::isAdmin()) {
+        if (empty($data) && !static::isAdmin()) {
             $data = SysRoleNode::mk()->getNodes($user_id);
             static::$app->cache->set('SysUserAuth_' . $user_id, $data);
         }
@@ -96,10 +96,10 @@ class UserService extends Service
 
     /**
      * 获取用户拥有的部门(权限范围)
-     * @param string $format
+     * @param int $user_id
      * @return array
      */
-    public function getUserDept(string $format = 'default'): array
+    public static function getUserDept(int $user_id = 0): array
     {
         if (static::isAdmin()) return SysDept::mk()->getAllOpenDept();
         $user_id = $user_id ?: static::getUserId();
