@@ -87,7 +87,7 @@ class UserService extends Service
         if (static::isAdmin()) return NodeService::instance()->getNodes();
         $user_id = $user_id ?: static::getUserId();
         $data = static::$app->cache->get('SysUserAuth_' . $user_id, []);
-        if (true || !empty($data) && !static::isAdmin()) {
+        if (!empty($data) && !static::isAdmin()) {
             $data = SysRoleNode::mk()->getNodes($user_id);
             static::$app->cache->set('SysUserAuth_' . $user_id, $data);
         }
