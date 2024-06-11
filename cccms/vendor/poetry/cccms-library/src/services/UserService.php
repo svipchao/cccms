@@ -6,7 +6,7 @@ namespace cccms\services;
 
 use cccms\Service;
 use cccms\extend\{JwtExtend, ArrExtend};
-use cccms\model\{SysDept, SysPost, SysRole, SysUser};
+use cccms\model\{SysDept, SysPost, SysRole, SysRoleNode, SysUser};
 
 class UserService extends Service
 {
@@ -78,73 +78,35 @@ class UserService extends Service
     }
 
     /**
-     * 获取用户拥有的权限信息
-     * @param array $userInfo
+     * 获取用户拥有的权限节点
+     * @param int $user_id
      * @return array
      */
-    public static function getUserAuths(array $userInfo = []): array
+    public static function getUserNodes(int $user_id = 0): array
     {
-        $userInfo = $userInfo ?: static::getUserInfo();
-        // 查询部门-岗位
-        // 查询部门-角色
-        // 查询岗位-权限
-        // 查询角色-权限
-        $data = static::$app->cache->get('SysUserAuth_' . $userInfo['id'], []);
+        if (static::isAdmin()) return NodeService::instance()->getNodes();
+        $user_id = $user_id ?: static::getUserId();
+        $data = static::$app->cache->get('SysUserAuth_' . $user_id, []);
         if (true || !empty($data) && !static::isAdmin()) {
-            $userDept = SysDept::mk()->getUserDept($userInfo['id']);
-            $userPost = SysPost::mk()->getUserPost($userInfo['id']);
-            /*
-EXPLAIN
-select node from sys_role_node where role_id in (
-    select role_id from sys_post_role where post_id in (
-        select post_id from sys_user_dept_post where user_id = 1 and post_id in (
-            select id from sys_post where `status` = 1
-        )
-    )
-)
-or
-role_id in (
-    select role_id from sys_dept_role where dept_id in (
-        select dept_id from sys_user_dept_post where user_id = 1 and dept_id in (
-            select id from sys_dept where `status` = 1
-        )
-    )
-)
-             */
-            dump($userDept);
-            halt($userPost);
-            // $sql = `select node from sys_role_node where role_id in `;
-            // $userData = SysAuth::mk()->where('user_id', $userInfo['id'])->_list();
-            // $userDeptIds = array_filter(array_column($userData, 'dept_id'));
-            // $userRoleIds = array_filter(array_column($userData, 'role_id'));
-            // 部门暂时不允许设置角色和权限
-            // $deptData = SysAuth::mk()->where('dept_id', 'in', $userDeptIds)->_list();
-            // $deptRoleIds = array_filter(array_merge(array_column($userData, 'role_id'), array_column($deptData, 'role_id')));
-            // $roleData = SysAuth::mk()->where('role_id', 'in', $userRoleIds)->_list();
-            // $data = array_merge($userData, $roleData);
-            // foreach ($data as &$d) $d['key'] = md5(join('|', $d));
-            // $data = array_values(array_column($data, null, 'key'));
-            static::$app->cache->set('SysUserAuth_' . $userInfo['id'], $data);
+            $data = SysRoleNode::mk()->getNodes($user_id);
+            static::$app->cache->set('SysUserAuth_' . $user_id, $data);
         }
-        $data = [];
-        return $data;
+        return array_keys(NodeService::instance()->setFrameNodes($data));
     }
 
     /**
-     * 获取用户拥有的部门ID(权限范围)
+     * 获取用户拥有的部门(权限范围)
      * @param string $format
      * @return array
      */
     public function getUserDept(string $format = 'default'): array
     {
-        if (static::isAdmin()) {
-            $data = SysDept::mk()->where('status', 1)->_list();
-        } else {
-            $data = SysDept::mk()->where([
-                ['status', '=', 1],
-                ['id', 'in', $this->getUserDeptIds()]
-            ])->_list();
-        }
+        if (static::isAdmin()) return SysDept::mk()->getAllOpenDept();
+        $user_id = $user_id ?: static::getUserId();
+        $data = SysDept::mk()->where([
+            ['status', '=', 1],
+            ['id', 'in', $this->getUserDeptIds()]
+        ])->_list();
         if ($format == 'tree') {
             return ArrExtend::toTreeArray($data, 'id', 'dept_id');
         } elseif ($format == 'list') {
@@ -161,6 +123,8 @@ role_id in (
      */
     public static function getUserDeptIds(array $userInfo = []): array
     {
+        // 查找拥有的岗位(权限范围)
+        // 查找部门ID
         $userInfo = $userInfo ?: static::getUserInfo();
         // 0:本人,1:本人及下属,2:本部门,3:本部门及下属部门,4:全部
         $data = static::getUserAuths($userInfo);
@@ -195,19 +159,6 @@ role_id in (
         // }, $roleIds))->column('id') : [];
         // if (empty($roleIds) && empty($roleChildIds)) return [];
         return ArrExtend::toOneUnique($roleIds);
-    }
-
-    /**
-     * 获取用户拥有的权限节点
-     * @param array $userInfo
-     * @return array
-     */
-    public static function getUserNodes(array $userInfo = []): array
-    {
-        $userInfo = $userInfo ?: static::getUserInfo();
-        if (static::isAdmin()) return NodeService::instance()->getNodes();
-        $nodes = array_column(static::getUserAuths($userInfo), 'node');
-        return array_keys(NodeService::instance()->setFrameNodes($nodes));
     }
 
     /**

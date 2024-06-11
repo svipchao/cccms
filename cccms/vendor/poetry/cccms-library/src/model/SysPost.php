@@ -14,10 +14,16 @@ class SysPost extends Model
         return $this->hasMany(SysUserDeptPost::class, 'dept_id', 'id');
     }
 
-    public function getUserPost(int $userId)
+    public function getUserPost(int $userId = 0, int $status = 1)
     {
-        return $this->hasWhere('deptPostRelation', function ($query) use ($userId) {
-            $query->where('user_id', '=', $userId);
-        })->where('status', 1)->select()->toArray();
+        if ($status == -1) {
+            return $this->hasWhere('deptPostRelation', function ($query) use ($userId) {
+                $query->where('user_id', '=', $userId);
+            })->select()->toArray();
+        } else {
+            return $this->hasWhere('deptPostRelation', function ($query) use ($userId) {
+                $query->where('user_id', '=', $userId);
+            })->where('status', $status)->select()->toArray();
+        }
     }
 }

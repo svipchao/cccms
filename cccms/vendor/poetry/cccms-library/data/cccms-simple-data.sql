@@ -45,3 +45,34 @@ VALUES (1, 'node_1_1'),
        (3, 'node_3_1'),
        (3, 'node_3_2'),
        (3, 'node_3_3');
+
+
+
+select distinct node
+from sys_role_node
+where role_id in (select role_id
+                  from sys_post_role
+                  where post_id in (select post_id
+                                    from sys_user_dept_post
+                                    where user_id = 2 and post_id in (select id from sys_post where `status` = 1))
+                  union
+                  select role_id
+                  from sys_dept_role
+                  where dept_id in (select dept_id
+                                    from sys_user_dept_post
+                                    where user_id = 2 and dept_id in (select id from sys_dept where `status` = 1)));
+
+
+SELECT DISTINCT rnode.node
+FROM sys_role_node AS rnode
+         JOIN (select dept_id, role_id from sys_dept_role union select post_id, role_id from sys_post_role) AS drole
+              ON rnode.role_id = drole.role_id
+
+         JOIN sys_user_dept_post AS udep ON drole.dept_id = udep.post_id
+
+         JOIN sys_user_dept_post AS udept ON drole.dept_id = udept.dept_id
+         JOIN sys_post AS post ON udep.post_id = post.id AND post.status = 1
+
+         JOIN sys_dept AS dept ON udept.dept_id = dept.id AND dept.status = 1
+WHERE udep.user_id = 2
+   OR udept.user_id = 2;

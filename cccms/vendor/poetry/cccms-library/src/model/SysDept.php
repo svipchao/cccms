@@ -112,35 +112,9 @@ class SysDept extends Model
         return $this->hasMany(SysUserDeptPost::class, 'dept_id', 'id');
     }
 
-    /**
-     * 获取组织状态开启列表
-     * @param $isTree
-     * @return array
-     */
-    public function getAllOpenDept($isTree = false): array
+    public function getAllOpenDept(): array
     {
-        if ($isTree) {
-            // 移除部门缓存
-            // $data = cache('allDeptOpenTree');
-            // if (empty($data)) {
-            //     $data = $this->where('status', 1)->_list();
-            //     $data = ArrExtend::toTreeArray($data, 'id', 'dept_id');
-            //     cache('allDeptOpenTree', $data);
-            // }
-            $data = $this->where('status', 1)->_list();
-            $data = ArrExtend::toTreeArray($data, 'id', 'dept_id');
-        } else {
-            // 移除部门缓存
-            // $data = cache('allDeptOpenList');
-            // if (empty($data)) {
-            //     $data = $this->where('status', 1)->_list();
-            //     $data = ArrExtend::toTreeList($data, 'id', 'dept_id');
-            //     cache('allDeptOpenList', $data);
-            // }
-            $data = $this->where('status', 1)->_list();
-            $data = ArrExtend::toTreeList($data, 'id', 'dept_id');
-        }
-        return $data;
+        return $this->where('status', 1)->_list();
     }
 
     public function getAllOpenDeptIds(): array
@@ -148,10 +122,16 @@ class SysDept extends Model
         return array_column($this->getAllOpenDept(), 'id');
     }
 
-    public function getUserDept(int $userId)
+    public function getUserDept(int $userId = 0, int $status = 1)
     {
-        return $this->hasWhere('deptPostRelation', function ($query) use ($userId) {
-            $query->where('user_id', '=', $userId);
-        })->where('status', 1)->select()->toArray();
+        if ($status == -1) {
+            return $this->hasWhere('deptPostRelation', function ($query) use ($userId) {
+                $query->where('user_id', '=', $userId);
+            })->select()->toArray();
+        } else {
+            return $this->hasWhere('deptPostRelation', function ($query) use ($userId) {
+                $query->where('user_id', '=', $userId);
+            })->where('status', $status)->select()->toArray();
+        }
     }
 }
