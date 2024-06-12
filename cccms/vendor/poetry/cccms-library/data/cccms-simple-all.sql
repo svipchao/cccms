@@ -22,22 +22,22 @@ CREATE TABLE `sys_user_dept`
 (
     `user_id`    int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
     `dept_id`    int unsigned NOT NULL DEFAULT 0 COMMENT '部门ID',
-    `auth_range` tinyint(4)   NOT NULL DEFAULT 0 COMMENT '权限范围【0:本人,1:本部门,2:本部门及下属部门】',
+    `post_range` tinyint(4)   NOT NULL DEFAULT 0 COMMENT '权限范围【0:本人,1:本部门,2:本部门及下属部门】',
     INDEX `idx_dept_id` (`dept_id`) USING BTREE,
     UNIQUE INDEX `uk_user_dept` (`user_id`, `dept_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '用户部门表';
 
-# CREATE TABLE `sys_user_post`
-# (
-#     `user_id` int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
-#     `post_id` int unsigned NOT NULL DEFAULT 0 COMMENT '岗位ID',
-#     INDEX `idx_post_id` (`post_id`) USING BTREE,
-#     UNIQUE INDEX `uk_user_post` (`user_id`, `post_id`)
-# ) ENGINE = InnoDB
-#   DEFAULT CHARSET = utf8mb4
-#   COLLATE = utf8mb4_general_ci COMMENT = '用户岗位表';
+CREATE TABLE `sys_user_post`
+(
+    `user_id` int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
+    `post_id` int unsigned NOT NULL DEFAULT 0 COMMENT '岗位ID',
+    INDEX `idx_post_id` (`post_id`) USING BTREE,
+    UNIQUE INDEX `uk_user_post` (`user_id`, `post_id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '用户岗位表';
 
 CREATE TABLE `sys_dept`
 (
@@ -66,32 +66,32 @@ CREATE TABLE `sys_dept_role`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '部门角色表';
 
-# CREATE TABLE `sys_post`
-# (
-#     `id`          int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
-# #     `dept_id`     int unsigned NOT NULL DEFAULT 0 COMMENT '部门ID',
-#     `post_id`     int unsigned NOT NULL DEFAULT 0 COMMENT '部门ID',
-#     `post_name`   varchar(32)  NOT NULL DEFAULT '' COMMENT '岗位名称',
-#     `post_desc`   varchar(255) NOT NULL DEFAULT '' COMMENT '岗位备注',
-# #     `post_range`  tinyint(4)   NOT NULL DEFAULT 0 COMMENT '权限范围【0:本人,1:本人及下属,2:本部门,3:本部门及下属部门】',
-# #     `is_default`  tinyint      NOT NULL DEFAULT 0 COMMENT '默认岗位【0:否,1:是】',
-#     `status`      tinyint      NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
-#     `delete_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '删除时间',
-#     `create_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-#     `update_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
-#     PRIMARY KEY (`id`) USING BTREE
-# ) ENGINE = InnoDB
-#   DEFAULT CHARSET = utf8mb4
-#   COLLATE = utf8mb4_general_ci COMMENT = '岗位表';
+CREATE TABLE `sys_post`
+(
+    `id`          int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+#     `dept_id`     int unsigned NOT NULL DEFAULT 0 COMMENT '部门ID',
+    `post_id`     int unsigned NOT NULL DEFAULT 0 COMMENT '部门ID',
+    `post_name`   varchar(32)  NOT NULL DEFAULT '' COMMENT '岗位名称',
+    `post_desc`   varchar(255) NOT NULL DEFAULT '' COMMENT '岗位备注',
+#     `post_range`  tinyint(4)   NOT NULL DEFAULT 0 COMMENT '权限范围【0:本人,1:本人及下属,2:本部门,3:本部门及下属部门】',
+#     `is_default`  tinyint      NOT NULL DEFAULT 0 COMMENT '默认岗位【0:否,1:是】',
+    `status`      tinyint      NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
+    `delete_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '删除时间',
+    `create_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '岗位表';
 
-# CREATE TABLE `sys_post_role`
-# (
-#     `post_id` int unsigned NOT NULL DEFAULT 0 COMMENT '岗位ID',
-#     `role_id` int unsigned NOT NULL DEFAULT 0 COMMENT '角色ID',
-#     UNIQUE INDEX `uk_post_role` (`post_id`, `role_id`)
-# ) ENGINE = InnoDB
-#   DEFAULT CHARSET = utf8mb4
-#   COLLATE = utf8mb4_general_ci COMMENT = '岗位角色表';
+CREATE TABLE `sys_post_role`
+(
+    `post_id` int unsigned NOT NULL DEFAULT 0 COMMENT '岗位ID',
+    `role_id` int unsigned NOT NULL DEFAULT 0 COMMENT '角色ID',
+    UNIQUE INDEX `uk_post_role` (`post_id`, `role_id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '岗位角色表';
 
 CREATE TABLE `sys_role`
 (

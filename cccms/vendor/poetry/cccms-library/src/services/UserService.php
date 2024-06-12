@@ -103,6 +103,18 @@ class UserService extends Service
     {
         if (static::isAdmin()) return SysDept::mk()->getAllOpenDept();
         $user_id = $user_id ?: static::getUserId();
+        $userDeptIds = array_column(SysDept::mk()->getUserDept($user_id), 'id');
+        // 过滤部门状态关闭所属的岗位
+        // 0:本人,1:本人及下属,2:本部门,3:本部门及下属部门
+        [$deptIds, $deptRange3Ids] = [[], []];
+        $userPost = SysPost::mk()->getUserPost($user_id);
+        foreach($userPost as $post){
+
+        }
+        $userPostIds = array_filter(array_map(function ($item) use ($userDeptIds) {
+            return in_array($item['dept_id'], $userDeptIds) ? $item['id'] : 0;
+        }, $userPost));
+        die;
         $data = SysDept::mk()->where([
             ['status', '=', 1],
             ['id', 'in', $this->getUserDeptIds()]

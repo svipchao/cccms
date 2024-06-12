@@ -205,7 +205,7 @@ class User extends Base
      */
     public function captcha()
     {
-        $res = UserService::getUserNodes();
+        $res = UserService::getUserDept();
         halt($res);
         die;
         $node = $this->request->get('node', 'admin/login/index');

@@ -109,7 +109,7 @@ class SysDept extends Model
 
     public function deptPostRelation(): HasMany
     {
-        return $this->hasMany(SysUserDeptPost::class, 'dept_id', 'id');
+        return $this->hasMany(SysUserDept::class, 'dept_id', 'id');
     }
 
     public function getAllOpenDept(): array

@@ -17,7 +17,7 @@ class SysUser extends Model
 
     public function deptRelation(): BelongsToMany
     {
-        return $this->belongsToMany(SysDept::class, SysUserDeptPost::class, 'dept_id', 'user_id');
+        return $this->belongsToMany(SysDept::class, SysUserDept::class, 'dept_id', 'user_id');
     }
 
     /**
