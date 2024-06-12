@@ -12,6 +12,7 @@ class SysRoleNode extends Model
     {
         return $this->where('role_id', 'in', function ($query) use ($user_id) {
             $userDeptIds = array_column(SysDept::mk()->getUserDept($user_id), 'id');
+            halt(SysPost::mk()->getUserPost($user_id));
             $userPostIds = array_column(SysPost::mk()->getUserPost($user_id), 'id');
             return $query->table('sys_post_role')->field('role_id')->union([
                 'SELECT role_id FROM sys_post_role where post_id in (' . join(',', $userDeptIds) . ')',
