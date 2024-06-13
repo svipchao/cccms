@@ -50,6 +50,7 @@ function http(
       }
       // 自动携带token
       const userStore = useUserStore();
+      console.log(userStore);
       if (userStore.accessToken) {
         config.headers.accessToken = userStore.accessToken;
       }

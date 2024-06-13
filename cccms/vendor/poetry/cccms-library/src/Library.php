@@ -46,7 +46,7 @@ class Library extends Service
             $this->setDatabaseQuery();
             // 设置全局中间件
             $this->app->middleware->import(array_merge_recursive(
-                [Cors::class, MultiApp::class, Permission::class, Log::class],
+                [Cors::class, MultiApp::class, Log::class],
                 $this->app->config->get('cccms.middleware', [])
             ));
         });

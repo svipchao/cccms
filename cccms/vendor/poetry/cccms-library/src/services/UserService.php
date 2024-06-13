@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace cccms\services;
 
 use cccms\Service;
-use cccms\extend\{JwtExtend, ArrExtend};
-use cccms\model\{SysDept, SysPost, SysRole, SysRoleNode, SysUser, SysUserDept};
+use cccms\model\{SysDept, SysRoleNode, SysUser, SysUserDept};
+use think\db\exception\{DbException, DataNotFoundException, ModelNotFoundException};
 
 class UserService extends Service
 {
@@ -105,7 +105,7 @@ class UserService extends Service
         $user_id = $user_id ?: static::getUserId();
         $userDeptRelation = SysUserDept::mk()->getUserDept($user_id);
         // 0:本人,1:本部门,2:本部门及下属部门
-        [$deptIds, $deptRange3Ids] = [[], []];
+        [$deptIds, $range3Ids] = [[], []];
         foreach ($userDeptRelation as $relation) {
             if ($relation['auth_range'] == 1) {
                 $deptIds[$relation['dept_id']] = $relation['dept_id'];
@@ -118,12 +118,12 @@ class UserService extends Service
             $query->whereOr(array_map(function ($item) {
                 return ['dept_path', 'like', '%,' . $item . ',%'];
             }, $range3Ids))->whereOr('id', 'in', $deptIds);
-        })->where('status', 1)->select()->toArray();
+        })->where('status', 1)->_list();
     }
 
     /**
      * 获取用户拥有的部门ID(权限范围)
-     * @param array $userInfo
+     * @param int $user_id
      * @return array
      */
     public static function getUserDeptIds(int $user_id = 0): array

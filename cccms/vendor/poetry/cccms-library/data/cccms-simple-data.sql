@@ -33,7 +33,7 @@ VALUES (1, 1),
 # VALUES (1, 1),
 #        (2, 1);
 
-INSERT INTO `sys_role` (`id`, `role_id`, `role_ids`, `role_name`, `role_desc`, `status`)
+INSERT INTO `sys_role` (`id`, `role_id`, `role_path`, `role_name`, `role_desc`, `status`)
 VALUES (1, 0, '1', '角色1', '角色1', 1),
        (2, 0, '1', '角色2', '角色2', 1),
        (3, 0, '1', '角色3', '角色3', 1);

@@ -53,7 +53,7 @@ CREATE TABLE `sys_dept`
 (
     `id`          int unsigned  NOT NULL AUTO_INCREMENT COMMENT 'ID',
     `dept_id`     int unsigned  NOT NULL DEFAULT 0 COMMENT '父级ID',
-    `dept_ids`    varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
+    `dept_path`   varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
     `dept_name`   varchar(32)   NOT NULL DEFAULT '' COMMENT '部门名称',
     `dept_desc`   varchar(255)  NOT NULL DEFAULT '' COMMENT '部门备注',
     `post_id`     int unsigned  NOT NULL DEFAULT 0 COMMENT '默认岗位ID',
@@ -107,7 +107,7 @@ CREATE TABLE `sys_role`
 (
     `id`          int unsigned  NOT NULL AUTO_INCREMENT COMMENT 'ID',
     `role_id`     int unsigned  NOT NULL DEFAULT 0 COMMENT '父级ID',
-    `role_ids`    varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
+    `role_path`   varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
     `role_name`   varchar(32)   NOT NULL DEFAULT '' COMMENT '角色名称',
     `role_desc`   varchar(255)  NOT NULL DEFAULT '' COMMENT '角色备注',
     `status`      tinyint       NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
@@ -200,7 +200,7 @@ INSERT INTO `sys_config` (`id`, `cate_name`, `name`, `label`, `value`, `configur
 VALUES (1, 'site', 'siteName', '网站名称', '诗无尽头i', '{"type":"input","placeholder":"请输入网站名称","default":"默认站点","description":"请输入网站名称"}'),
        (2, 'site', 'siteIcp', '备案号', '豫ICP备93093369号', '{"type":"input","placeholder":"请输入网站备案号","default":"豫ICP备93093369号","description":"请输入网站备案号"}'),
        (3, 'captcha', 'open', '启用验证码', 1, '{"type":"switch","default":1,"description":"是否启用验证码","options":{"checked":1,"unchecked":0}}'),
-       (4, 'captcha', 'math', '验证码类型', 0, '{"type":"select","placeholder":"请选择验证码类型","default":0,"description":"请选择验证码类型","options":[{"value":"0","label":"普通验证码"},{"value":"1","label":"算数验证码"}]}'),
+       (4, 'captcha', 'math', '验证码类型', 1, '{"type":"select","placeholder":"请选择验证码类型","default":0,"description":"请选择验证码类型","options":[{"value":"0","label":"普通验证码"},{"value":"1","label":"算数验证码"}]}'),
        (5, 'captcha', 'length', '验证码位数', 4, '{"type":"input-number","placeholder":"请输入验证码位数，建议4位或5位","default":4,"description":"请输入验证码位数，建议4位或5位"}'),
        (6, 'captcha', 'fontSize', '验证码字体大小', 22, '{"type":"input-number","placeholder":"请输入验证码字体大小(px)","default":22,"description":"请输入验证码字体大小(px)"}'),
        (7, 'captcha', 'matchCase', '是否区分大小写', 0, '{"type":"switch","default":0,"description":"是否区分大小写","options":{"checked":1,"unchecked":0}}'),
