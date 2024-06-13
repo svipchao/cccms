@@ -15,11 +15,11 @@ class NodeService extends Service
      * 所有框架父级节点 应用节点、类节点
      * @return array
      */
-    protected function getFrameNodes(): array
+    protected static function getFrameNodes(): array
     {
         $data = static::$app->cache->get('SysFrameNodes') ?? [];
         if (empty($data)) {
-            $data = $this->getNodesInfo();
+            $data = static::getNodesInfo();
             foreach ($data as $key => $val) {
                 if (isset($val['encode'], $val['methods'])) {
                     unset($data[$key]);
@@ -35,9 +35,9 @@ class NodeService extends Service
      * @param array $nodes
      * @return array
      */
-    public function setFrameNodes(array $nodes): array
+    public static function setFrameNodes(array $nodes): array
     {
-        $nodes = array_merge($this->getFrameNodes(), array_intersect_key($this->getNodesInfo(), array_flip($nodes)));
+        $nodes = array_merge(static::getFrameNodes(), array_intersect_key(static::getNodesInfo(), array_flip($nodes)));
         $tree = ArrExtend::toTreeArray($nodes, 'currentNode', 'parentNode');
         $call = function (callable $call, array $tree = [], array &$data = []) {
             foreach ($tree as $val) {

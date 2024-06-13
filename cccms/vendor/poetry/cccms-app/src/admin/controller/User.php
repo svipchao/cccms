@@ -130,7 +130,7 @@ class User extends Base
             ];
         }
         $userInfo = SysUser::mk()->withoutGlobalScope()
-            ->field('id,invite_id,nickname,username,avatar,phone,email,range')
+            ->field('id,nickname,username,avatar,phone')
             ->where($where)->findOrEmpty();
         if ($userInfo->isEmpty()) {
             _result(['code' => 401, 'msg' => '账号或密码错误'], _getEnCode());
@@ -205,7 +205,7 @@ class User extends Base
      */
     public function captcha()
     {
-        $node = $this->request->get('node', 'admin/login/index');
+        $node = $this->request->get('node', '');
         _result(['code' => 200, 'msg' => 'success', 'data' => CaptchaService::instance()->create($node)]);
     }
 }

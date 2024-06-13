@@ -78,7 +78,7 @@ class SysUser extends Model
      */
     public function getNodesAttr($value, $data): array
     {
-        $data['nodes'] = UserService::instance()->getUserNodes($data);
+        $data['nodes'] = UserService::instance()->getUserNodes($data['id']);
         $this->data($data, true);
         return $data['nodes'];
     }

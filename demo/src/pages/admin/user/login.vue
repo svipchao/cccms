@@ -248,9 +248,9 @@ const switchTags = (key) => {
 const getCaptchaFun = async (key) => {
   let node = '';
   if (key == 'login') {
-    node = 'admin/login/index';
+    node = 'admin/user/login';
   } else {
-    node = 'admin/login/register';
+    node = 'admin/user/register';
   }
   const { data } = await getCaptcha({ node: node });
   captcha.value = data.base64;
