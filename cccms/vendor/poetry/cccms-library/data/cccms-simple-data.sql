@@ -8,9 +8,13 @@ VALUES (2, 1, 1),
        (3, 1, 1),
        (3, 2, 2);
 
-INSERT INTO `sys_dept` (`id`, `dept_id`, `dept_ids`, `dept_name`, `dept_desc`, `post_id`, `status`)
-VALUES (1, 0, '1', '部门1', '部门1', 1, 1),
-       (2, 0, '1', '部门2', '部门2', 2, 1);
+INSERT INTO `sys_dept` (`id`, `dept_id`, `dept_path`, `dept_name`, `dept_desc`, `post_id`, `status`)
+VALUES (1, 0, ',1,', '部门1', '部门1', 1, 1),
+       (2, 0, ',2,', '部门2', '部门2', 2, 1),
+       (3, 1, ',1,3,', '部门3', '部门3', 2, 1),
+       (4, 3, ',1,3,4,', '部门4', '部门4', 2, 1),
+       (5, 3, ',1,3,5,', '部门5', '部门5', 2, 1),
+       (6, 2, ',2,6,', '部门6', '部门6', 2, 1);
 
 INSERT INTO `sys_dept_role` (`dept_id`, `role_id`)
 VALUES (1, 1),
@@ -47,3 +51,10 @@ VALUES (1, 'admin/user/create'),
        (3, 'admin/dept/delete'),
        (3, 'admin/dept/update'),
        (3, 'admin/dept/index');
+
+
+
+SELECT `node`
+FROM `sys_role_node`
+WHERE `role_id` IN (SELECT `role_id` FROM `sys_dept_role` WHERE `dept_id` IN (1, 2))
+  AND `role_id` NOT IN (SELECT `id` FROM `sys_role` WHERE `status` = 0)

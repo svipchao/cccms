@@ -107,7 +107,7 @@ class SysDept extends Model
         ]);
     }
 
-    public function deptPostRelation(): HasMany
+    public function deptRelation(): HasMany
     {
         return $this->hasMany(SysUserDept::class, 'dept_id', 'id');
     }
@@ -122,16 +122,17 @@ class SysDept extends Model
         return array_column($this->getAllOpenDept(), 'id');
     }
 
-    public function getUserDept(int $userId = 0, int $status = 1)
+    public function getUserDept(int $userId = 0)
     {
-        if ($status == -1) {
-            return $this->hasWhere('deptPostRelation', function ($query) use ($userId) {
-                $query->where('user_id', '=', $userId);
-            })->select()->toArray();
-        } else {
-            return $this->hasWhere('deptPostRelation', function ($query) use ($userId) {
-                $query->where('user_id', '=', $userId);
-            })->where('status', $status)->select()->toArray();
-        }
+        return $this->hasWhere('deptRelation', function ($query) use ($userId) {
+            $query->where('user_id', '=', $userId);
+        })->where('status', 1)->select()->toArray();
+    }
+
+    public function getUserDeptAll(int $userId = 0)
+    {
+        return $this->hasWhere('deptRelation', function ($query) use ($userId) {
+            $query->where('user_id', '=', $userId);
+        })->select()->toArray();
     }
 }

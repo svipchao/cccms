@@ -6,7 +6,7 @@ namespace cccms\services;
 
 use cccms\Service;
 use cccms\extend\{JwtExtend, ArrExtend};
-use cccms\model\{SysDept, SysPost, SysRole, SysRoleNode, SysUser};
+use cccms\model\{SysDept, SysPost, SysRole, SysRoleNode, SysUser, SysUserDept};
 
 class UserService extends Service
 {
@@ -88,7 +88,7 @@ class UserService extends Service
         $user_id = $user_id ?: static::getUserId();
         $data = static::$app->cache->get('SysUserAuth_' . $user_id, []);
         if (empty($data) && !static::isAdmin()) {
-            $data = SysRoleNode::mk()->getNodes($user_id);
+            $data = SysRoleNode::mk()->getUserNodes($user_id);
             static::$app->cache->set('SysUserAuth_' . $user_id, $data);
         }
         return array_keys(NodeService::instance()->setFrameNodes($data));
@@ -103,29 +103,22 @@ class UserService extends Service
     {
         if (static::isAdmin()) return SysDept::mk()->getAllOpenDept();
         $user_id = $user_id ?: static::getUserId();
-        $userDeptIds = array_column(SysDept::mk()->getUserDept($user_id), 'id');
-        // 过滤部门状态关闭所属的岗位
-        // 0:本人,1:本人及下属,2:本部门,3:本部门及下属部门
+        $userDeptRelation = SysUserDept::mk()->getUserDept($user_id);
+        // 0:本人,1:本部门,2:本部门及下属部门
         [$deptIds, $deptRange3Ids] = [[], []];
-        $userPost = SysPost::mk()->getUserPost($user_id);
-        foreach($userPost as $post){
-
+        foreach ($userDeptRelation as $relation) {
+            if ($relation['auth_range'] == 1) {
+                $deptIds[$relation['dept_id']] = $relation['dept_id'];
+            } elseif ($relation['auth_range'] == 2) {
+                $range3Ids[$relation['dept_id']] = $relation['dept_id'];
+            }
         }
-        $userPostIds = array_filter(array_map(function ($item) use ($userDeptIds) {
-            return in_array($item['dept_id'], $userDeptIds) ? $item['id'] : 0;
-        }, $userPost));
-        die;
-        $data = SysDept::mk()->where([
-            ['status', '=', 1],
-            ['id', 'in', $this->getUserDeptIds()]
-        ])->_list();
-        if ($format == 'tree') {
-            return ArrExtend::toTreeArray($data, 'id', 'dept_id');
-        } elseif ($format == 'list') {
-            return ArrExtend::toTreeList($data, 'id', 'dept_id');
-        } else {
-            return $data;
-        }
+        // $dept = SysDept::mk()->whereFindInSet('dept_path', 2)->select()->toArray();
+        return SysDept::mk()->where(function ($query) use ($deptIds, $range3Ids) {
+            $query->whereOr(array_map(function ($item) {
+                return ['dept_path', 'like', '%,' . $item . ',%'];
+            }, $range3Ids))->whereOr('id', 'in', $deptIds);
+        })->where('status', 1)->select()->toArray();
     }
 
     /**
@@ -133,57 +126,11 @@ class UserService extends Service
      * @param array $userInfo
      * @return array
      */
-    public static function getUserDeptIds(array $userInfo = []): array
+    public static function getUserDeptIds(int $user_id = 0): array
     {
-        // 查找拥有的岗位(权限范围)
-        // 查找部门ID
-        $userInfo = $userInfo ?: static::getUserInfo();
-        // 0:本人,1:本人及下属,2:本部门,3:本部门及下属部门,4:全部
-        $data = static::getUserAuths($userInfo);
-        [$deptIds, $range3Ids] = [[], []];
-        foreach ($data as $d) {
-            if ($userInfo['range'] == 2) {
-                $deptIds[$d['dept_id']] = $d['dept_id'];
-            } elseif ($userInfo['range'] == 3) {
-                $range3Ids[$d['dept_id']] = $d['dept_id'];
-            } elseif ($userInfo['range'] == 4) {
-                return SysDept::mk()->getAllOpenDeptIds();
-            }
-        }
-        $deptChildIds = $range3Ids ? SysDept::mk()->whereOr(array_map(function ($item) {
-            return ['dept_ids', 'like', '%,' . $item . ',%'];
-        }, $range3Ids))->column('id') : [];
-        if (empty($deptIds) && empty($deptChildIds)) return [];
-        return ArrExtend::toOneUnique([...$deptIds, ...$deptChildIds]);
-    }
-
-    /**
-     * 获取用户拥有的角色ID
-     * @param array $userInfo
-     * @return array
-     */
-    public function getUserRoleIds(array $userInfo = []): array
-    {
-        $data = $this->getUserAuths($userInfo);
-        $roleIds = array_column($data, 'role_id');
-        // $roleChildIds = $roleIds ? SysRole::mk()->whereOr(array_map(function ($item) {
-        //     return ['role_ids', 'like', '%,' . $item . ',%'];
-        // }, $roleIds))->column('id') : [];
-        // if (empty($roleIds) && empty($roleChildIds)) return [];
-        return ArrExtend::toOneUnique($roleIds);
-    }
-
-    /**
-     * 获取用户下级用户ID
-     * @param array $userInfo
-     * @return array
-     */
-    public function getUserSubUserIds(array $userInfo = []): array
-    {
-        $userInfo = $userInfo ?: $this->getUserInfo();
-        if ($userInfo['is_admin']) return [];
-        $range = array_column($this->getUserAuths($userInfo), 'range');
-        if (!in_array(1, $range)) return [$userInfo['id']];
-        return [...SysUser::mk()->where('user_id', $userInfo['id'])->column('id'), $userInfo['id']];
+        if (static::isAdmin()) return SysDept::mk()->getAllOpenDeptIds();
+        $user_id = $user_id ?: static::getUserId();
+        $dept = static::getUserDept($user_id);
+        return array_column($dept, 'id');
     }
 }

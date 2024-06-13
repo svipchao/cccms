@@ -29,6 +29,16 @@ CREATE TABLE `sys_user_dept`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '用户部门表';
 
+# CREATE TABLE `sys_user_role`
+# (
+#     `user_id` int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
+#     `role_id` int unsigned NOT NULL DEFAULT 0 COMMENT '角色ID',
+#     INDEX `idx_role_id` (`role_id`) USING BTREE,
+#     UNIQUE INDEX `uk_dept_role` (`user_id`, `role_id`)
+# ) ENGINE = InnoDB
+#   DEFAULT CHARSET = utf8mb4
+#   COLLATE = utf8mb4_general_ci COMMENT = '用户角色表';
+
 # CREATE TABLE `sys_user_post`
 # (
 #     `user_id` int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',

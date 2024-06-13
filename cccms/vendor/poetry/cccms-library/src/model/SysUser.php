@@ -20,6 +20,11 @@ class SysUser extends Model
         return $this->belongsToMany(SysDept::class, SysUserDept::class, 'dept_id', 'user_id');
     }
 
+    public function getUserDeptInfo()
+    {
+        
+    }
+
     /**
      * 获取用户权限菜单
      * @param array $userInfo

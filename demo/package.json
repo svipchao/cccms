@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arco-design/web-vue": "^2.55.2",
-    "@vueuse/core": "^10.9.0",
+    "@arco-design/web-vue": "^2.55.3",
+    "@vueuse/core": "^10.11.0",
     "axios": "^1.7.2",
     "less": "^4.2.0",
     "mitt": "^3.0.1",
@@ -19,10 +19,10 @@
     "pinia-plugin-persistedstate": "^3.2.1",
     "remixicon": "^4.2.0",
     "vue": "^3.4.27",
-    "vue-router": "^4.3.2"
+    "vue-router": "^4.3.3"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.4",
-    "vite": "^5.2.11"
+    "@vitejs/plugin-vue": "^5.0.5",
+    "vite": "^5.2.13"
   }
 }

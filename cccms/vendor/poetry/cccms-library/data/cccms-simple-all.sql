@@ -29,6 +29,16 @@ CREATE TABLE `sys_user_dept`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '用户部门表';
 
+CREATE TABLE `sys_user_role`
+(
+    `user_id` int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
+    `role_id` int unsigned NOT NULL DEFAULT 0 COMMENT '角色ID',
+    INDEX `idx_role_id` (`role_id`) USING BTREE,
+    UNIQUE INDEX `uk_dept_role` (`user_id`, `role_id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '用户角色表';
+
 CREATE TABLE `sys_user_post`
 (
     `user_id` int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
@@ -43,7 +53,7 @@ CREATE TABLE `sys_dept`
 (
     `id`          int unsigned  NOT NULL AUTO_INCREMENT COMMENT 'ID',
     `dept_id`     int unsigned  NOT NULL DEFAULT 0 COMMENT '父级ID',
-    `dept_ids`    varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
+    `dept_path`   varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
     `dept_name`   varchar(32)   NOT NULL DEFAULT '' COMMENT '部门名称',
     `dept_desc`   varchar(255)  NOT NULL DEFAULT '' COMMENT '部门备注',
     `post_id`     int unsigned  NOT NULL DEFAULT 0 COMMENT '默认岗位ID',
@@ -97,7 +107,7 @@ CREATE TABLE `sys_role`
 (
     `id`          int unsigned  NOT NULL AUTO_INCREMENT COMMENT 'ID',
     `role_id`     int unsigned  NOT NULL DEFAULT 0 COMMENT '父级ID',
-    `role_ids`    varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
+    `role_path`   varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
     `role_name`   varchar(32)   NOT NULL DEFAULT '' COMMENT '角色名称',
     `role_desc`   varchar(255)  NOT NULL DEFAULT '' COMMENT '角色备注',
     `status`      tinyint       NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
