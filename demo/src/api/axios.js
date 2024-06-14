@@ -1,6 +1,7 @@
 import axios from 'axios';
 import config from '@/config';
 import router from '@/router/index';
+import NProgress from 'nprogress';
 import { Message } from '@arco-design/web-vue';
 import { useUserStore } from '@/stores/admin/user.js';
 
@@ -39,6 +40,8 @@ function http(
   // 请求拦截
   service.interceptors.request.use(
     (config) => {
+      NProgress.configure({ minimum: 0.01 });
+      NProgress.start();
       removePending(config);
       custom_options.repeat_request_cancel && addPending(config);
       // 创建loading实例
@@ -50,7 +53,6 @@ function http(
       }
       // 自动携带token
       const userStore = useUserStore();
-      console.log(userStore);
       if (userStore.accessToken) {
         config.headers.accessToken = userStore.accessToken;
       }
@@ -76,6 +78,11 @@ function http(
       ) {
         Message.error(response.data.msg);
         return Promise.reject(response.data); // code不等于200, 页面具体逻辑就不执行了
+      }
+      if (NProgress.isStarted()) {
+        setTimeout(() => {
+          NProgress.done(true);
+        }, 100);
       }
       return custom_options.reduct_data_format ? response.data : response;
     },

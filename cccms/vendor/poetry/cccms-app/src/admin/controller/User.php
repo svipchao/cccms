@@ -188,7 +188,7 @@ class User extends Base
             _result(['code' => 401, 'msg' => '登陆已过期 请重新登陆'], _getEnCode());
         }
         $userInfo = SysUser::mk()->withoutGlobalScope()
-            ->field('id,invite_id,nickname,username,avatar,phone,email,range')
+            ->field('id,nickname,username,avatar,phone')
             ->where('status', 1)
             ->findOrEmpty(UserService::instance()->getUserInfo('id', 0))
             ->append(['accessToken', 'nodes', 'menus', 'configs'])

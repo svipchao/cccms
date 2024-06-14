@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace cccms\services;
 
 use cccms\Service;
+use cccms\extend\JwtExtend;
 use cccms\model\{SysDept, SysRoleNode, SysUser, SysUserDept};
 use think\db\exception\{DbException, DataNotFoundException, ModelNotFoundException};
 
@@ -30,8 +31,8 @@ class UserService extends Service
      */
     public static function getUserInfo(string $key = 'all', mixed $default = null): mixed
     {
-        // $userInfo = JwtExtend::verifyToken(static::getAccessToken());
-        $userInfo = SysUser::mk()->findOrEmpty(2)->toArray();
+        $userInfo = JwtExtend::verifyToken(static::getAccessToken());
+        // $userInfo = SysUser::mk()->findOrEmpty(2)->toArray();
         if (!$userInfo || !empty($userInfo['exp']) && $userInfo['exp'] < time()) {
             if ($default !== '') return $default;
             _result(['code' => 401, 'msg' => '登陆状态失效，请重新登陆'], _getEnCode());

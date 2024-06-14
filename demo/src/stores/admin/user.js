@@ -1,7 +1,9 @@
+import router from '@/router';
 import { defineStore } from 'pinia';
 import { useMenuStore } from './menu.js';
 import { useTabsStore } from './tabs.js';
 import { useThemeStore } from './theme.js';
+import { refreshToken } from '@/api/admin/user.js';
 import { Message } from '@arco-design/web-vue';
 
 export const useUserStore = defineStore('user', {
@@ -48,6 +50,30 @@ export const useUserStore = defineStore('user', {
           tabsStore.switchTab(userInfo.home_url);
         },
       });
+    },
+    async setAccessToken() {
+      await refreshToken().then((res) => {
+        const menuStore = useMenuStore();
+        menuStore.setMenus(res.data.menus);
+        this.$patch(res.data);
+        this.setRegisterRouteFresh();
+        Message.success('缓存清除成功');
+      });
+    },
+    logout(isTip = true) {
+      if (isTip) {
+        Message.success({
+          content: '注销成功',
+        });
+      }
+      router.push('/login');
+      this.$reset();
+      const menuStore = useMenuStore();
+      menuStore.$reset();
+      const tabsStore = useTabsStore();
+      tabsStore.$reset();
+      const themeStore = useThemeStore();
+      themeStore.$reset();
     },
     setRegisterRouteFresh() {
       this.isRegisterRouteFresh = !this.isRegisterRouteFresh;
