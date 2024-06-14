@@ -79,25 +79,28 @@ class User extends Base
     public function index(): void
     {
         $params = _validate('get.sys_user.true', 'page,limit|user,tag,type,dept_id');
-        $users = $this->model->_withSearch('user,dept_id', [
+        $users = $this->model->_withSearch('tag,user,dept_id', [
+            'tag' => $params['tag'] ?? null,
             'user' => $params['user'] ?? null,
-            'type' => $params['type'] ?? null,
             'dept_id' => $params['dept_id'] ?? null,
-        ])->with(['depts', 'roles'])->_page($params, false, function ($data) {
+        ])->with(['dept' => function ($query) {
+            $query->field('id,dept_name');
+        }])->_page($params, false, function ($data) {
             $data = $data->toArray();
-            $data['data'] = array_map(function ($item) {
-                $item['dept_ids'] = array_column($item['depts'], 'id');
-                $item['depts'] = array_column($item['depts'], 'dept_name');
-                $item['role_ids'] = array_column($item['roles'], 'id');
-                $item['roles'] = array_column($item['roles'], 'role_name');
-                return $item;
-            }, $data['data']);
+            foreach ($data['data'] as &$d) {
+                $d['dept'] = array_map(function ($v) {
+                    return [
+                        'id' => $v['id'],
+                        'dept_name' => $v['dept_name'],
+                        'auth_range' => $v['pivot']['auth_range'],
+                    ];
+                }, $d['dept']);
+            }
             return $data;
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_user'),
-            'roles' => SysRole::mk()->getAllOpenRole(true),
-            'depts' => UserService::instance()->getUserDept('tree'),
+            'dept' => UserService::instance()->getUserDept(),
             'total' => $users['total'] ?? 0,
             'data' => $users['data'] ?? [],
         ]], _getEnCode());

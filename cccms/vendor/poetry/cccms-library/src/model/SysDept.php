@@ -6,12 +6,13 @@ namespace cccms\model;
 
 use cccms\Model;
 use cccms\extend\ArrExtend;
-use cccms\services\DataService;
 use think\db\exception\DbException;
 use think\model\relation\{HasMany, BelongsToMany};
 
 class SysDept extends Model
 {
+    // protected $hidden = ['pivot'];
+
     /**
      * 新增后
      * @param $model
@@ -89,22 +90,9 @@ class SysDept extends Model
         $model->auth()->delete();
     }
 
-    public function auth(): HasMany
-    {
-        return $this->hasMany(SysAuth::class, 'dept_id', 'id');
-    }
-
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(SysRole::class, SysAuth::class, 'role_id', 'dept_id');
-    }
-
-    public function nodesRelation(): HasMany
-    {
-        return $this->hasMany(SysAuth::class, 'dept_id', 'id')->where([
-            ['dept_id', '<>', 0],
-            ['node', '<>', ''],
-        ]);
+        return $this->belongsToMany(SysRole::class, SysDeptRole::class, 'role_id', 'dept_id');
     }
 
     public function deptRelation(): HasMany
@@ -122,17 +110,17 @@ class SysDept extends Model
         return array_column($this->getAllOpenDept(), 'id');
     }
 
-    public function getUserDept(int $userId = 0)
+    public function getUserDept(int $userId = 0): array
     {
         return $this->hasWhere('deptRelation', function ($query) use ($userId) {
             $query->where('user_id', '=', $userId);
-        })->where('status', 1)->select()->toArray();
+        })->where('status', 1)->_list();
     }
 
-    public function getUserDeptAll(int $userId = 0)
+    public function getUserDeptAll(int $userId = 0): array
     {
         return $this->hasWhere('deptRelation', function ($query) use ($userId) {
             $query->where('user_id', '=', $userId);
-        })->select()->toArray();
+        })->_list();
     }
 }

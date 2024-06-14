@@ -1,15 +1,16 @@
 CREATE TABLE `sys_user`
 (
-    `id`          int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
-    `nickname`    varchar(32)  NOT NULL DEFAULT '' COMMENT '昵称',
-    `username`    varchar(32)  NOT NULL DEFAULT '' COMMENT '用户名',
-    `password`    varchar(32)  NOT NULL DEFAULT '' COMMENT '密码',
-    `phone`       varchar(11)  NOT NULL DEFAULT '' COMMENT '手机号',
-    `avatar`      varchar(255) NOT NULL DEFAULT '' COMMENT '头像',
-    `status`      tinyint      NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
-    `delete_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '删除时间',
-    `create_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    `id`          int unsigned  NOT NULL AUTO_INCREMENT COMMENT 'ID',
+    `nickname`    varchar(32)   NOT NULL DEFAULT '' COMMENT '昵称',
+    `username`    varchar(32)   NOT NULL DEFAULT '' COMMENT '用户名',
+    `password`    varchar(32)   NOT NULL DEFAULT '' COMMENT '密码',
+    `phone`       varchar(11)   NOT NULL DEFAULT '' COMMENT '手机号',
+    `avatar`      varchar(255)  NOT NULL DEFAULT '' COMMENT '头像',
+    `tags`        varchar(1024) NOT NULL DEFAULT '' COMMENT '用户标签',
+    `status`      tinyint       NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
+    `delete_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '删除时间',
+    `create_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE KEY `idx_username` (`username`) USING BTREE
 ) ENGINE = InnoDB

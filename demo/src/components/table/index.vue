@@ -60,6 +60,7 @@ const { proxy } = getCurrentInstance();
 onMounted(() => {
   // 关闭分页时
   if (!props.pagination) page = false;
+  reloadData();
 });
 
 // 分页配置
@@ -102,29 +103,42 @@ watch(
 
 watch(
   () => props.form,
-  debounce(() => {
+  () => {
     let pagination = deepClone(props.pagination);
     pagination.page = 1;
-    pagination.current = 1;
+    // pagination.current = 1;
     emits('update:pagination', pagination);
-    reloadData();
-  }, 10),
+    // reloadData();
+  },
   { deep: true }
 );
+// watch(
+//   () => props.form,
+//   debounce(() => {
+//     let pagination = deepClone(props.pagination);
+//     pagination.page = 1;
+//     // pagination.current = 1;
+//     emits('update:pagination', pagination);
+//     // reloadData();
+//   }, 10),
+//   { deep: true }
+// );
 
 // 页码改变时触发
 const handlePageChange = (current) => {
-  props.pagination.page = current;
-  props.pagination.current = current;
-  emits('update:pagination', props.pagination);
+  let pagination = deepClone(props.pagination);
+  pagination.page = current;
+  // pagination.current = current;
+  emits('update:pagination', pagination);
   reloadData();
 };
 
 // 数据条数改变时触发
 const handleSizeChange = (pageSize) => {
-  props.pagination.limit = pageSize;
-  props.pagination.pageSize = pageSize;
-  emits('update:pagination', props.pagination);
+  let pagination = deepClone(props.pagination);
+  pagination.limit = pageSize;
+  // pagination.pageSize = current;
+  emits('update:pagination', pagination);
   reloadData();
 };
 

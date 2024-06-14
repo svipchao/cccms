@@ -12,7 +12,7 @@ class InitService extends Service
 {
     public function getConfigs()
     {
-        $data = $this->app->cache->get('SysConfigs', []);
+        $data = static::$app->cache->get('SysConfigs', []);
         if (empty($data)) {
             $configRes = SysConfig::mk()->with(['detail'])->_list();
             // 根据类别分组
@@ -36,7 +36,7 @@ class InitService extends Service
                 }
                 $data[$key] = $items;
             }
-            $this->app->cache->set('SysConfigs', $data);
+            static::$app->cache->set('SysConfigs', $data);
         }
         return $data;
     }
@@ -48,7 +48,7 @@ class InitService extends Service
      */
     public function getTables(string $tableName = ''): array
     {
-        $data = $this->app->cache->get('Tables', []);
+        $data = static::$app->cache->get('Tables', []);
         if (empty($data)) {
             $tables = Db::query('SHOW TABLE STATUS');
             foreach ($tables as $table) {
@@ -59,7 +59,7 @@ class InitService extends Service
                     $data[$table['Name']][$key] = $val['comment'] ?: $key;
                 }
             }
-            $this->app->cache->set('Tables', $data);
+            static::$app->cache->set('Tables', $data);
         }
         return $tableName ? ($data[StrExtend::humpToUnderline($tableName)] ?? []) : $data;
     }

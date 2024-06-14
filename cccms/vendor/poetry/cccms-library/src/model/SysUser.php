@@ -15,14 +15,13 @@ class SysUser extends Model
     {
     }
 
-    public function deptRelation(): BelongsToMany
+    public function dept(): BelongsToMany
     {
         return $this->belongsToMany(SysDept::class, SysUserDept::class, 'dept_id', 'user_id');
     }
 
     public function getUserDeptInfo()
     {
-        
     }
 
     /**
@@ -148,6 +147,24 @@ class SysUser extends Model
             _result(['code' => 403, 'msg' => '不能禁用自己的账户'], _getEnCode());
         }
         return $value;
+    }
+
+    public function getTagsAttr($value): array
+    {
+        return $value ? explode(',', $value) : [];
+    }
+
+    public function setTagsAttr($value): string
+    {
+        if (is_string($value)) return $value;
+        return $value ? implode(',', $value) : '';
+    }
+
+    public function searchTagAttr($query, $value): void
+    {
+        $query->when($value, function ($query) use ($value) {
+            $query->where('tags', 'like', '%' . $value . '%');
+        });
     }
 
     public function searchUserAttr($query, $value): void

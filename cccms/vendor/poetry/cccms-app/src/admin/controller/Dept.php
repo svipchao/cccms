@@ -67,11 +67,10 @@ class Dept extends Base
      */
     public function index(): void
     {
-        $depts = $this->model->with(['roles', 'nodesRelation'])->_list(callable: function ($data) {
+        $dept = $this->model->with(['roles'])->_list(callable: function ($data) {
             return array_map(function ($item) {
-                $item['nodes'] = array_column($item['nodesRelation'], 'node');
                 $item['role_ids'] = array_column($item['roles'], 'id');
-                unset($item['roles'], $item['nodesRelation']);
+                unset($item['roles']);
                 return $item;
             }, $data->toArray());
         });
@@ -79,7 +78,7 @@ class Dept extends Base
             'fields' => AuthService::instance()->fields('sys_dept'),
             'roles' => SysRole::mk()->getAllOpenRole(true),
             'nodes' => NodeService::instance()->getAuthNodesTree(),
-            'data' => ArrExtend::toTreeArray($depts, 'id', 'dept_id'),
+            'data' => ArrExtend::toTreeArray($dept, 'id', 'dept_id'),
         ]], _getEnCode());
     }
 }
