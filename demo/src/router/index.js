@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import { useTabsStore } from '@/stores/admin/tabs.js';
 import { useMenuStore } from '@/stores/admin/menu.js';
 import { useUserStore } from '@/stores/admin/user.js';
+import { useSystemStore } from '@/stores/admin/system.js';
 import { expandArray } from '@/utils/array.js';
 import NProgress from 'nprogress';
 import config from '@/config';
@@ -47,7 +48,8 @@ router.beforeEach(async (to, from, next) => {
     }
   } else {
     // 解决刷新页面路由不生效问题
-    if (userStore.isRegisterRouteFresh) {
+    const systemStore = useSystemStore();
+    if (systemStore.isRegisterRouteFresh) {
       const menuStore = useMenuStore();
       const menus = expandArray(menuStore.menus || []);
       menus.forEach((item) => {
@@ -73,7 +75,7 @@ router.beforeEach(async (to, from, next) => {
         }
       });
       next({ ...to, replace: true });
-      userStore.setRegisterRouteFresh();
+      systemStore.setRegisterRouteFresh();
     } else {
       // keep-alive 实现
       const tabsStore = useTabsStore();

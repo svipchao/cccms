@@ -26,8 +26,6 @@ export const useUserStore = defineStore('user', {
     login_expire: 0,
     // 权限节点列表
     nodes: [],
-    // 是否注册路由
-    isRegisterRouteFresh: true,
     // 系统配置
     configs: [],
   }),
@@ -74,9 +72,6 @@ export const useUserStore = defineStore('user', {
       tabsStore.$reset();
       const themeStore = useThemeStore();
       themeStore.$reset();
-    },
-    setRegisterRouteFresh() {
-      this.isRegisterRouteFresh = !this.isRegisterRouteFresh;
     },
   },
   persist: true,
