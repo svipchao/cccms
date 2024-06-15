@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace cccms;
 
-use cccms\services\NodeService;
 use think\{Request, Service};
 use cccms\support\Url;
-use cccms\services\BaseService;
-use cccms\support\middleware\{Cors, MultiApp, Permission, Log};
+use cccms\services\{BaseService, NodeService};
+use cccms\support\middleware\{Cors, MultiApp, Log};
 
 class Library extends Service
 {

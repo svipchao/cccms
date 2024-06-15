@@ -10,6 +10,10 @@ use think\model\relation\BelongsToMany;
 
 class SysUser extends Model
 {
+    use SoftDelete;
+
+    protected $deleteTime = 'delete_time';
+
     // 写入后
     public static function onAfterWrite($model)
     {

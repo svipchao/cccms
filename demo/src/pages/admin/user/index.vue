@@ -2,6 +2,7 @@
   <Table
     :fields="table.fields"
     :ignoreFields="table.ignoreFields"
+    v-model:recycle="table.form.recycle"
     v-model:form="table.form"
     v-model:columns="table.columns"
     v-model:pagination="table.pagination"
@@ -14,12 +15,34 @@
       </a-space>
     </template>
     <template #nicknameFilter>
-      <a-card :style="{ width: '200px' }">
+      <a-card :style="{ width: '300px' }">
         <a-input
           placeholder="模糊查询用户姓名(账号)..."
           allow-clear
           v-model="table.form.user"
         />
+        <template #actions>
+          <a-button size="mini" type="primary" @click="getDatas">确定</a-button>
+        </template>
+      </a-card>
+    </template>
+    <template #deptFilter>
+      <a-card :style="{ width: '300px' }">
+        <a-select
+          allow-clear
+          v-model="table.form.dept_id"
+          placeholder="选择部门..."
+          :fallback-option="false"
+        >
+          <template #prefix>部门</template>
+          <a-option
+            v-for="dept in table.dept"
+            :value="dept.id"
+            :label="dept.dept_name"
+          >
+            {{ dept.mark }}{{ dept.dept_name }}
+          </a-option>
+        </a-select>
         <template #actions>
           <a-button size="mini" type="primary" @click="getDatas">确定</a-button>
         </template>
@@ -151,21 +174,13 @@
 </template>
 
 <script setup>
-import { reactive, onMounted, watch } from 'vue';
+import { reactive } from 'vue';
 import { Message } from '@arco-design/web-vue';
-import Table from '@/components/table/index.vue';
-import Popconfirm from '@/components/popconfirm/index.vue';
 import { userQuery, userUpdate, userDelete } from '@/api/admin/user.js';
 import { useFormEdit } from '@/hooks/form.js';
+import Table from '@/components/table/index.vue';
+import Popconfirm from '@/components/popconfirm/index.vue';
 import Info from './info.vue';
-
-// watch(
-//   () => props.dept_id,
-//   () => {
-//     table.form.dept_id = props.dept_id || 0;
-//     getDatas();
-//   }
-// );
 
 const getDatas = async () => {
   const {
@@ -246,6 +261,7 @@ const setTag = (tag) => {
 // 数据
 const table = reactive({
   form: {
+    recycle: false,
     user: undefined,
     tag: undefined,
     dept_id: undefined,
@@ -278,12 +294,6 @@ const table = reactive({
       slotName: 'nickname',
     },
     {
-      dataIndex: 'type',
-      title: '用户类型',
-      width: 145,
-      slotName: 'type',
-    },
-    {
       dataIndex: 'tags',
       title: '用户标签',
       width: 300,
@@ -293,10 +303,13 @@ const table = reactive({
     },
     {
       dataIndex: 'dept',
-      title: '所属组织',
+      title: '所属部门',
       width: 300,
       ellipsis: true,
       tooltip: true,
+      filterable: {
+        slotName: 'deptFilter',
+      },
       slotName: 'dept',
     },
     {
@@ -307,14 +320,6 @@ const table = reactive({
       tooltip: true,
       slotName: 'phone',
     },
-    // {
-    //   dataIndex: 'invite_id',
-    //   title: '邀请人',
-    //   width: 130,
-    //   ellipsis: true,
-    //   tooltip: true,
-    //   slotName: 'inviteId',
-    // },
     { dataIndex: 'status', title: '状态', width: 80, slotName: 'status' },
     {
       dataIndex: 'create_time',

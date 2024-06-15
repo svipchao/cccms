@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace app\admin\controller;
 
 use cccms\Base;
+use cccms\extend\ArrExtend;
 use cccms\model\{SysUser, SysRole, SysDept};
 use cccms\services\{CaptchaService, UserService, AuthService};
 
@@ -85,7 +86,7 @@ class User extends Base
             'dept_id' => $params['dept_id'] ?? null,
         ])->with(['dept' => function ($query) {
             $query->field('id,dept_name');
-        }])->_page($params, false, function ($data) {
+        }])->onlyTrashed()->order('id desc')->_page($params, false, function ($data) {
             $data = $data->toArray();
             foreach ($data['data'] as &$d) {
                 $d['dept'] = array_map(function ($v) {
@@ -100,7 +101,7 @@ class User extends Base
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_user'),
-            'dept' => UserService::instance()->getUserDept(),
+            'dept' => ArrExtend::toTreeList(UserService::instance()->getUserDept(), 'id', 'dept_id'),
             'total' => $users['total'] ?? 0,
             'data' => $users['data'] ?? [],
         ]], _getEnCode());

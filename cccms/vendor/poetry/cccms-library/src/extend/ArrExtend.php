@@ -127,7 +127,7 @@ class ArrExtend
      * @param string $mark 记号
      * @return array
      */
-    public static function toTreeList(array $array = [], string $cKey = 'id', string $pKey = 'pid', string $children = 'children', string $mark = '├　'): array
+    public static function toTreeList(array $array = [], string $cKey = 'id', string $pKey = 'pid', string $children = 'children', string $mark = '└　'): array
     {
         $call = function (callable $call, array $array = [], array &$data = [], int $level = 0) use ($cKey, $pKey, $children, $mark) {
             foreach ($array as &$val) {

@@ -17,7 +17,7 @@
         <slot name="headerForm">
           <a-grid-item>
             <a-input placeholder="示例内容">
-              <template #prefix> 示例 </template>
+              <template #prefix>示例</template>
             </a-input>
           </a-grid-item>
         </slot>
@@ -31,7 +31,7 @@
                 :checked="headerFormStatus"
                 @click="headerFormStatus = !headerFormStatus"
               >
-                {{ !headerFormStatus ? "折叠" : "展开" }}
+                {{ !headerFormStatus ? '折叠' : '展开' }}
               </a-button>
             </a-space>
           </a-row>
@@ -53,11 +53,25 @@
             <a-space>
               <slot name="headerExtend"></slot>
               <a-button-group>
-                <a-button type="text" @click="emits('reload')">
-                  <template #icon>
-                    <i class="ri-refresh-line"></i>
-                  </template>
-                </a-button>
+                <a-tooltip content="回收站" v-if="props.recycle !== undefined">
+                  <a-button type="text" @click="openRecycle()">
+                    <template #icon>
+                      <i
+                        class="ri-recycle-line"
+                        style="color: rgb(var(--primary-6))"
+                        v-if="props.recycle"
+                      ></i>
+                      <i class="ri-recycle-line" v-else></i>
+                    </template>
+                  </a-button>
+                </a-tooltip>
+                <a-tooltip content="刷新">
+                  <a-button type="text" @click="emits('reload')">
+                    <template #icon>
+                      <i class="ri-refresh-line"></i>
+                    </template>
+                  </a-button>
+                </a-tooltip>
                 <a-select
                   multiple
                   v-model:model-value="selectedColumn"
@@ -93,14 +107,14 @@
 </template>
 
 <script setup>
-import { ref, useSlots, watch } from "vue";
+import { ref, useSlots, watch } from 'vue';
 
 const slots = useSlots();
 
 // 头部表单收缩状态
 const headerFormStatus = ref(true);
 
-const emits = defineEmits(["reload", "update:columns"]);
+const emits = defineEmits(['reload', 'update:columns', 'update:recycle']);
 
 /**
  * 思路：
@@ -113,6 +127,7 @@ const emits = defineEmits(["reload", "update:columns"]);
  *     实际上业务一个单元格有可能会出现多个字段 父级组件可以方便处理显示隐藏问题
  */
 const props = defineProps({
+  recycle: false,
   columns: {},
   fields: {},
   ignoreFields: {},
@@ -139,8 +154,14 @@ watch(
 
 watch(selectedColumn, () => {
   const { columnsArr } = tableField(columns.value, selectedColumn.value);
-  emits("update:columns", columnsArr);
+  emits('update:columns', columnsArr);
 });
+
+// 回收站
+const openRecycle = () => {
+  emits('update:recycle', !props.recycle);
+  emits('reload');
+};
 
 /**
  * 表格字段处理
@@ -175,7 +196,7 @@ const tableField = (columns, fields = [], ignoreFields = []) => {
   padding-bottom: 10px;
   border-bottom: 1px solid #f2f2f2;
 }
-.arco-btn-text[type="button"] {
+.arco-btn-text[type='button'] {
   color: #222;
 }
 </style>
