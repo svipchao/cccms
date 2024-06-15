@@ -176,7 +176,7 @@ class SysUser extends Model
     {
         $query->when($value, function ($query) use ($value) {
             $query->where('id', 'in', function ($query) use ($value) {
-                $query->table('sys_user_dept_post')->where('dept_id', '=', $value)->field('user_id');
+                $query->table('sys_user_dept')->where('dept_id', '=', $value)->field('user_id');
             });
         });
     }

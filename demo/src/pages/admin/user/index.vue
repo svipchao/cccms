@@ -79,10 +79,18 @@
         </a-tag>
       </a-space>
     </template>
-    <template #deptIds="{ record }">
+    <template #dept="{ record }">
       <div :style="{ width: `280px` }" v-if="record.dept.length > 0">
         <a-overflow-list>
-          <a-tag v-for="dept of record.dept" :key="dept">{{ dept }}</a-tag>
+          <a-tag
+            v-for="dept of record.dept"
+            bordered
+            :key="dept"
+            :color="dept.id === table.form.dept_id ? 'blue' : ''"
+            @click="searchDeptUserFun(dept.id)"
+          >
+            {{ dept.dept_name }}
+          </a-tag>
         </a-overflow-list>
       </div>
       <div v-else>-</div>
@@ -172,6 +180,15 @@ const getDatas = async () => {
   table.pagination.total = total;
 };
 
+const searchDeptUserFun = (id) => {
+  if (table.form.dept_id == id) {
+    table.form.dept_id = 0;
+  } else {
+    table.form.dept_id = id;
+  }
+  getDatas();
+};
+
 // 切换状态
 const changeStatusFun = (record) => {
   userUpdate({ id: record.id, status: record.status }).then((res) => {
@@ -241,7 +258,7 @@ const table = reactive({
   dept: [],
   data: [],
   fields: [],
-  ignoreFields: ['deptIds', 'roleIds', 'operation'],
+  ignoreFields: ['dept', 'operation'],
   columns: [
     {
       dataIndex: 'id',
@@ -275,12 +292,12 @@ const table = reactive({
       slotName: 'tags',
     },
     {
-      dataIndex: 'deptIds',
+      dataIndex: 'dept',
       title: '所属组织',
       width: 300,
       ellipsis: true,
       tooltip: true,
-      slotName: 'deptIds',
+      slotName: 'dept',
     },
     {
       dataIndex: 'phone',
