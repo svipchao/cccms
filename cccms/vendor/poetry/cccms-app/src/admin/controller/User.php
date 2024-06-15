@@ -43,8 +43,9 @@ class User extends Base
      */
     public function delete(): void
     {
-        $this->model->_delete($this->request->delete('id/d', 0));
-        _result(['code' => 200, 'msg' => '删除成功'], _getEnCode());
+        $params = $this->request->delete(['id' => 0, 'type' => null]);
+        $this->model->_delete($params['id'], $params['type']);
+        _result(['code' => 200, 'msg' => '操作成功'], _getEnCode());
     }
 
     /**
@@ -79,14 +80,14 @@ class User extends Base
      */
     public function index(): void
     {
-        $params = _validate('get.sys_user.true', 'page,limit|user,tag,type,dept_id');
+        $params = _validate('get.sys_user.true', 'page,limit|user,tag,type,dept_id,recycle');
         $users = $this->model->_withSearch('tag,user,dept_id', [
             'tag' => $params['tag'] ?? null,
             'user' => $params['user'] ?? null,
             'dept_id' => $params['dept_id'] ?? null,
         ])->with(['dept' => function ($query) {
             $query->field('id,dept_name');
-        }])->onlyTrashed()->order('id desc')->_page($params, false, function ($data) {
+        }])->order('id desc')->_page($params, false, function ($data) {
             $data = $data->toArray();
             foreach ($data['data'] as &$d) {
                 $d['dept'] = array_map(function ($v) {

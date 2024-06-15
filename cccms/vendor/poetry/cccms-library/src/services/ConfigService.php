@@ -11,7 +11,7 @@ class ConfigService extends Service
 {
     protected static function handle(): array
     {
-        $data = app()->cache->get('SysConfigs', []);
+        $data = static::$app->cache->get('SysConfigs', []);
         if (empty($data)) {
             [$data, $configs] = [[], SysConfig::mk()->field('cate_name,name,value')->_list()];
             foreach ($configs as $config) {
@@ -20,7 +20,7 @@ class ConfigService extends Service
                 }
                 $data[$config['cate_name']][$config['name']] = $config['value'];
             }
-            app()->cache->set('SysConfigs', $data);
+            static::$app->cache->set('SysConfigs', $data);
         }
         return $data;
     }

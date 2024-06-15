@@ -85,11 +85,13 @@
                   }"
                 >
                   <template #trigger>
-                    <a-button type="text">
-                      <template #icon>
-                        <i class="ri-list-settings-line"></i>
-                      </template>
-                    </a-button>
+                    <a-tooltip content="选择列">
+                      <a-button type="text">
+                        <template #icon>
+                          <i class="ri-list-settings-line"></i>
+                        </template>
+                      </a-button>
+                    </a-tooltip>
                   </template>
                   <a-option
                     v-for="column in columns"

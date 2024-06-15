@@ -39,12 +39,19 @@ class Query extends \think\db\Query
     public function _read(mixed $data = null, ?callable $callable = null): mixed
     {
         try {
+            $data = $this;
+            if (isset($listRows['recycle'])) {
+                if (is_string($listRows['recycle'])) {
+                    $listRows['recycle'] = $listRows['recycle'] == 'true';
+                }
+                if ($listRows['recycle']) $data = $data->onlyTrashed();
+            }
             if (is_string($data) || is_numeric($data)) {
-                $data = $this->allowEmpty()->find($data);
+                $data = $data->allowEmpty()->find($data);
             } elseif (is_array($data)) {
-                $data = $this->where($data)->allowEmpty()->find();
+                $data = $data->where($data)->allowEmpty()->find();
             } else {
-                $data = $this->allowEmpty()->find();
+                $data = $data->allowEmpty()->find();
             }
             if (is_callable($callable)) {
                 $data = call_user_func($callable, $data);
@@ -67,7 +74,14 @@ class Query extends \think\db\Query
     public function _list(?array $where = null, ?callable $callable = null): mixed
     {
         try {
-            $data = $this->where($where)->select();
+            $data = $this;
+            if (isset($listRows['recycle'])) {
+                if (is_string($listRows['recycle'])) {
+                    $listRows['recycle'] = $listRows['recycle'] == 'true';
+                }
+                if ($listRows['recycle']) $data = $data->onlyTrashed();
+            }
+            $data = $data->where($where)->select();
             if (is_callable($callable)) {
                 return call_user_func($callable, $data);
             } else {
@@ -90,7 +104,14 @@ class Query extends \think\db\Query
     public function _page(?array $listRows = null, bool|int $simple = false, ?callable $callable = null): mixed
     {
         try {
-            $data = $this->paginate([
+            $data = $this;
+            if (isset($listRows['recycle'])) {
+                if (is_string($listRows['recycle'])) {
+                    $listRows['recycle'] = $listRows['recycle'] == 'true';
+                }
+                if ($listRows['recycle']) $data = $data->onlyTrashed();
+            }
+            $data = $data->paginate([
                 'list_rows' => $listRows['limit'] ?? 15,
                 'page' => $listRows['page'] ?? 1,
             ], $simple);
@@ -111,32 +132,37 @@ class Query extends \think\db\Query
      * @param callable|null $callable 回调
      * @return bool
      */
-    public function _delete(array|string $condition, ?callable $callable = null): bool
+    public function _delete(array|string $condition, $delete = null, ?callable $callable = null): bool
     {
+        $data = $this;
         // 查询限制处理
         if (is_array($condition)) {
-            $query = $this->where($condition);
+            $data = $data->where($condition);
         } else {
-            $query = $this->whereIn('id', StrExtend::str2arr($condition));
+            $data = $data->whereIn('id', StrExtend::str2arr($condition));
         }
         // 阻止危险操作
-        if (!$query->getOptions('where')) {
+        if (!$data->getOptions('where')) {
             _result(['code' => 403, 'msg' => '数据删除失败, 请稍候再试！'], _getEnCode());
         }
-        $query = $query->findOrEmpty();
-        if ($query->isEmpty()) return false;
-        // 组装执行数据
-        $data = [];
-        if (method_exists($query, 'getTableFields')) {
-            $fields = $query->getTableFields();
-            // 软删除
-            if (in_array('delete_time', $fields)) $data['delete_time'] = time();
-        }
-        if (is_callable($callable)) {
-            $query = call_user_func($callable, $query);
-        }
         try {
-            return (bool)(empty($data) ? $query->delete() : $query->update($data));
+            if ($delete !== null) $data = $data->withTrashed();
+            $data = $data->findOrEmpty();
+            if ($data->isEmpty()) return false;
+            if ($delete == 'delete') {
+                // 如果开启软删除这是是真实删除
+                $result = $data->force()->delete();
+            } elseif ($delete == 'restore') {
+                // 如果开启软删除这里是恢复数据
+                $result = $data->restore();
+            } else {
+                // 如果开启软删除这里就是软删除
+                $result = $data->delete();
+            }
+            if (is_callable($callable)) {
+                return call_user_func($callable, $result);
+            }
+            return $result;
         } catch (DbException $e) {
             $message = app()->isDebug() ? $e->getMessage() : '数据删除失败, 请稍候再试！';
             _result(['code' => 403, 'msg' => $message], _getEnCode());

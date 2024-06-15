@@ -39,7 +39,7 @@ abstract class Base extends stdClass
         $this->request = $this->app->request;
 
         // 权限拦截
-        $this->check();
+        // $this->check();
 
         // 控制器初始化
         $this->init();

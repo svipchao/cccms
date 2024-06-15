@@ -148,10 +148,30 @@
         </template>
       </a-button>
       <Popconfirm
-        content="确定要删除吗？"
+        v-if="table.form.recycle !== undefined && table.form.recycle !== false"
+        content="确定要恢复数据吗？"
         type="warning"
         position="left"
-        @ok="delData(record)"
+        @ok="delData(record, 'restore')"
+      >
+        <a-button type="text" size="mini" v-permission="'admin/user/delete'">
+          <template #icon>
+            <i class="ri-refresh-line" style="color: rgb(var(--warning-6))"></i>
+          </template>
+        </a-button>
+      </Popconfirm>
+      <Popconfirm
+        content="确定要删除数据吗？"
+        type="warning"
+        position="left"
+        @ok="
+          delData(
+            record,
+            table.form.recycle !== undefined && table.form.recycle !== false
+              ? 'delete'
+              : null
+          )
+        "
       >
         <a-button type="text" size="mini" v-permission="'admin/user/delete'">
           <template #icon>
@@ -217,8 +237,8 @@ const editData = (record) => {
   userEditStatus.updateFormEditStatus(record);
 };
 
-const delData = (record) => {
-  userDelete(record).then((record) => {
+const delData = (record, type = null) => {
+  userDelete({ id: record.id, type: type }).then((record) => {
     Message.success('删除成功');
     getDatas();
   });
@@ -338,7 +358,7 @@ const table = reactive({
     {
       dataIndex: 'operation',
       title: '操作',
-      width: 80,
+      width: 120,
       align: 'center',
       fixed: 'right',
       slotName: 'operation',

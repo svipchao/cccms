@@ -3,16 +3,19 @@ declare(strict_types=1);
 
 namespace cccms\model;
 
+use think\model\concern\SoftDelete;
+use think\model\relation\BelongsToMany;
 use cccms\Model;
 use cccms\extend\{ArrExtend, JwtExtend};
 use cccms\services\{NodeService, UserService, ConfigService};
-use think\model\relation\BelongsToMany;
 
 class SysUser extends Model
 {
     use SoftDelete;
 
     protected $deleteTime = 'delete_time';
+
+    protected $defaultSoftDelete = '1900-01-01 00:00:00';
 
     // 写入后
     public static function onAfterWrite($model)
