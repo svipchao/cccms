@@ -187,8 +187,7 @@
   <Info
     v-model:visible="userEditStatus.data.visible"
     :data="userEditStatus.data.currentData"
-    :depts="table.depts"
-    :roles="table.roles"
+    :dept="table.dept"
     @done="getDatas"
   />
 </template>

@@ -67,10 +67,6 @@ import { useFormEdit } from '@/hooks/form.js';
 import Popconfirm from '@/components/popconfirm/index.vue';
 import Info from './info.vue';
 
-onMounted(() => {
-  getDatas();
-});
-
 const getDatas = async () => {
   const { data } = await deptQuery(table.form);
   table.fields = data.fields;

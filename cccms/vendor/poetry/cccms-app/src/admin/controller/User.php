@@ -28,8 +28,7 @@ class User extends Base
      */
     public function create(): void
     {
-        $params = _validate('post.sys_user.true', 'nickname,username,password|role_ids,dept_ids');
-        $params['password'] = md5($params['password']);
+        $params = _validate('post.sys_user.true', 'nickname,username,password|dept');
         $this->model->save($params);
         _result(['code' => 200, 'msg' => '添加成功'], _getEnCode());
     }
@@ -57,12 +56,7 @@ class User extends Base
      */
     public function update(): void
     {
-        $params = _validate('put.sys_user.true', 'id|role_ids,dept_ids');
-        if (!empty($params['password'])) {
-            $params['password'] = md5($params['password']);
-        } else {
-            unset($params['password']);
-        }
+        $params = _validate('put.sys_user.true', 'id|dept');
         $user = $this->model->where('id', $params['id'])->findOrEmpty();
         if ($user->isEmpty()) {
             _result(['code' => 403, 'msg' => '用户不存在'], _getEnCode());

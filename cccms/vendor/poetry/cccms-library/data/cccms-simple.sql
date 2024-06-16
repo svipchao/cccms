@@ -57,7 +57,7 @@ CREATE TABLE `sys_dept`
     `dept_path`   varchar(2048) NOT NULL DEFAULT '' COMMENT '父级ID集合',
     `dept_name`   varchar(32)   NOT NULL DEFAULT '' COMMENT '部门名称',
     `dept_desc`   varchar(255)  NOT NULL DEFAULT '' COMMENT '部门备注',
-    `post_id`     int unsigned  NOT NULL DEFAULT 0 COMMENT '默认岗位ID',
+    # `post_id`     int unsigned  NOT NULL DEFAULT 0 COMMENT '默认岗位ID',
     `status`      tinyint       NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
     `delete_time` datetime      NOT NULL DEFAULT '1900-01-01 00:00:00' COMMENT '删除时间',
     `create_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

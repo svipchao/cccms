@@ -129,6 +129,7 @@ class Query extends \think\db\Query
     /**
      * 快捷删除逻辑器
      * @param array|string $condition
+     * @param null $delete 删除类型
      * @param callable|null $callable 回调
      * @return bool
      */

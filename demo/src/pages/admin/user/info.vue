@@ -1,78 +1,16 @@
 <template>
-  <a-modal
+  <a-drawer
     :mask-closable="false"
     :visible="visible"
     :title="isUpdate ? '修改用户' : '添加用户'"
+    width="45vw"
+    :drawer-style="{
+      minWidth: '360px',
+    }"
     @cancel="cancelModal"
     @ok="okModal"
   >
     <a-form :model="form" layout="vertical">
-      <a-form-item field="dept_ids">
-        <a-tree-select
-          v-if="props.depts"
-          v-model="form.dept_ids"
-          :multiple="true"
-          :allow-clear="true"
-          :allow-search="true"
-          :tree-check-strictly="false"
-          :data="props.depts"
-          :fieldNames="{
-            key: 'id',
-            title: 'dept_name',
-            children: 'children',
-          }"
-          :max-tag-count="2"
-          placeholder="拥有组织"
-        >
-          <template #prefix>拥有组织</template>
-          <template #label="{ data }">
-            <span v-if="data.label.indexOf('+') == -1">
-              {{
-                data.label.slice(0, 5) + (data.label.length > 5 ? '...' : '')
-              }}
-            </span>
-            <span v-else>{{ data.label }}</span>
-          </template>
-        </a-tree-select>
-      </a-form-item>
-      <a-form-item field="role_ids">
-        <a-tree-select
-          v-if="props.roles"
-          v-model="form.role_ids"
-          :multiple="true"
-          :allow-clear="true"
-          :allow-search="true"
-          :tree-check-strictly="false"
-          :data="props.roles"
-          :fieldNames="{
-            key: 'id',
-            title: 'role_name',
-            children: 'children',
-          }"
-          :max-tag-count="2"
-          placeholder="拥有角色"
-        >
-          <template #prefix>拥有角色</template>
-          <template #label="{ data }">
-            <span v-if="data.label.indexOf('+') == -1">
-              {{
-                data.label.slice(0, 5) + (data.label.length > 5 ? '...' : '')
-              }}
-            </span>
-            <span v-else>{{ data.label }}</span>
-          </template>
-        </a-tree-select>
-      </a-form-item>
-      <a-form-item field="range">
-        <a-select v-model="form.range" placeholder="权限范围">
-          <template #prefix>权限范围</template>
-          <a-option :value="0">本人</a-option>
-          <a-option :value="1">本人及下属</a-option>
-          <a-option :value="2">本部门</a-option>
-          <a-option :value="3">本部门及下属部门</a-option>
-          <a-option :value="4">全部</a-option>
-        </a-select>
-      </a-form-item>
       <a-form-item field="nickname">
         <a-input v-model="form.nickname" placeholder="请输入姓名...">
           <template #prefix>用户姓名</template>
@@ -96,26 +34,76 @@
           <template #prefix>手机号码</template>
         </a-input-number>
       </a-form-item>
-      <a-form-item field="email">
-        <a-input v-model="form.email" placeholder="请输入电子邮箱地址...">
-          <template #prefix>电子邮箱</template>
-        </a-input>
-      </a-form-item>
+      <a-tabs default-active-key="dept">
+        <a-tab-pane key="dept" title="部门权限">
+          <a-space direction="vertical" fill>
+            <a-row :gutter="8">
+              <a-col flex="auto">
+                <a-select
+                  allow-clear
+                  :allow-clear="true"
+                  :allow-search="true"
+                  v-model="form.currentDept"
+                  :fallback-option="false"
+                  placeholder="选择部门..."
+                  value-key="id"
+                >
+                  <template #prefix>部门</template>
+                  <a-option v-for="dept of props.dept" :value="dept">
+                    {{ dept.mark }}{{ dept.dept_name }}
+                  </a-option>
+                </a-select>
+              </a-col>
+              <a-col flex="60px">
+                <a-button type="primary" @click="addUserDept">添加</a-button>
+              </a-col>
+            </a-row>
+            <a-list size="medium">
+              <a-list-item
+                v-for="dept in form.dept"
+                :key="dept.id"
+                :action-layout="
+                  useWindowWidthSize(500, 'vertical', 'horizontal')
+                "
+              >
+                <a-list-item-meta :title="dept.dept_name" />
+                <template #actions>
+                  <a-space>
+                    <a-select v-model="dept.auth_range" size="mini">
+                      <a-option :value="0">本人</a-option>
+                      <a-option :value="1">本部门</a-option>
+                      <a-option :value="2">本部门及下属部门</a-option>
+                    </a-select>
+                    <a-button
+                      size="mini"
+                      status="danger"
+                      @click="delUserDept(dept.id)"
+                    >
+                      移除
+                    </a-button>
+                  </a-space>
+                </template>
+              </a-list-item>
+            </a-list>
+          </a-space>
+        </a-tab-pane>
+      </a-tabs>
     </a-form>
-  </a-modal>
+  </a-drawer>
 </template>
 
 <script setup>
 import { watch } from 'vue';
 import { Message } from '@arco-design/web-vue';
 import { userCreate, userUpdate } from '@/api/admin/user.js';
+import { useWindowWidthSize } from '@/hooks/window.js';
 import { useResetForm } from '@/hooks/form.js';
+import { deepClone } from '@/utils/utils.js';
 
 const props = defineProps({
   visible: false,
   data: undefined,
-  depts: undefined,
-  roles: undefined,
+  dept: undefined,
 });
 
 const { form, isUpdate, setForm, resetForm } = useResetForm({
@@ -124,11 +112,28 @@ const { form, isUpdate, setForm, resetForm } = useResetForm({
   username: undefined,
   password: undefined,
   phone: undefined,
-  email: undefined,
-  range: undefined,
-  role_ids: undefined,
-  dept_ids: undefined,
+  dept: undefined,
+  currentDept: undefined,
 });
+
+const addUserDept = () => {
+  if (form.dept.filter((n) => form.currentDept.id == n.id).length > 0) {
+    return true;
+  }
+  form.dept.push({
+    id: form.currentDept.id,
+    dept_name: form.currentDept.dept_name,
+    auth_range: 0,
+  });
+};
+
+const delUserDept = (id) => {
+  for (let index in form.dept) {
+    if (form.dept[index]['id'] == id) {
+      form.dept.splice(index, 1);
+    }
+  }
+};
 
 const emit = defineEmits(['update:visible', 'done']);
 
@@ -167,3 +172,11 @@ watch(
   }
 );
 </script>
+
+<style lang="less">
+.arco-list-wrapper {
+  .arco-list-item {
+    padding: 10px !important;
+  }
+}
+</style>

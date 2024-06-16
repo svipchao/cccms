@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { useMenuStore } from './menu.js';
 import { useTabsStore } from './tabs.js';
 import { useThemeStore } from './theme.js';
+import { useSystemStore } from './system.js';
 import { refreshToken } from '@/api/admin/user.js';
 import { Message } from '@arco-design/web-vue';
 
@@ -54,7 +55,8 @@ export const useUserStore = defineStore('user', {
         const menuStore = useMenuStore();
         menuStore.setMenus(res.data.menus);
         this.$patch(res.data);
-        this.setRegisterRouteFresh();
+        const systemStore = useSystemStore();
+        systemStore.setRegisterRouteFresh();
         Message.success('缓存清除成功');
       });
     },

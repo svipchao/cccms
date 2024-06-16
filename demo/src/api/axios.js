@@ -90,6 +90,11 @@ function http(
       error.config && removePending(error.config);
       custom_options.loading && closeLoading(custom_options); // 关闭loading
       custom_options.error_message_show && httpErrorStatusHandle(error); // 处理错误状态码
+      if (NProgress.isStarted()) {
+        setTimeout(() => {
+          NProgress.done(true);
+        }, 100);
+      }
       return Promise.reject(error); // 错误继续返回给到具体页面
     }
   );

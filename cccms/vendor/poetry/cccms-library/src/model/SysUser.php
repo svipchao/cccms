@@ -13,22 +13,30 @@ class SysUser extends Model
 {
     use SoftDelete;
 
-    protected $deleteTime = 'delete_time';
+    protected string $deleteTime = 'delete_time';
 
     protected $defaultSoftDelete = '1900-01-01 00:00:00';
 
     // 写入后
     public static function onAfterWrite($model)
     {
+        if (isset($model['dept']) && !empty($model['dept'])) {
+            SysUserDept::mk()->where('user_id', $model['id'])->delete();
+            $userDeptData = [];
+            foreach ($model['dept'] as $dept) {
+                $userDeptData[$dept['id']] = [
+                    'user_id' => $model['id'],
+                    'dept_id' => $dept['id'],
+                    'auth_range' => $dept['auth_range'],
+                ];
+            }
+            SysUserDept::mk()->saveAll($userDeptData);
+        }
     }
 
     public function dept(): BelongsToMany
     {
         return $this->belongsToMany(SysDept::class, SysUserDept::class, 'dept_id', 'user_id');
-    }
-
-    public function getUserDeptInfo()
-    {
     }
 
     /**
@@ -124,6 +132,11 @@ class SysUser extends Model
         return (int)$value;
     }
 
+    public function getTagsAttr($value): array
+    {
+        return $value ? explode(',', $value) : [];
+    }
+
     /**
      * 设置密码
      * @param $value
@@ -154,11 +167,6 @@ class SysUser extends Model
             _result(['code' => 403, 'msg' => '不能禁用自己的账户'], _getEnCode());
         }
         return $value;
-    }
-
-    public function getTagsAttr($value): array
-    {
-        return $value ? explode(',', $value) : [];
     }
 
     public function setTagsAttr($value): string
