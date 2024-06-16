@@ -100,7 +100,6 @@ const getDatas = async () => {
   const { data } = await roleQuery(table.form);
   table.fields = data.fields;
   table.data = data.data;
-  table.role = data.role;
   table.nodes = data.nodes;
 };
 
@@ -131,7 +130,6 @@ const table = reactive({
   },
   pagination: false,
   data: [],
-  role: [],
   nodes: [],
   fields: [],
   ignoreFields: ['role', 'operation'],

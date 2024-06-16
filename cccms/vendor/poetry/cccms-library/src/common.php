@@ -118,7 +118,7 @@ if (!function_exists('_validate')) {
         }
         if (is_string($method) && method_exists(request(), $method)) {
             $params = array_intersect_key(request()->$method(), $params);
-            $params = array_merge($requireParams, $params);
+            $params = array_merge($requireParams ?? [], $params);
         }
         if (empty($params)) {
             _result(['code' => 412, 'msg' => '需要验证的数据为空'], _getEnCode());

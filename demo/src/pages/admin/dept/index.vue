@@ -111,7 +111,6 @@ const getDatas = async () => {
   table.fields = data.fields;
   table.data = data.data;
   table.role = data.role;
-  table.role = data.role;
 };
 
 // 切换状态
@@ -141,7 +140,6 @@ const table = reactive({
   },
   pagination: false,
   data: [],
-  dept: [],
   role: [],
   fields: [],
   ignoreFields: ['role', 'operation'],

@@ -27,7 +27,7 @@ class Config extends Base
      */
     public function create()
     {
-        $this->model->create(_validate('post.sys_config', 'type_id,key,val|desc'));
+        // $this->model->create(_validate('post.sys_config', 'type_id,key,val|desc'));
         _result(['code' => 200, 'msg' => '添加成功'], _getEnCode());
     }
 
@@ -40,7 +40,7 @@ class Config extends Base
      */
     public function delete()
     {
-        $this->model->_delete($this->request->delete('id/d', 0));
+        // $this->model->_delete($this->request->delete('id/d', 0));
         _result(['code' => 200, 'msg' => '删除成功'], _getEnCode());
     }
 
@@ -75,8 +75,8 @@ class Config extends Base
      */
     public function index()
     {
-        $data = $this->model->_withSearch('config_name', [
-            'config_name' => $this->request->get('config_name', 'site')
+        $data = $this->model->_withSearch('cate_name', [
+            'cate_name' => $this->request->get('cate_name', 'site')
         ])->_list(null, function ($data) {
             $data = $data->toArray();
             return array_map(function ($item) {
@@ -100,7 +100,7 @@ class Config extends Base
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_config'),
-            'cates' => ConfigService::instance()->getConfigCate(),
+            'cate' => ConfigService::instance()->getConfigCate(),
             'data' => $data
         ]], _getEnCode());
     }
