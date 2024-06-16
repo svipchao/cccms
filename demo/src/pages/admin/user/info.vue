@@ -69,7 +69,11 @@
                 <a-list-item-meta :title="dept.dept_name" />
                 <template #actions>
                   <a-space>
-                    <a-select v-model="dept.auth_range" size="mini">
+                    <a-select
+                      v-model="dept.auth_range"
+                      size="mini"
+                      style="width: 150px"
+                    >
                       <a-option :value="0">本人</a-option>
                       <a-option :value="1">本部门</a-option>
                       <a-option :value="2">本部门及下属部门</a-option>
@@ -112,12 +116,15 @@ const { form, isUpdate, setForm, resetForm } = useResetForm({
   username: undefined,
   password: undefined,
   phone: undefined,
-  dept: undefined,
+  dept: [],
   currentDept: undefined,
 });
 
 const addUserDept = () => {
-  if (form.dept.filter((n) => form.currentDept.id == n.id).length > 0) {
+  if (
+    form.currentDept == undefined ||
+    form.dept.filter((n) => form.currentDept.id == n.id).length > 0
+  ) {
     return true;
   }
   form.dept.push({

@@ -18,19 +18,20 @@ class SysUser extends Model
     protected $defaultSoftDelete = '1900-01-01 00:00:00';
 
     // 写入后
-    public static function onAfterWrite($model)
+    public static function onAfterWrite($model): void
     {
-        if (isset($model['dept']) && !empty($model['dept'])) {
-            SysUserDept::mk()->where('user_id', $model['id'])->delete();
+        $data = $model->toArray();
+        if (!empty($data['dept'])) {
+            SysUserDept::mk()->where('user_id', $data['id'])->delete();
             $userDeptData = [];
-            foreach ($model['dept'] as $dept) {
+            foreach ($data['dept'] as $dept) {
                 $userDeptData[$dept['id']] = [
-                    'user_id' => $model['id'],
+                    'user_id' => $data['id'],
                     'dept_id' => $dept['id'],
                     'auth_range' => $dept['auth_range'],
                 ];
             }
-            SysUserDept::mk()->saveAll($userDeptData);
+            if (!empty($userDeptData)) SysUserDept::mk()->saveAll($userDeptData);
         }
     }
 
