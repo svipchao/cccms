@@ -142,13 +142,14 @@
         size="mini"
         @click="editData(record)"
         v-permission="'admin/user/update'"
+        v-if="table.form.recycle !== undefined && table.form.recycle == false"
       >
         <template #icon>
           <i class="ri-edit-line"></i>
         </template>
       </a-button>
       <Popconfirm
-        v-if="table.form.recycle !== undefined && table.form.recycle !== false"
+        v-if="table.form.recycle !== undefined && table.form.recycle == true"
         content="确定要恢复数据吗？"
         type="warning"
         position="left"

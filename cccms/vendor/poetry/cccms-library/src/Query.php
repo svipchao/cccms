@@ -3,9 +3,8 @@ declare(strict_types=1);
 
 namespace cccms;
 
-use think\facade\Db;
-use think\db\exception\DbException;
 use cccms\extend\StrExtend;
+use think\db\exception\DbException;
 
 class Query extends \think\db\Query
 {

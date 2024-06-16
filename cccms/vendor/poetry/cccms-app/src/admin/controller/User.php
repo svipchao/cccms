@@ -4,8 +4,8 @@ declare(strict_types=1);
 namespace app\admin\controller;
 
 use cccms\Base;
+use cccms\model\SysUser;
 use cccms\extend\ArrExtend;
-use cccms\model\{SysUser, SysRole, SysDept};
 use cccms\services\{CaptchaService, UserService, AuthService};
 
 /**
@@ -23,7 +23,7 @@ class User extends Base
      * 添加用户
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods POST
      */
     public function create(): void
@@ -37,7 +37,7 @@ class User extends Base
      * 删除用户
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods DELETE
      */
     public function delete(): void
@@ -51,7 +51,7 @@ class User extends Base
      * 更新用户
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods PUT
      */
     public function update(): void
@@ -69,7 +69,7 @@ class User extends Base
      * 用户列表
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods GET
      */
     public function index(): void
@@ -202,7 +202,7 @@ class User extends Base
      * @encode json
      * @methods GET
      */
-    public function captcha()
+    public function captcha(): void
     {
         $node = $this->request->get('node', '');
         _result(['code' => 200, 'msg' => 'success', 'data' => CaptchaService::instance()->create($node)]);

@@ -69,7 +69,7 @@ abstract class Model extends \think\Model
     /**
      * 写入前
      * @param $model
-     * @return false|void
+     * @return void
      */
     public static function onBeforeWrite($model)
     {

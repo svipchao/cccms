@@ -3,11 +3,11 @@ declare(strict_types=1);
 
 namespace cccms\model;
 
-use think\model\concern\SoftDelete;
-use think\model\relation\BelongsToMany;
 use cccms\Model;
 use cccms\extend\{ArrExtend, JwtExtend};
 use cccms\services\{NodeService, UserService, ConfigService};
+use think\model\concern\SoftDelete;
+use think\model\relation\BelongsToMany;
 
 class SysUser extends Model
 {
@@ -20,6 +20,7 @@ class SysUser extends Model
     // 写入后
     public static function onAfterWrite($model): void
     {
+        parent::onAfterWrite($model);
         $data = $model->toArray();
         if (!empty($data['dept'])) {
             SysUserDept::mk()->where('user_id', $data['id'])->delete();
@@ -32,6 +33,32 @@ class SysUser extends Model
                 ];
             }
             if (!empty($userDeptData)) SysUserDept::mk()->saveAll($userDeptData);
+        }
+    }
+
+    /**
+     * 更新前
+     * @param $model
+     */
+    public static function onBeforeUpdate($model): void
+    {
+        parent::onBeforeDelete($model);
+        // halt($model);
+    }
+
+    /**
+     * 删除前
+     * @param $model
+     * @return void
+     */
+    public static function onBeforeDelete($model): void
+    {
+        parent::onBeforeDelete($model);
+        $data = $model->toArray();
+        if ($data['id'] == 1) _result(['code' => 403, 'msg' => '禁止删除管理员'], _getEnCode());
+        // 删除所有关联权限数据
+        if ($model->isForce()) {
+            SysUserDept::mk()->where('user_id', $data['id'])->delete();
         }
     }
 
