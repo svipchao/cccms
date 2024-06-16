@@ -11,25 +11,24 @@
       <sider-menu :menus="menu.children" />
     </a-sub-menu>
     <template v-else>
-      <a
-        v-if="menu.target == '_blank'"
-        :href="'/#/' + menu.url"
-        :target="menu.target"
-      >
+      <a v-if="isLink(menu.url)" :href="menu.url" :target="menu.target">
         <a-menu-item>
           <i :class="menu.icon"></i>
           {{ menu.name }}
         </a-menu-item>
       </a>
       <a-menu-item v-else :key="menu.id">
-        <i :class="menu.icon"></i>
-        {{ menu.name }}
+        <router-link :to="menu.url" :target="menu.target">
+          <i :class="menu.icon"></i>
+          {{ menu.name }}
+        </router-link>
       </a-menu-item>
     </template>
   </div>
 </template>
 
 <script setup>
+import { isLink } from '@/utils/utils.js';
 import { useMenuStore } from '@/stores/admin/menu.js';
 
 const menuStore = useMenuStore();

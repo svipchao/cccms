@@ -98,7 +98,7 @@
 </template>
 
 <script setup>
-import { reactive, onMounted } from 'vue';
+import { reactive } from 'vue';
 import { Message } from '@arco-design/web-vue';
 import { deptQuery, deptUpdate, deptDelete } from '@/api/admin/dept.js';
 import { useFormEdit } from '@/hooks/form.js';

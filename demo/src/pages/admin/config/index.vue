@@ -6,6 +6,7 @@
       show-add-button
       default-active-key="site"
       @change="switchConfigCate"
+      style="padding-bottom: 10px"
     >
       <a-tab-pane
         v-for="(cate, index) in info.cate"
@@ -46,8 +47,6 @@ import { useFormEdit } from '@/hooks/form.js';
 import DynamicForm from '@/components/form/dynamic-form.vue';
 import Info from './info.vue';
 
-const userStore = useUserStore();
-
 onMounted(() => {
   getConfigs();
 });
@@ -78,7 +77,7 @@ const dynamicFormKey = ref(1);
 const updateConfig = () => {
   configUpdate(dynamicFormRef.value.getDynamicDatas()).then((res) => {
     Message.success('修改成功');
-    userStore.setAccessToken();
+    useUserStore().setAccessToken();
   });
 };
 

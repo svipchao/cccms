@@ -40,8 +40,18 @@ function http(
   // 请求拦截
   service.interceptors.request.use(
     (config) => {
-      NProgress.configure({ minimum: 0.01 });
-      NProgress.start();
+      NProgress.configure({
+        // 动画方式
+        easing: 'ease',
+        // 递增进度条的速度
+        speed: 500,
+        // 是否显示加载ico
+        showSpinner: true,
+        // 自动递增间隔
+        trickleSpeed: 200,
+        // 初始化时的最小百分比
+        minimum: 0.3,
+      }).start();
       removePending(config);
       custom_options.repeat_request_cancel && addPending(config);
       // 创建loading实例

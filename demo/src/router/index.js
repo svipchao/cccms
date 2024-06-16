@@ -36,7 +36,18 @@ let modules = import.meta.glob('../pages/**/*.vue');
 
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
-  NProgress.start();
+  NProgress.configure({
+    // 动画方式
+    easing: 'ease',
+    // 递增进度条的速度
+    speed: 500,
+    // 是否显示加载ico
+    showSpinner: true,
+    // 自动递增间隔
+    trickleSpeed: 200,
+    // 初始化时的最小百分比
+    minimum: 0.3,
+  }).start();
   // 判断是否需要登录
   const userStore = useUserStore();
   if (!userStore.accessToken) {

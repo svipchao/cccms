@@ -46,7 +46,7 @@
         </a-col>
         <a-col flex="auto" style="text-align: center">
           <a-tooltip content="清除缓存" position="tl">
-            <a-button type="text" @click="userStore.setAccessToken()">
+            <a-button type="text" @click="userStore.setAccessToken(true)">
               <template #icon>
                 <i class="ri-refresh-line"></i>
               </template>

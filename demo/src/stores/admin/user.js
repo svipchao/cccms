@@ -50,14 +50,14 @@ export const useUserStore = defineStore('user', {
         },
       });
     },
-    async setAccessToken() {
+    async setAccessToken(isMsg = false) {
       await refreshToken().then((res) => {
         const menuStore = useMenuStore();
         menuStore.setMenus(res.data.menus);
         this.$patch(res.data);
         const systemStore = useSystemStore();
         systemStore.setRegisterRouteFresh();
-        Message.success('缓存清除成功');
+        if (isMsg) Message.success('缓存清除成功');
       });
     },
     logout(isTip = true) {

@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace cccms\model;
 
-use think\facade\Cache;
+use think\model\concern\SoftDelete;
 use cccms\Model;
 use cccms\services\{MenuService, UserService};
 
 class SysMenu extends Model
 {
-    public static function onBeforeWrite($model): void
-    {
-        Cache::delete('SysMenus');
-    }
+    use SoftDelete;
+
+    protected string $deleteTime = 'delete_time';
+
+    protected $defaultSoftDelete = '1900-01-01 00:00:00';
 
     // 删除前
     public static function onBeforeDelete($model): void
@@ -34,7 +35,7 @@ class SysMenu extends Model
         return (int)$value;
     }
 
-    public function searchParentIdAttr($query, $value)
+    public function searchParentIdAttr($query, $value): void
     {
         $query->where('parent_id', '=', $value);
     }

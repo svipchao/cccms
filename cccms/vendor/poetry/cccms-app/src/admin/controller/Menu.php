@@ -29,7 +29,8 @@ class Menu extends Base
      */
     public function create()
     {
-        $this->model->create(_validate('post.sys_menu.true', 'parent_id,name,url'));
+        $params = _validate('post.sys_menu.true', 'parent_id,name,url');
+        $this->model->save($params);
         _result(['code' => 200, 'msg' => '添加成功'], _getEnCode());
     }
 
@@ -42,8 +43,9 @@ class Menu extends Base
      */
     public function delete()
     {
-        $this->model->_delete($this->request->delete('id/d', 0));
-        _result(['code' => 200, 'msg' => '删除成功'], _getEnCode());
+        $params = $this->request->delete(['id' => 0, 'type' => null]);
+        $this->model->_delete($params['id'], $params['type']);
+        _result(['code' => 200, 'msg' => '操作成功'], _getEnCode());
     }
 
     /**
@@ -63,6 +65,10 @@ class Menu extends Base
             }
             $this->model->saveAll($data);
         } else {
+            $user = $this->model->where('id', $params['id'])->findOrEmpty();
+            if ($user->isEmpty()) {
+                _result(['code' => 403, 'msg' => '菜单不存在'], _getEnCode());
+            }
             $this->model->update($params);
         }
         _result(['code' => 200, 'msg' => '更新成功'], _getEnCode());
@@ -77,16 +83,16 @@ class Menu extends Base
      */
     public function index()
     {
-        $cates = $this->model->where(['parent_id' => 0, 'menu_id' => 0])->_list();
-        $parent_id = $this->request->get('parent_id/d', null);
-        $parent_id = $parent_id ?: ($cates[0]['id'] ?? 0);
+        $params = $this->request->get(['parent_id' => null, 'recycle' => null]);
+        $cate = $this->model->where(['parent_id' => 0, 'menu_id' => 0])->_list();
+        $params['parent_id'] = $params['parent_id'] ?: ($cate[0]['id'] ?? 0);
         $data = $this->model->_withSearch('parent_id', [
-            'parent_id' => $parent_id
-        ])->order('sort desc')->_list();
+            'parent_id' => $params['parent_id']
+        ])->order('sort desc')->_list($params);
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_menu'),
-            'cates' => $cates,
-            'data' => ArrExtend::toTreeList($data, 'id', 'menu_id')
+            'data' => ArrExtend::toTreeList($data, 'id', 'menu_id'),
+            'cate' => $cate,
         ]], _getEnCode());
     }
 }
