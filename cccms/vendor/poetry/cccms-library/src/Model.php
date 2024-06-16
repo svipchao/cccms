@@ -69,7 +69,6 @@ abstract class Model extends \think\Model
     /**
      * 写入前
      * @param $model
-     * @return void
      */
     public static function onBeforeWrite($model)
     {
@@ -91,7 +90,6 @@ abstract class Model extends \think\Model
     /**
      * 删除前
      * @param $model
-     * @return false|void
      */
     public static function onBeforeDelete($model)
     {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 namespace app\admin\controller;
 
 use cccms\Base;
+use cccms\model\SysRole;
 use cccms\extend\ArrExtend;
-use cccms\model\{SysRole, SysAuth};
 use cccms\services\{NodeService, AuthService, UserService};
 
 /**
@@ -28,7 +28,8 @@ class Role extends Base
      */
     public function create(): void
     {
-        $this->model->create(_validate('put.sys_role.true', 'role_name'));
+        $params = _validate('post.sys_role.true', 'role_name|nodes');
+        $this->model->save($params);
         _result(['code' => 200, 'msg' => '添加成功'], _getEnCode());
     }
 
@@ -41,8 +42,9 @@ class Role extends Base
      */
     public function delete(): void
     {
-        $this->model->_delete($this->request->delete('id/d', 0));
-        _result(['code' => 200, 'msg' => '删除成功'], _getEnCode());
+        $params = $this->request->delete(['id' => 0, 'type' => null]);
+        $this->model->_delete($params['id'], $params['type']);
+        _result(['code' => 200, 'msg' => '操作成功'], _getEnCode());
     }
 
     /**
@@ -54,7 +56,12 @@ class Role extends Base
      */
     public function update(): void
     {
-        $this->model->update(_validate('put.sys_role.true', 'id|nodes'));
+        $params = _validate('put.sys_role.true', 'id|nodes');
+        $user = $this->model->where('id', $params['id'])->findOrEmpty();
+        if ($user->isEmpty()) {
+            _result(['code' => 403, 'msg' => '角色不存在'], _getEnCode());
+        }
+        $user->save($params);
         _result(['code' => 200, 'msg' => '更新成功'], _getEnCode());
     }
 
@@ -67,7 +74,15 @@ class Role extends Base
      */
     public function index(): void
     {
-        $roles = $this->model->with('nodesRelation')->_list(callable: function ($data) {
+        $params = $this->request->param(['recycle' => null]);
+        $role = $this->model;
+        if (!UserService::isAdmin()) {
+            $role = $role->where('id', 'in', function ($query) {
+                $userDeptIds = UserService::instance()->getUserDeptIds();
+                return $query->table('sys_dept_role')->field('role_id')->where('dept_id', 'in', $userDeptIds);
+            });
+        }
+        $role = $role->with(['nodesRelation'])->_list($params, function ($data) {
             return array_map(function ($item) {
                 $item['nodes'] = array_column($item['nodesRelation'], 'node');
                 unset($item['nodesRelation']);
@@ -76,8 +91,8 @@ class Role extends Base
         });
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_role'),
+            'data' => ArrExtend::toTreeList($role, 'id', 'role_id'),
             'nodes' => NodeService::instance()->getAuthNodesTree(),
-            'data' => ArrExtend::toTreeList($roles, 'id', 'role_id')
         ]], _getEnCode());
     }
 }

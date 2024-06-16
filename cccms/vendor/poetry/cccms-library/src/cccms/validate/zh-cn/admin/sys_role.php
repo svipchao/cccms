@@ -2,9 +2,8 @@
 declare (strict_types=1);
 
 return [
-    'role_id|父级角色' => 'integer|different:id',
+    'role_id|父级角色' => 'integer',
     'role_id.integer' => '请选择正确的 %s',
-    'role_id.different' => '禁止选择自身为 %s',
 
     'role_name|角色名称' => 'require|chsDash|length:2,32',
     'role_name.require' => '%s 不能为空',

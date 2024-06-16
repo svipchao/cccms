@@ -104,11 +104,13 @@ watch(
 watch(
   () => props.form,
   () => {
-    let pagination = deepClone(props.pagination);
-    pagination.page = 1;
-    // pagination.current = 1;
-    emits('update:pagination', pagination);
-    // reloadData();
+    if (props.pagination !== false) {
+      let pagination = deepClone(props.pagination);
+      pagination.page = 1;
+      // pagination.current = 1;
+      emits('update:pagination', pagination);
+      // reloadData();
+    }
   },
   { deep: true }
 );

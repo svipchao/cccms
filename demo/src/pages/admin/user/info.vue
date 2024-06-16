@@ -41,10 +41,9 @@
               <a-col flex="auto">
                 <a-select
                   allow-clear
-                  :allow-clear="true"
-                  :allow-search="true"
-                  v-model="form.currentDept"
+                  allow-search
                   :fallback-option="false"
+                  v-model="form.currentDept"
                   placeholder="选择部门..."
                   value-key="id"
                 >

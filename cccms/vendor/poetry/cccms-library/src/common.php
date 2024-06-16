@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use think\response\View;
 use think\{Response, Validate};
+use cccms\services\InitService;
 
 if (!function_exists('_getEnCode')) {
     /**
@@ -103,7 +104,7 @@ if (!function_exists('_validate')) {
                         $validateRule[$field]['rule'] = array_keys($rule);
                     }
                 }
-                $tableFields = \cccms\services\InitService::instance()->getTables($tableName);
+                $tableFields = InitService::instance()->getTables($tableName);
                 foreach ($tableFields as $fieldKey => $fieldVal) {
                     if (isset($requireParams[$fieldKey])) {
                         $isTableFields && $requireParams[$fieldKey] = 0;

@@ -8,4 +8,13 @@ use think\model\Pivot;
 
 class SysDeptRole extends Pivot
 {
+    /**
+     * 创建模型实例
+     * @param array $data
+     * @return SysDeptRole
+     */
+    public static function mk(array $data = []): SysDeptRole
+    {
+        return new static($data);
+    }
 }

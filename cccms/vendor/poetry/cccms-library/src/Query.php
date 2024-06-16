@@ -66,21 +66,21 @@ class Query extends \think\db\Query
 
     /**
      * 数组
-     * @param array|null $where
+     * @param array|null $params
      * @param callable|null $callable 回调
      * @return mixed
      */
-    public function _list(?array $where = null, ?callable $callable = null): mixed
+    public function _list(?array $params = null, ?callable $callable = null): mixed
     {
         try {
             $data = $this;
-            if (isset($listRows['recycle'])) {
-                if (is_string($listRows['recycle'])) {
-                    $listRows['recycle'] = $listRows['recycle'] == 'true';
+            if (isset($params['recycle'])) {
+                if (is_string($params['recycle'])) {
+                    $params['recycle'] = $params['recycle'] == 'true';
                 }
-                if ($listRows['recycle']) $data = $data->onlyTrashed();
+                if ($params['recycle']) $data = $data->onlyTrashed();
             }
-            $data = $data->where($where)->select();
+            $data = $data->select();
             if (is_callable($callable)) {
                 return call_user_func($callable, $data);
             } else {

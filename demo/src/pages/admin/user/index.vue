@@ -11,7 +11,13 @@
   >
     <template #headerButton>
       <a-space>
-        <a-button type="primary" @click="editData()">添加</a-button>
+        <a-button
+          type="primary"
+          v-permission="'admin/user/create'"
+          @click="editData()"
+        >
+          添加
+        </a-button>
       </a-space>
     </template>
     <template #nicknameFilter>
@@ -138,11 +144,11 @@
     </template>
     <template #operation="{ record }">
       <a-button
+        v-if="table.form.recycle !== undefined && table.form.recycle == false"
         type="text"
         size="mini"
         @click="editData(record)"
         v-permission="'admin/user/update'"
-        v-if="table.form.recycle !== undefined && table.form.recycle == false"
       >
         <template #icon>
           <i class="ri-edit-line"></i>
@@ -203,16 +209,14 @@ import Popconfirm from '@/components/popconfirm/index.vue';
 import Info from './info.vue';
 
 const getDatas = async () => {
-  const {
-    data: { fields, data, total, dept },
-  } = await userQuery({
+  const { data } = await userQuery({
     ...table.form,
     ...table.pagination,
   });
-  table.dept = dept;
-  table.data = data;
-  table.fields = fields;
-  table.pagination.total = total;
+  table.dept = data.dept;
+  table.data = data.data;
+  table.fields = data.fields;
+  table.pagination.total = data.total;
 };
 
 const searchDeptUserFun = (id) => {
@@ -358,7 +362,7 @@ const table = reactive({
     {
       dataIndex: 'operation',
       title: '操作',
-      width: 120,
+      width: 80,
       align: 'center',
       fixed: 'right',
       slotName: 'operation',

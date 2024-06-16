@@ -5,71 +5,40 @@ declare(strict_types=1);
 namespace cccms\model;
 
 use cccms\Model;
-use cccms\extend\ArrExtend;
+use cccms\services\UserService;
+use think\facade\Db;
 use think\db\exception\DbException;
+use think\model\concern\SoftDelete;
 use think\model\relation\{HasMany, BelongsToMany};
 
 class SysDept extends Model
 {
-    // protected $hidden = ['pivot'];
+    use SoftDelete;
 
-    /**
-     * 新增后
-     * @param $model
-     */
-    public static function onAfterInsert($model)
-    {
-        halt($model);
-    }
+    protected string $deleteTime = 'delete_time';
 
-    public function setDeptIdAttr($value, $data)
-    {
-        $data['dept_ids'] = $value ? $this->where('id', $value)->value('dept_ids') . ',' : '';
-        if (isset($data['id'])) {
-            // 更新
-            $sonRes = $this->whereOr([
-                ['id', '=', $data['id']],
-                ['dept_id', 'find in set', $data['id']]
-            ])->column('id,dept_ids');
-            if ($value !== 0 && in_array($value, array_column($sonRes, 'id'))) {
-                _result(['code' => 403, 'msg' => '不能选择自己的子部门'], _getEnCode());
-            }
-            // 记录path
-            foreach ($sonRes as &$son) {
-                $son['dept_ids'] = $data['dept_ids'] . strstr($son['dept_ids'], (string)$data['id']);
-            }
-            $this->saveAll($sonRes);
-        } else {
-            // 新增 修复选择上级部门500报错
-            // $this->data($data, true);
-        }
-        return $value;
-    }
-
-    public function setDeptIdsAttr($value, $data)
-    {
-        halt($data);
-    }
+    protected $defaultSoftDelete = '1900-01-01 00:00:00';
 
     // 写入后
-    public static function onAfterWrite($model)
+    public static function onAfterWrite($model): void
     {
-        if (isset($model['role_ids']) && !empty($model['role_ids'])) {
-            if (is_string($model['role_ids'])) {
-                $model['role_ids'] = explode(',', $model['role_ids']);
+        parent::onAfterWrite($model);
+        $data = $model->toArray();
+        if (!empty($data['role'])) {
+            SysDeptRole::mk()->where('dept_id', $data['id'])->delete();
+            $deptRoleData = [];
+            foreach ($data['role'] as $role) {
+                $deptRoleData[$role['id']] = [
+                    'dept_id' => $data['id'],
+                    'role_id' => $role['id'],
+                ];
             }
-            $roles = $model->roles()->_list();
-            if (!empty($roles)) {
-                $model->roles()->detach(array_column($roles, 'id'));
-            }
-            $model->roles()->attach($model['role_ids']);
+            if (!empty($deptRoleData)) SysDeptRole::mk()->saveAll($deptRoleData);
         }
-        if (isset($model['nodes']) && !empty($model['nodes'])) {
-            if (is_string($model['nodes'])) {
-                $model['nodes'] = explode(',', $model['nodes']);
-            }
-            $model->nodesRelation()->delete();
-            $model->nodesRelation()->saveAll(ArrExtend::createTwoArray($model['nodes'], 'node'));
+        if (isset($data['dept_id'])) {
+            $parent = $model->where('id', $data['dept_id'] ?: 0)->value('dept_path');
+            $parent = (empty($parent) ? ',' : $parent) . $data['id'] . ',';
+            Db::table('sys_dept')->where('id', $data['id'])->update(['dept_path' => $parent]);
         }
     }
 
@@ -82,22 +51,30 @@ class SysDept extends Model
     public static function onBeforeDelete($model): void
     {
         parent::onBeforeDelete($model);
-        $sonCount = $model->whereFindInSet('dept_id', $model['id'])->count();
+        $data = $model->toArray();
+        $sonCount = $model->whereFindInSet('dept_id', $data['id'])->count();
         if (!empty($sonCount)) {
-            _result(['code' => 403, 'msg' => '存在子级部门，禁止删除'], _getEnCode());
+            _result(['code' => 403, 'msg' => '存在子级部门 禁止删除'], _getEnCode());
         }
         // 删除所有关联权限数据
-        $model->auth()->delete();
+        if ($model->isForce()) {
+            SysDeptRole::mk()->where('dept_id', $data['id'])->delete();
+        }
     }
 
-    public function roles(): BelongsToMany
+    public function role(): BelongsToMany
     {
         return $this->belongsToMany(SysRole::class, SysDeptRole::class, 'role_id', 'dept_id');
     }
 
-    public function deptRelation(): HasMany
+    public function userDeptRelation(): HasMany
     {
         return $this->hasMany(SysUserDept::class, 'dept_id', 'id');
+    }
+
+    public function setDeptIdAttr($value, $data): int
+    {
+        return $value ?: 0;
     }
 
     public function getAllOpenDept(): array
@@ -112,14 +89,18 @@ class SysDept extends Model
 
     public function getUserDept(int $userId = 0): array
     {
-        return $this->hasWhere('deptRelation', function ($query) use ($userId) {
+        if (UserService::isAdmin()) return $this->where('status', 1)->_list();
+        $userId = $userId ?: UserService::getUserId();
+        return $this->hasWhere('userDeptRelation', function ($query) use ($userId) {
             $query->where('user_id', '=', $userId);
         })->where('status', 1)->_list();
     }
 
     public function getUserDeptAll(int $userId = 0): array
     {
-        return $this->hasWhere('deptRelation', function ($query) use ($userId) {
+        if (UserService::isAdmin()) return $this->_list();
+        $userId = $userId ?: UserService::getUserId();
+        return $this->hasWhere('userDeptRelation', function ($query) use ($userId) {
             $query->where('user_id', '=', $userId);
         })->_list();
     }

@@ -1,26 +1,30 @@
 <template>
-  <a-modal
+  <a-drawer
     :mask-closable="false"
     :visible="visible"
     :title="isUpdate ? '修改部门' : '添加部门'"
+    width="45vw"
+    :drawer-style="{
+      minWidth: '360px',
+    }"
     @cancel="cancelModal"
     @ok="okModal"
   >
     <a-form :model="form" layout="vertical">
-      <a-form-item field="dept_id">
-        <a-tree-select
-          :data="props.depts"
+      <a-form-item field="dept">
+        <a-select
+          allow-clear
+          :allow-clear="true"
+          :allow-search="true"
           v-model="form.dept_id"
-          placeholder="选择部门..."
           :fallback-option="false"
-          :fieldNames="{
-            key: 'id',
-            title: 'dept_name',
-            children: 'children',
-          }"
+          placeholder="选择父级部门..."
         >
           <template #prefix>父级部门</template>
-        </a-tree-select>
+          <a-option v-for="dept of props.dept" :value="dept.id">
+            {{ dept.mark }}{{ dept.dept_name }}
+          </a-option>
+        </a-select>
       </a-form-item>
       <a-form-item field="dept_name">
         <a-input v-model="form.dept_name" placeholder="请输入部门名称...">
@@ -32,8 +36,24 @@
           <template #prefix>部门备注</template>
         </a-input>
       </a-form-item>
+      <a-form-item field="dept_id">
+        <a-select
+          multiple
+          allow-clear
+          allow-search
+          :fallback-option="false"
+          v-model="form.role"
+          placeholder="选择角色..."
+          value-key="id"
+        >
+          <template #prefix>拥有角色</template>
+          <a-option v-for="role of props.role" :value="role">
+            {{ role.mark }}{{ role.role_name }}
+          </a-option>
+        </a-select>
+      </a-form-item>
     </a-form>
-  </a-modal>
+  </a-drawer>
 </template>
 
 <script setup>
@@ -45,18 +65,17 @@ import { useResetForm } from '@/hooks/form.js';
 const props = defineProps({
   visible: false,
   data: undefined,
-  depts: undefined,
-  roles: undefined,
-  nodes: undefined,
+  dept: undefined,
+  role: undefined,
 });
 
 const { form, isUpdate, setForm, resetForm } = useResetForm({
   id: undefined,
-  dept_id: undefined,
+  dept_id: null,
   dept_name: '',
   dept_desc: '',
-  role_ids: [],
-  nodes: [],
+  role: [],
+  dept: [],
 });
 
 const emit = defineEmits(['update:visible', 'done']);

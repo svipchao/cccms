@@ -37,16 +37,6 @@ class SysUser extends Model
     }
 
     /**
-     * 更新前
-     * @param $model
-     */
-    public static function onBeforeUpdate($model): void
-    {
-        parent::onBeforeDelete($model);
-        // halt($model);
-    }
-
-    /**
      * 删除前
      * @param $model
      * @return void
