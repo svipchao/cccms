@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 namespace cccms\services;
 
-use cccms\{model\SysFileCate, Service, Storage};
+use cccms\{Service, Storage};
+use think\Image;
 
 class UploadService extends Service
 {
@@ -14,13 +15,13 @@ class UploadService extends Service
      */
     public function upload(int|string $pathOrId = 0): array
     {
-        $file = $this->request->file('file');
+        $file = static::$request->file('file');
         if (!empty($file)) {
             $file = Storage::instance()->upload($file, $pathOrId);
             if (in_array($file['file_ext'], ['jpg', 'gif', 'png', 'bmp', 'jpeg', 'wbmp'])) {
                 // 图片压缩
                 $filePath = $this->app->getRootPath() . 'public/uploads/' . $file['file_url'];
-                \think\Image::open($filePath)->save($filePath, $file['file_ext'], 90);
+                Image::open($filePath)->save($filePath, $file['file_ext'], 90);
             }
             return $file;
         }

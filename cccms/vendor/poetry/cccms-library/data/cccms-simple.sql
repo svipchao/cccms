@@ -160,9 +160,8 @@ VALUES (1, 0, 0, '基础系统', 'ri-stack-line', '#', '#', 'default', '_self', 
        (7, 1, 1, '系统配置', 'ri-settings-line', '#', '#', 'default', '_self', 0, 1),
        (8, 1, 7, '系统设置', '', 'admin/config/index', 'admin/config/index', 'default', '_self', 0, 1),
        (9, 1, 7, '菜单管理', '', 'admin/menu/index', 'admin/menu/index', 'default', '_self', 0, 1),
-       (10, 1, 7, '路由管理', '', 'admin/route/index', 'admin/route/index', 'default', '_self', 0, 0),
-       (11, 1, 7, '附件管理', '', 'admin/file/index', 'admin/file/index', 'default', '_self', 0, 1),
-       (12, 1, 7, '日志管理', '', 'admin/log/index', 'admin/log/index', 'default', '_self', 0, 1);
+       (10, 1, 7, '附件管理', '', 'admin/file/index', 'admin/file/index', 'default', '_self', 0, 1),
+       (11, 1, 7, '日志管理', '', 'admin/log/index', 'admin/log/index', 'default', '_self', 0, 1);
 
 CREATE TABLE `sys_config_cate`
 (

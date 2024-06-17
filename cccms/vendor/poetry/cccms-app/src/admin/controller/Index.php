@@ -15,10 +15,10 @@ class Index extends Base
      * 控制台
      * @auth false
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods GET
      */
-    public function index()
+    public function index(): void
     {
         _result(['code' => 200, 'msg' => 'success', 'data' => []], _getEnCode());
     }

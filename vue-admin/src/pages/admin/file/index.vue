@@ -9,14 +9,15 @@
       style="padding-bottom: 10px"
     >
       <a-tab-pane
-        v-for="(cate, index) in table.cates"
+        v-for="(cate, index) in table.cate"
         :key="cate.id"
-        :title="cate.desc"
+        :title="cate.cate_name"
       />
     </a-tabs>
     <Table
       :fields="table.fields"
       :ignoreFields="table.ignoreFields"
+      v-model:recycle="table.form.recycle"
       v-model:form="table.form"
       v-model:columns="table.columns"
       v-model:pagination="table.pagination"
@@ -147,61 +148,6 @@ import Popconfirm from '@/components/popconfirm/index.vue';
 import ImagePreviewGroup from '@/components/image/image-preview-group.vue';
 import Info from './info.vue';
 
-onMounted(() => {
-  getDatas();
-});
-
-// 数据
-const table = reactive({
-  form: {
-    cate_id: 1,
-    user: undefined,
-  },
-  pagination: {
-    page: 1,
-    limit: 15,
-    total: 0,
-  },
-  users: [],
-  cates: [], // 类别
-  datas: [], // 表数据
-  ignoreFields: ['operation'],
-  columns: [
-    {
-      dataIndex: 'user_id',
-      title: '用户昵称(账号)',
-      width: 160,
-      slotName: 'user',
-      filterable: {
-        slotName: 'userFilter',
-      },
-    },
-    {
-      dataIndex: 'file_name',
-      title: '文件名',
-      width: 230,
-      slotName: 'fileName',
-    },
-    {
-      dataIndex: 'file_url',
-      title: '外链地址',
-      width: 200,
-      slotName: 'fileUrl',
-    },
-    { dataIndex: 'file_size', title: '文件大小', width: 100 },
-    { dataIndex: 'status', title: '状态', width: 80, slotName: 'status' },
-    { dataIndex: 'create_time', title: '创建时间', width: 180 },
-    { dataIndex: 'update_time', title: '更新时间', width: 180 },
-    {
-      dataIndex: 'operation',
-      title: '操作',
-      width: 80,
-      fixed: 'right',
-      slotName: 'operation',
-    },
-  ],
-});
-
 // 切换状态
 const changeStatusFun = (record) => {
   fileUpdate(record).then((res) => {
@@ -215,16 +161,14 @@ const switchCate = (key) => {
 };
 
 const getDatas = async () => {
-  const {
-    data: { fields, data, cates, total },
-  } = await fileQuery({ ...table.form, ...table.pagination });
-  table.cates = cates;
-  table.datas = data;
-  table.fields = fields;
-  table.form.total = total;
+  const { data } = await fileQuery({ ...table.form, ...table.pagination });
+  table.cate = data.cate;
+  table.data = data.data;
+  table.fields = data.fields;
+  table.form.total = data.total;
   // 图片预览
-  for (const index in table.datas) {
-    image.list.push(table.datas[index].file_link);
+  for (const index in table.data) {
+    image.list.push(table.data[index].file_link);
   }
 };
 
@@ -271,4 +215,56 @@ const showImage = (rowIndex) => {
   image.current = rowIndex;
   image.visible = true;
 };
+
+// 数据
+const table = reactive({
+  form: {
+    recycle: false,
+    cate_id: 1,
+    user: undefined,
+  },
+  pagination: {
+    page: 1,
+    limit: 15,
+    total: 0,
+  },
+  user: [],
+  cate: [], // 类别
+  data: [], // 表数据
+  ignoreFields: ['operation'],
+  columns: [
+    {
+      dataIndex: 'user_id',
+      title: '用户昵称(账号)',
+      width: 160,
+      slotName: 'user',
+      filterable: {
+        slotName: 'userFilter',
+      },
+    },
+    {
+      dataIndex: 'file_name',
+      title: '文件名',
+      width: 230,
+      slotName: 'fileName',
+    },
+    {
+      dataIndex: 'file_url',
+      title: '外链地址',
+      width: 200,
+      slotName: 'fileUrl',
+    },
+    { dataIndex: 'file_size', title: '文件大小', width: 100 },
+    { dataIndex: 'status', title: '状态', width: 80, slotName: 'status' },
+    { dataIndex: 'create_time', title: '创建时间', width: 180 },
+    { dataIndex: 'update_time', title: '更新时间', width: 180 },
+    {
+      dataIndex: 'operation',
+      title: '操作',
+      width: 80,
+      fixed: 'right',
+      slotName: 'operation',
+    },
+  ],
+});
 </script>

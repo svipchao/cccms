@@ -13,7 +13,7 @@ use cccms\services\AuthService;
  */
 class Log extends Base
 {
-    public function init()
+    public function init(): void
     {
         $this->model = SysLog::mk();
     }
@@ -22,10 +22,10 @@ class Log extends Base
      * 删除日志
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods DELETE
      */
-    public function delete()
+    public function delete(): void
     {
         $this->model->destroy(function ($query) {
             $query->_withSearch(['user'], [
@@ -39,10 +39,10 @@ class Log extends Base
      * 日志列表
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods GET
      */
-    public function index()
+    public function index(): void
     {
         $params = _validate('get.sys_log', [
             'page' => 1,

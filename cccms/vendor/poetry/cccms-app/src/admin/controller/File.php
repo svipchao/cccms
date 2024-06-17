@@ -13,7 +13,7 @@ use cccms\services\{AuthService, UploadService};
  */
 class File extends Base
 {
-    public function init()
+    public function init(): void
     {
         $this->model = SysFile::mk();
     }
@@ -22,10 +22,10 @@ class File extends Base
      * 添加附件
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods POST
      */
-    public function create()
+    public function create(): void
     {
         $cate_id = $this->request->post('cate_id/d', 0);
         _result([
@@ -39,10 +39,10 @@ class File extends Base
      * 删除附件
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods DELETE
      */
-    public function delete()
+    public function delete(): void
     {
         Storage::instance()->delete($this->request->delete('id/d', 0));
         _result(['code' => 200, 'msg' => '删除成功'], _getEnCode());
@@ -52,10 +52,10 @@ class File extends Base
      * 修改附件
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods PUT
      */
-    public function update()
+    public function update(): void
     {
         $params = _validate('put.sys_file.false', 'id|file_name,file_desc,extract_code,status');
         $this->model->update($params);
@@ -66,23 +66,22 @@ class File extends Base
      * 附件列表
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods GET
      */
-    public function index()
+    public function index(): void
     {
-        $cates = SysFileCate::mk()->_list();
-        $cate_id = $this->request->get('cate_id/d', null);
-        $cate_id = $cate_id ?: ($cates[0]['id'] ?? 0);
+        $cate = SysFileCate::mk()->_list();
         $params = _validate('get.sys_file.true', 'page,limit|cate_id');
+        $params['cate_id'] = $params['cate_id'] ?: ($cate[0]['id'] ?? 0);
         $data = $this->model->with(['cate', 'user'])->_withSearch('cate_id', [
             'cate_id' => $params['cate_id'],
         ])->order('id desc')->_page($params);
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_file'),
-            'cates' => $cates,
             'total' => $data['total'],
-            'data' => $data['data']
+            'data' => $data['data'],
+            'cate' => $cate,
         ]], _getEnCode());
     }
 }

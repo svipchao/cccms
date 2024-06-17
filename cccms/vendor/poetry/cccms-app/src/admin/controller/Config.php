@@ -13,7 +13,7 @@ use cccms\services\{AuthService, ConfigService};
  */
 class Config extends Base
 {
-    public function init()
+    public function init(): void
     {
         $this->model = SysConfig::mk();
     }
@@ -22,10 +22,10 @@ class Config extends Base
      * 添加配置
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods POST
      */
-    public function create()
+    public function create(): void
     {
         // $this->model->create(_validate('post.sys_config', 'type_id,key,val|desc'));
         _result(['code' => 200, 'msg' => '添加成功'], _getEnCode());
@@ -35,10 +35,10 @@ class Config extends Base
      * 删除配置
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods DELETE
      */
-    public function delete()
+    public function delete(): void
     {
         // $this->model->_delete($this->request->delete('id/d', 0));
         _result(['code' => 200, 'msg' => '删除成功'], _getEnCode());
@@ -48,10 +48,10 @@ class Config extends Base
      * 修改配置
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods PUT
      */
-    public function update()
+    public function update(): void
     {
         $data = array_map(function ($item) {
             return [
@@ -70,10 +70,10 @@ class Config extends Base
      * 配置列表
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods GET
      */
-    public function index()
+    public function index(): void
     {
         $data = $this->model->_withSearch('cate_name', [
             'cate_name' => $this->request->get('cate_name', 'site')

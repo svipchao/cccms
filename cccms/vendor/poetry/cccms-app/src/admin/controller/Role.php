@@ -23,7 +23,7 @@ class Role extends Base
      * 添加角色
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods POST
      */
     public function create(): void
@@ -37,7 +37,7 @@ class Role extends Base
      * 删除角色
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods DELETE
      */
     public function delete(): void
@@ -51,7 +51,7 @@ class Role extends Base
      * 修改角色
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods PUT
      */
     public function update(): void
@@ -69,7 +69,7 @@ class Role extends Base
      * 角色列表
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods GET
      */
     public function index(): void

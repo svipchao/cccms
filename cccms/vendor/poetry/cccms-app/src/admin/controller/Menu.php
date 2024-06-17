@@ -15,7 +15,7 @@ use cccms\services\AuthService;
  */
 class Menu extends Base
 {
-    public function init()
+    public function init(): void
     {
         $this->model = SysMenu::mk();
     }
@@ -24,10 +24,10 @@ class Menu extends Base
      * 添加菜单
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods POST
      */
-    public function create()
+    public function create(): void
     {
         $params = _validate('post.sys_menu.true', 'parent_id,name,url');
         $this->model->save($params);
@@ -38,10 +38,10 @@ class Menu extends Base
      * 删除菜单
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods DELETE
      */
-    public function delete()
+    public function delete(): void
     {
         $params = $this->request->delete(['id' => 0, 'type' => null]);
         $this->model->_delete($params['id'], $params['type']);
@@ -52,10 +52,10 @@ class Menu extends Base
      * 修改菜单
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods PUT
      */
-    public function update()
+    public function update(): void
     {
         $params = _validate('put.sys_menu.true', 'id|type,data');
         if (isset($params['type']) && $params['type'] == 'sort') {
@@ -78,10 +78,10 @@ class Menu extends Base
      * 菜单列表
      * @auth true
      * @login true
-     * @encode json|jsonp|xml
+     * @encode json
      * @methods GET
      */
-    public function index()
+    public function index(): void
     {
         $params = $this->request->get(['parent_id' => null, 'recycle' => null]);
         $cate = $this->model->where(['parent_id' => 0, 'menu_id' => 0])->_list();
