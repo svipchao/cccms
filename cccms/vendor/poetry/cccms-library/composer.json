@@ -1,38 +1,39 @@
 {
-  "name": "poetry/cccms-library",
-  "description": "ThinkPHP6.* Library 扩展包",
-  "type": "library",
-  "license": "MIT",
-  "authors": [
-    {
-      "name": "诗无尽头i",
-      "email": "admin@cccms.cc"
-    }
-  ],
-  "minimum-stability": "dev",
-  "require": {
-    "php": ">=8.0.0",
-    "topthink/framework": "^8.0",
-    "topthink/think-orm": "^3.0",
-    "topthink/think-view": "^2.0",
-    "topthink/think-filesystem": "^2.0"
-  },
-  "require-dev": {
-    "phpunit/phpunit": "v9.5.11"
-  },
-  "autoload": {
-    "files": [
-      "src/common.php"
+    "name": "poetry/cccms-library",
+    "description": "ThinkPHP8.* Library 扩展包",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "诗无尽头i",
+            "email": "admin@cccms.cc"
+        }
     ],
-    "psr-4": {
-      "cccms\\": "src/"
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=8.0.0",
+        "topthink/framework": "^8.0",
+        "topthink/think-orm": "^3.0",
+        "topthink/think-view": "^2.0",
+        "topthink/think-image": "^1.0",
+        "topthink/think-filesystem": "^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "v9.5.11"
+    },
+    "autoload": {
+        "files": [
+            "src/common.php"
+        ],
+        "psr-4": {
+            "cccms\\": "src/"
+        }
+    },
+    "extra": {
+        "think": {
+            "services": [
+                "cccms\\Library"
+            ]
+        }
     }
-  },
-  "extra": {
-    "think": {
-      "services": [
-        "cccms\\Library"
-      ]
-    }
-  }
 }

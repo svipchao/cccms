@@ -150,24 +150,24 @@
         },
         {
             "name": "poetry/cccms-app",
-            "version": "1.0.0",
-            "version_normalized": "1.0.0.0",
+            "version": "2.0.1",
+            "version_normalized": "2.0.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/svipchao/cccms-app.git",
-                "reference": "2344fd780c53b655a612125ed95a03815237dc91"
+                "reference": "9e3eb308d739b1649c20af7f13cc7735f2a5c23f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/svipchao/cccms-app/zipball/2344fd780c53b655a612125ed95a03815237dc91",
-                "reference": "2344fd780c53b655a612125ed95a03815237dc91",
+                "url": "https://api.github.com/repos/svipchao/cccms-app/zipball/9e3eb308d739b1649c20af7f13cc7735f2a5c23f",
+                "reference": "9e3eb308d739b1649c20af7f13cc7735f2a5c23f",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.4",
-                "poetry/cccms-library": "^1.0.0"
+                "php": ">=8.0.0",
+                "poetry/cccms-library": "^2.0"
             },
-            "time": "2023-11-27T08:49:04+00:00",
+            "time": "2024-06-17T15:05:43+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -182,42 +182,43 @@
             "authors": [
                 {
                     "name": "诗无尽头i",
-                    "email": "svipchao@qq.com"
+                    "email": "admin@cccms.cc"
                 }
             ],
             "description": "CCCMS 应用包扩展",
             "support": {
                 "issues": "https://github.com/svipchao/cccms-app/issues",
-                "source": "https://github.com/svipchao/cccms-app/tree/1.0.0"
+                "source": "https://github.com/svipchao/cccms-app/tree/2.0.1"
             },
             "install-path": "../poetry/cccms-app"
         },
         {
             "name": "poetry/cccms-library",
-            "version": "1.0.6",
-            "version_normalized": "1.0.6.0",
+            "version": "2.0.0",
+            "version_normalized": "2.0.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/svipchao/cccms-library.git",
-                "reference": "e238f78ca6b5cdd4f501c53e9e1e936fef1d6d39"
+                "reference": "905548bd0f2a1afac1c338685fba9ec108f20f20"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/svipchao/cccms-library/zipball/e238f78ca6b5cdd4f501c53e9e1e936fef1d6d39",
-                "reference": "e238f78ca6b5cdd4f501c53e9e1e936fef1d6d39",
+                "url": "https://api.github.com/repos/svipchao/cccms-library/zipball/905548bd0f2a1afac1c338685fba9ec108f20f20",
+                "reference": "905548bd0f2a1afac1c338685fba9ec108f20f20",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.0.0",
                 "topthink/framework": "^8.0",
                 "topthink/think-filesystem": "^2.0",
+                "topthink/think-image": "^1.0",
                 "topthink/think-orm": "^3.0",
                 "topthink/think-view": "^2.0"
             },
             "require-dev": {
                 "phpunit/phpunit": "v9.5.11"
             },
-            "time": "2024-04-25T06:12:17+00:00",
+            "time": "2024-06-17T15:01:01+00:00",
             "type": "library",
             "extra": {
                 "think": {
@@ -245,10 +246,10 @@
                     "email": "admin@cccms.cc"
                 }
             ],
-            "description": "ThinkPHP6.* Library 扩展包",
+            "description": "ThinkPHP8.* Library 扩展包",
             "support": {
                 "issues": "https://github.com/svipchao/cccms-library/issues",
-                "source": "https://github.com/svipchao/cccms-library/tree/1.0.6"
+                "source": "https://github.com/svipchao/cccms-library/tree/2.0.0"
             },
             "install-path": "../poetry/cccms-library"
         },
@@ -810,6 +811,53 @@
                 "source": "https://github.com/top-think/think-helper/tree/v3.1.6"
             },
             "install-path": "../topthink/think-helper"
+        },
+        {
+            "name": "topthink/think-image",
+            "version": "v1.0.7",
+            "version_normalized": "1.0.7.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/top-think/think-image.git",
+                "reference": "8586cf47f117481c6d415b20f7dedf62e79d5512"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/top-think/think-image/zipball/8586cf47f117481c6d415b20f7dedf62e79d5512",
+                "reference": "8586cf47f117481c6d415b20f7dedf62e79d5512",
+                "shasum": ""
+            },
+            "require": {
+                "ext-gd": "*"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "4.8.*",
+                "topthink/framework": "^5.0"
+            },
+            "time": "2016-09-29T06:05:43+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "think\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "yunwuxin",
+                    "email": "448901948@qq.com"
+                }
+            ],
+            "description": "The ThinkPHP5 Image Package",
+            "support": {
+                "issues": "https://github.com/top-think/think-image/issues",
+                "source": "https://github.com/top-think/think-image/tree/master"
+            },
+            "install-path": "../topthink/think-image"
         },
         {
             "name": "topthink/think-orm",
