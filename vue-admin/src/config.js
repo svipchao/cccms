@@ -1,4 +1,6 @@
 let config = {
+  // 版本号
+  version: 'v1.0.0',
   // 标题
   title: 'CCCMS',
   // 描述
@@ -8,20 +10,17 @@ let config = {
   // 版权链接
   copyrightUrl: 'javascript:;',
   // 接口URL
-  baseUrl: 'http://rpa.qq.com',
+  baseUrl: 'http://cms.qq.com',
   // 全局确认框加载时间 ms
   okLoadingTime: 1000,
-  // 全局确认框加载时间 ms
-  ossImageUrl: 'http://zz-media.weilianyiyao.top/',
 };
 
 if (import.meta.env.MODE === 'development') {
   // 开发模式
-  config.baseUrl = 'http://rpa.qq.com';
-  // config.baseUrl = 'https://demo.weilianyiyao.top';
+  config.baseUrl = 'http://cms.qq.com';
 } else {
   // 生产模式
-  config.baseUrl = 'https://demo.weilianyiyao.top';
+  config.baseUrl = 'http://cms.qq.com';
 }
 
 export default config;
