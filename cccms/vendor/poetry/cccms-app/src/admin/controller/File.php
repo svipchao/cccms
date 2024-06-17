@@ -72,7 +72,7 @@ class File extends Base
     public function index(): void
     {
         $cate = SysFileCate::mk()->_list();
-        $params = _validate('get.sys_file.true', 'page,limit|cate_id');
+        $params = _validate('get.sys_file.true', 'page,limit|cate_id,recycle');
         $params['cate_id'] = $params['cate_id'] ?: ($cate[0]['id'] ?? 0);
         $data = $this->model->with(['cate', 'user'])->_withSearch('cate_id', [
             'cate_id' => $params['cate_id'],

@@ -27,7 +27,7 @@ class Log
         // 记录日志
         if ($logs['logClose']) {
             // 需要监控的请求类型
-            $log_methods = array_map('strtolower', $logs['logMethods']);
+            $log_methods = array_map('strtoupper', $logs['logMethods']);
             // 请求参数 排除掉不需要记录的参数
             $request_param = $request->except($logs['logNoParams']);
             // 不需要登陆的节点不记录 || 不需要监控的请求类型不记录

@@ -44,13 +44,9 @@ class Log extends Base
      */
     public function index(): void
     {
-        $params = _validate('get.sys_log', [
-            'page' => 1,
-            'limit' => 15,
-            'user' => null,
-        ]);
+        $params = _validate('get.sys_log', 'page,limit|user');
         $data = $this->model->with(['user'])->_withSearch('user', [
-            'user' => $params['user']
+            'user' => $params['user'] ?? null
         ])->order('id desc')->_page($params);
         _result(['code' => 200, 'msg' => 'success', 'data' => [
             'fields' => AuthService::instance()->fields('sys_log'),

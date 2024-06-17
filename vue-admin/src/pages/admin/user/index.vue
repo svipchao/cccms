@@ -291,9 +291,9 @@ const table = reactive({
     dept_id: undefined,
   },
   pagination: {
-    total: 1,
     page: 1,
     limit: 15,
+    total: 1,
   },
   dept: [],
   data: [],

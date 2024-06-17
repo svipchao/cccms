@@ -1,33 +1,32 @@
 <template>
   <a-card>
     <a-tabs
+      :editable="false"
+      hide-content
+      show-add-button
       :active-key="table.form.cate_id"
       @change="switchCate"
-      hide-content
-      editable
-      show-add-button
       style="padding-bottom: 10px"
     >
       <a-tab-pane
         v-for="(cate, index) in table.cate"
         :key="cate.id"
-        :title="cate.cate_name"
+        :title="cate.cate_desc"
       />
     </a-tabs>
     <Table
       :fields="table.fields"
       :ignoreFields="table.ignoreFields"
-      v-model:recycle="table.form.recycle"
       v-model:form="table.form"
       v-model:columns="table.columns"
       v-model:pagination="table.pagination"
-      :data="table.datas"
+      :data="table.data"
       @reload="getDatas"
     >
       <template #headerButton>
         <a-space>
           <a-upload
-            :custom-request="addFile"
+            :custom-request="addData"
             :show-file-list="false"
             v-permission="'admin/file/create'"
           />
@@ -95,7 +94,7 @@
         <a-button
           type="text"
           size="mini"
-          @click="editFile(record)"
+          @click="editData(record)"
           v-permission="'admin/file/update'"
         >
           <template #icon>
@@ -106,7 +105,7 @@
           content="确定要删除吗？"
           type="warning"
           position="left"
-          @ok="delFile(record)"
+          @ok="delData(record)"
         >
           <a-button type="text" size="mini" v-permission="'admin/file/delete'">
             <template #icon>
@@ -165,7 +164,7 @@ const getDatas = async () => {
   table.cate = data.cate;
   table.data = data.data;
   table.fields = data.fields;
-  table.form.total = data.total;
+  table.pagination.total = data.total;
   // 图片预览
   for (const index in table.data) {
     image.list.push(table.data[index].file_link);
@@ -174,25 +173,25 @@ const getDatas = async () => {
 
 let fileEditStatus = useFormEdit();
 
-const editFile = (row) => {
+const editData = (row) => {
   fileEditStatus.updateFormEditStatus(row);
 };
 
-const delFile = (row) => {
-  if (table.datas.length === 1) {
-    if (table.form.page > 1) {
-      table.form.page--;
+const delData = (record, type = null) => {
+  if (table.data.length === 1) {
+    if (table.pagination.page > 1) {
+      table.pagination.page--;
     } else {
-      table.form.page = 1;
+      table.pagination.page = 1;
     }
   }
-  fileDelete(row).then((res) => {
+  fileDelete({ id: record.id, type: type }).then((res) => {
     Message.success('删除成功');
     getDatas();
   });
 };
 
-const addFile = (option) => {
+const addData = (option) => {
   const { fileItem, name } = option;
   const formData = new FormData();
   formData.append(name || 'file', fileItem.file);
@@ -219,14 +218,13 @@ const showImage = (rowIndex) => {
 // 数据
 const table = reactive({
   form: {
-    recycle: false,
     cate_id: 1,
     user: undefined,
   },
   pagination: {
     page: 1,
     limit: 15,
-    total: 0,
+    total: 1,
   },
   user: [],
   cate: [], // 类别
