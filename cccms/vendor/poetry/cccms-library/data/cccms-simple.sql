@@ -247,7 +247,6 @@ CREATE TABLE `sys_file`
     `file_sha1`    char(64)     NOT NULL DEFAULT '' COMMENT 'sha1值',
     `extract_code` varchar(20)  NOT NULL DEFAULT '' COMMENT '提取码',
     `status`       tinyint      NOT NULL DEFAULT 1 COMMENT '状态【0:禁用,1:正常】',
-    `delete_time`  datetime     NOT NULL DEFAULT '1900-01-01 00:00:00' COMMENT '删除时间',
     `create_time`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`) USING BTREE,

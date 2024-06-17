@@ -5,7 +5,8 @@ namespace cccms\model;
 
 use cccms\Model;
 use cccms\extend\FormatExtend;
-use think\model\relation\{HasOne, HasMany};
+use think\model\concern\SoftDelete;
+use think\model\relation\HasOne;
 
 class SysFile extends Model
 {
@@ -28,13 +29,7 @@ class SysFile extends Model
         ]);
     }
 
-    // 关联权限记录表
-    public function relationAuth(): HasMany
-    {
-        return $this->hasMany(SysAuth::class, 'user_id', 'user_id');
-    }
-
-    public function searchCateIdAttr($query, $value)
+    public function searchCateIdAttr($query, $value): void
     {
         $query->where('cate_id', '=', $value);
     }

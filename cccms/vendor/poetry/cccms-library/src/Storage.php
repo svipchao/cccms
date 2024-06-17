@@ -60,7 +60,7 @@ abstract class Storage
      */
     public function getCatePath(int $cate_id = 0): string
     {
-        return SysFileCate::mk()->where('id', $cate_id)->value('name') ?: 'default';
+        return SysFileCate::mk()->where('id', $cate_id)->value('cate_name') ?: 'default';
     }
 
     /**
