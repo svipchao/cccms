@@ -62,9 +62,9 @@ class ComposerStaticInitc2e7d7acb3e3918b0674a3d5789de5d8
             0 => __DIR__ . '/..' . '/topthink/framework/src/think',
             1 => __DIR__ . '/..' . '/topthink/think-filesystem/src',
             2 => __DIR__ . '/..' . '/topthink/think-helper/src',
-            3 => __DIR__ . '/..' . '/topthink/think-orm/src',
-            4 => __DIR__ . '/..' . '/topthink/think-template/src',
-            5 => __DIR__ . '/..' . '/topthink/think-image/src',
+            3 => __DIR__ . '/..' . '/topthink/think-image/src',
+            4 => __DIR__ . '/..' . '/topthink/think-orm/src',
+            5 => __DIR__ . '/..' . '/topthink/think-template/src',
         ),
         'cccms\\' => 
         array (

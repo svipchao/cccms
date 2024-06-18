@@ -17,6 +17,10 @@ class SysUser extends Model
 
     protected $defaultSoftDelete = '1900-01-01 00:00:00';
 
+    protected $dataAuthField = 'id';
+
+    protected $globalScope = ['userDataAuth'];
+
     // 写入后
     public static function onAfterWrite($model): void
     {

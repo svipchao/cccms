@@ -15,7 +15,9 @@ use cccms\services\{NodeService, UserService, DataService};
  */
 abstract class Model extends \think\Model
 {
-    protected $globalScope = ['commonAuth'];
+    protected $dataAuthField = 'user_id';
+
+    // protected $globalScope = ['commonAuth'];
 
     /**
      * 创建模型实例
@@ -130,11 +132,25 @@ abstract class Model extends \think\Model
             // 数据权限
             // $this->commonDataAuth($query, $fields);
             // 用户数据范围
-            $this->commonUserAuth($query, $fields);
+            // $this->commonUserAuth($query, $fields);
             // 部门数据范围
             // $this->commonDeptAuth($query, $fields);
             // 角色数据范围
             // $this->commonRoleAuth($query, $fields);
+        }
+    }
+
+    // 用户数据范围
+    public function scopeUserDataAuth($query): void
+    {
+        $node = NodeService::instance()->getCurrentNodeInfo();
+        if (!empty($node) && $node['auth'] && !UserService::isAdmin()) {
+            $fields = $query->getTableFields();
+            if (in_array($this->dataAuthField, $fields)) {
+                $query->where($this->dataAuthField, 'in', function ($query) {
+                    $query->table('sys_user_dept')->where('dept_id', 'in', UserService::getUserDeptIds())->field('user_id');
+                });
+            }
         }
     }
 
@@ -163,19 +179,6 @@ abstract class Model extends \think\Model
                     return '***********';
                 });
             }
-        }
-    }
-
-    // 用户数据范围
-    private function commonUserAuth($query, $fields): void
-    {
-        if (in_array('user_id', $fields)) {
-            $query->where('user_id', 'in', function ($query) {
-                $query->table('sys_auth')->whereOr([
-                    ['dept_id', 'in', UserService::instance()->getUserDeptIds()],
-                    ['user_id', 'in', UserService::instance()->getUserSubUserIds()]
-                ])->field('user_id');
-            });
         }
     }
 
