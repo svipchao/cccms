@@ -12,6 +12,10 @@ CREATE TABLE `sys_user`
     `create_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`) USING BTREE,
+    INDEX `idx_username` (`username`) USING BTREE,
+    INDEX `idx_nickname` (`nickname`) USING BTREE,
+    INDEX `idx_tags` (`tags`) USING BTREE,
+    INDEX `idx_status` (`status`) USING BTREE,
     UNIQUE KEY `idx_username` (`username`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
