@@ -85,7 +85,7 @@
       :selected-keys="[menuStore.getSelectedKeys]"
       @menu-item-click="tabsStore.switchTab"
     >
-      <sider-menu
+      <SiderMenu
         :menus="menuStore.currentMenus"
         v-if="menuStore.currentMenus !== undefined"
       />
