@@ -26,9 +26,9 @@
         "topthink/think-filesystem": "^2.0",
         "poetry/cccms-app": "^2.0",
         "poetry/cccms-library": "^2.0",
+        "ext-openssl": "*",
         "ext-iconv": "*",
         "ext-curl": "*",
-        "ext-openssl": "*",
         "ext-gd": "*"
     },
     "require-dev": {
