@@ -6,8 +6,7 @@ namespace cccms\services;
 
 use cccms\Service;
 use cccms\extend\JwtExtend;
-use cccms\model\{SysDept, SysRoleNode, SysUser, SysUserDept};
-use think\db\exception\{DbException, DataNotFoundException, ModelNotFoundException};
+use cccms\model\{SysDept, SysRoleNode, SysUserDept};
 
 class UserService extends Service
 {
@@ -32,7 +31,6 @@ class UserService extends Service
     public static function getUserInfo(string $key = 'all', mixed $default = null): mixed
     {
         $userInfo = JwtExtend::verifyToken(static::getAccessToken());
-        // $userInfo = SysUser::mk()->findOrEmpty(2)->toArray();
         if (!$userInfo || !empty($userInfo['exp']) && $userInfo['exp'] < time()) {
             if ($default !== '') return $default;
             _result(['code' => 401, 'msg' => '登陆状态失效，请重新登陆'], _getEnCode());
@@ -63,9 +61,9 @@ class UserService extends Service
      * 判断是否是管理员
      * @return bool
      */
-    public static function isAdmin(): bool
+    public static function isAdmin(int $user_id = 0): bool
     {
-        return static::getUserInfo('id', 0) === 1;
+        return static::getUserInfo('id', $user_id) === 1;
     }
 
     /**
@@ -85,6 +83,7 @@ class UserService extends Service
      */
     public static function getUserNodes(int $user_id = 0): array
     {
+        if (static::isAdmin($user_id)) return NodeService::getNodes();
         $user_id = $user_id ?: static::getUserId();
         $data = static::$app->cache->get('SysUserAuth_' . $user_id, []);
         if (empty($data)) {
