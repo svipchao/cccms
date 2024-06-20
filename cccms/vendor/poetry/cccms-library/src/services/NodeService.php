@@ -113,7 +113,7 @@ class NodeService extends Service
      * 获取当前节点
      * @return string
      */
-    public static function getCurrentNode()
+    public static function getCurrentNode(): string
     {
         return StrExtend::humpToUnderline(app('http')->getName() . '/' . str_replace('.', '/', request()->controller()) . '/' . request()->action());
     }
@@ -123,7 +123,7 @@ class NodeService extends Service
      * @param string $node 权限节点(键)
      * @return array
      */
-    public static function getCurrentNodeInfo(string $node = '')
+    public static function getCurrentNodeInfo(string $node = ''): array
     {
         return static::getNodesInfo()[$node ?: static::getCurrentNode()] ?? [];
     }
@@ -201,15 +201,16 @@ class NodeService extends Service
     /**
      * 解析硬节点属性
      * @param string $comment 备注内容
-     * @param string $default 默认标题
+     * @param string $defaultTitle
+     * @param string $node
      * @return array
      */
-    private static function parseComment(string $comment, string $defaultTitle = '', $node = ''): array
+    private static function parseComment(string $comment, string $defaultTitle = '', string $node = ''): array
     {
         $text = strtolower(strtr($comment, "\n", ' '));
         $title = preg_replace('/^\/\*\s*\*\s*\*\s*(.*?)\s*\*.*?$/', '$1', $text);
         foreach (['@auth', '@login', '@methods'] as $find) {
-            if (stripos($title, $find) === 0) $title = $default;
+            if (stripos($title, $find) === 0) $title = $defaultTitle;
         }
         preg_match('/@encode.(\S+)/i', $text, $enCode);
         preg_match('/@sort.(\S+)/i', $text, $sort);
@@ -218,7 +219,7 @@ class NodeService extends Service
         // 请求类型详细解释请看 https://www.kancloud.cn/manual/thinkphp6_0/1037520
         $letters = 'abcdefghijklmnopqrstuvwxyz';
         return [
-            'title' => $title ?: $default,
+            'title' => $title ?: $defaultTitle,
             'sort' => $sort[1] ?? strpos($letters, substr($node, 0, 1)),
             'auth' => (bool)intval(preg_match('/@auth\s*true/i', $text)),
             'login' => (bool)intval(preg_match('/@login\s*true/i', $text)),

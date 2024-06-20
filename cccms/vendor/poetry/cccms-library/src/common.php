@@ -145,9 +145,8 @@ if (!function_exists('_logUpdateParams')) {
      * 记录日志修改参数信息
      * @param array $newData 新数据
      * @param array $oldData 旧数据
-     * @return NULL
      */
-    function _logUpdateParams(array $newData = [], array $oldData = [])
+    function _logUpdateParams(array $newData = [], array $oldData = []): void
     {
         request()->updResult = array_diff_assoc($newData, $oldData);
     }
@@ -179,10 +178,10 @@ if (!function_exists('_view')) {
      * @param string $template 模板文件
      * @param array $vars 模板变量
      * @param int $code 状态码
-     * @param callable $filter 内容过滤
-     * @return \think\response\View
+     * @param callable|null $filter 内容过滤
+     * @return View
      */
-    function _view(string $template = '', $vars = [], $code = 200, $filter = null): View
+    function _view(string $template = '', array $vars = [], int $code = 200, callable $filter = null): View
     {
         if (empty($template)) {
             $template = config('cccms.resultPath');
@@ -199,11 +198,11 @@ if (!function_exists('_display')) {
      * @param string $content 渲染内容
      * @param array $vars 模板变量
      * @param int $code 状态码
-     * @param callable $filter 内容过滤
-     * @return \think\response\View
+     * @param callable|null $filter 内容过滤
+     * @return View
      */
-    function _display(string $content, $vars = [], $code = 200, $filter = null): View
+    function _display(string $content, array $vars = [], int $code = 200, callable $filter = null): View
     {
-        return Response::create($content, 'view', $code)->isContent(true)->assign($vars)->filter($filter);
+        return Response::create($content, 'view', $code)->isContent()->assign($vars)->filter($filter);
     }
 }

@@ -75,45 +75,45 @@ class DataService extends Service
      */
     public function getUserData(string $table = ''): array
     {
-        $tableName = StrExtend::humpToUnderline($table);
-        $data = [
-            'fields' => [], // 字段
-            'withoutField' => [], // 排除字段
-            'maskShow' => [], // 掩码显示
-            'readOnly' => [], // 只读
-            'whereAndMap' => [], // 并且条件
-            'whereOrMap' => [], // 或者条件
-        ];
-        $userData = UserService::instance()->getUserAuths();
-        foreach ($userData as $d) {
-            if ($d['table_name'] !== $tableName) continue;
-            if (empty($d['field'])) continue;
-            // 掩码显示需要字段
-            if ($d['where'] == 'mask_show') $data['maskShow'][$d['field']] = 0;
-            // 只读也需要字段
-            if ($d['where'] == 'read_only') $data['readOnly'][$d['field']] = 0;
-            if ($d['where'] == 'hidden') {
-                $data['withoutField'][$d['field']] = 0;
-            } else {
-                $data['fields'][$d['field']] = 0;
-            }
-            if (empty($d['where'])) continue;
-            if (empty($where = $this->handleWhere($d['field'], $d['where'], $d['value']))) continue;
-            $whereKey = md5($d['field'] . $d['where'] . $d['value']);
-            if ($d['logical'] == 1) {
-                $data['whereOrMap'][$whereKey] = $where;
-            } elseif ($d['logical'] == 2) {
-                $data['whereAndMap'][$whereKey] = $where;
-            }
-            // 访问控制 logical = 3 or 4 -待实现
-        }
-        return [
-            'fields' => array_keys($data['fields']),
-            'withoutField' => array_keys($data['withoutField']),
-            'maskShow' => array_keys($data['maskShow']),
-            'readOnly' => array_keys($data['readOnly']),
-            'whereAndMap' => array_filter(array_values($data['whereAndMap'])),
-            'whereOrMap' => array_filter(array_values($data['whereOrMap']))
-        ];
+        // $tableName = StrExtend::humpToUnderline($table);
+        // $data = [
+        //     'fields' => [], // 字段
+        //     'withoutField' => [], // 排除字段
+        //     'maskShow' => [], // 掩码显示
+        //     'readOnly' => [], // 只读
+        //     'whereAndMap' => [], // 并且条件
+        //     'whereOrMap' => [], // 或者条件
+        // ];
+        // $userData = UserService::instance()->getUserAuths();
+        // foreach ($userData as $d) {
+        //     if ($d['table_name'] !== $tableName) continue;
+        //     if (empty($d['field'])) continue;
+        //     // 掩码显示需要字段
+        //     if ($d['where'] == 'mask_show') $data['maskShow'][$d['field']] = 0;
+        //     // 只读也需要字段
+        //     if ($d['where'] == 'read_only') $data['readOnly'][$d['field']] = 0;
+        //     if ($d['where'] == 'hidden') {
+        //         $data['withoutField'][$d['field']] = 0;
+        //     } else {
+        //         $data['fields'][$d['field']] = 0;
+        //     }
+        //     if (empty($d['where'])) continue;
+        //     if (empty($where = $this->handleWhere($d['field'], $d['where'], $d['value']))) continue;
+        //     $whereKey = md5($d['field'] . $d['where'] . $d['value']);
+        //     if ($d['logical'] == 1) {
+        //         $data['whereOrMap'][$whereKey] = $where;
+        //     } elseif ($d['logical'] == 2) {
+        //         $data['whereAndMap'][$whereKey] = $where;
+        //     }
+        //     // 访问控制 logical = 3 or 4 -待实现
+        // }
+        // return [
+        //     'fields' => array_keys($data['fields']),
+        //     'withoutField' => array_keys($data['withoutField']),
+        //     'maskShow' => array_keys($data['maskShow']),
+        //     'readOnly' => array_keys($data['readOnly']),
+        //     'whereAndMap' => array_filter(array_values($data['whereAndMap'])),
+        //     'whereOrMap' => array_filter(array_values($data['whereOrMap']))
+        // ];
     }
 }

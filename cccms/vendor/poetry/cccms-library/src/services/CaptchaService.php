@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace cccms\services;
 
 use Exception;
-use think\Config;
 use cccms\Service;
 use cccms\extend\{JwtExtend, StrExtend};
 
@@ -79,7 +78,7 @@ class CaptchaService extends Service
             $this->length = 5;
             $x = random_int(10, 30);
             $y = random_int(1, 9);
-            $bag = "{$x} + {$y} = ";
+            $bag = "$x + $y = ";
             $key = $x + $y;
             $key .= '';
         } else {
@@ -126,7 +125,7 @@ class CaptchaService extends Service
         if (!$this->open) return ['open' => false, 'captchaToken' => '', 'base64' => ''];
         $generator = $this->generate();
         // 图片宽(px)
-        $this->imageW || $this->imageW = $this->length * $this->fontSize * 1 + $this->length * $this->fontSize / 2;
+        $this->imageW || $this->imageW = $this->length * $this->fontSize + $this->length * $this->fontSize / 2;
         // 图片高(px)
         $this->imageH || $this->imageH = $this->fontSize * 2;
 
@@ -191,7 +190,7 @@ class CaptchaService extends Service
      */
     protected function writeCurve(): void
     {
-        $px = $py = 0;
+        $py = 0;
         // 曲线前部分
         $A = mt_rand(1, (int)($this->imageH / 5)); // 振幅
         $b = mt_rand((int)(-$this->imageH / 4), (int)($this->imageH / 4)); // Y轴方向偏移量
@@ -263,7 +262,7 @@ class CaptchaService extends Service
 
         $bgs = [];
         while (false !== ($file = $dir->read())) {
-            if ('.' != $file[0] && substr($file, -4) == '.jpg') {
+            if ('.' != $file[0] && str_ends_with($file, '.jpg')) {
                 $bgs[] = $path . $file;
             }
         }

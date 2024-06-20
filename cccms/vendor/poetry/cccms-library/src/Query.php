@@ -38,7 +38,7 @@ class Query extends \think\db\Query
     public function _read(mixed $data = null, ?callable $callable = null): mixed
     {
         try {
-            $data = $this;
+            $that = $this;
             if (isset($listRows['recycle'])) {
                 if (is_string($listRows['recycle'])) {
                     $listRows['recycle'] = $listRows['recycle'] == 'true';
@@ -46,18 +46,18 @@ class Query extends \think\db\Query
                 if ($listRows['recycle']) $data = $data->onlyTrashed();
             }
             if (is_string($data) || is_numeric($data)) {
-                $data = $data->allowEmpty()->find($data);
+                $result = $that->allowEmpty()->find($data);
             } elseif (is_array($data)) {
-                $data = $data->where($data)->allowEmpty()->find();
+                $result = $that->where($data)->allowEmpty()->find();
             } else {
-                $data = $data->allowEmpty()->find();
+                $result = $that->allowEmpty()->find();
             }
             if (is_callable($callable)) {
-                $data = call_user_func($callable, $data);
+                $result = call_user_func($callable, $result);
             } else {
-                $data = $data->toArray();
+                $result = $result->toArray();
             }
-            return $data;
+            return $result;
         } catch (DbException $e) {
             $message = app()->isDebug() ? $e->getMessage() : '查询失败';
             _result(['code' => 403, 'msg' => $message], _getEnCode());

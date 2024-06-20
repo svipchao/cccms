@@ -15,7 +15,7 @@ use cccms\services\{NodeService, UserService, DataService};
  */
 abstract class Model extends \think\Model
 {
-    protected $dataAuthField = 'user_id';
+    protected string $dataAuthField = 'user_id';
 
     // protected $globalScope = ['commonAuth'];
 
@@ -126,9 +126,9 @@ abstract class Model extends \think\Model
 
     public function scopeCommonAuth($query): void
     {
-        $node = NodeService::instance()->getCurrentNodeInfo();
-        if (!empty($node) && $node['auth'] && !UserService::instance()->isAdmin()) {
-            $fields = $query->getTableFields();
+        // $node = NodeService::instance()->getCurrentNodeInfo();
+        // if (!empty($node) && $node['auth'] && !UserService::instance()->isAdmin()) {
+            // $fields = $query->getTableFields();
             // 数据权限
             // $this->commonDataAuth($query, $fields);
             // 用户数据范围
@@ -137,7 +137,7 @@ abstract class Model extends \think\Model
             // $this->commonDeptAuth($query, $fields);
             // 角色数据范围
             // $this->commonRoleAuth($query, $fields);
-        }
+        // }
     }
 
     // 用户数据范围
@@ -193,8 +193,8 @@ abstract class Model extends \think\Model
     // 角色数据范围
     private function commonRoleAuth($query, $fields): void
     {
-        if (in_array('role_id', $fields)) {
-            $query->where('role_id', 'in', UserService::instance()->getUserRoleIds());
-        }
+        // if (in_array('role_id', $fields)) {
+        //     $query->where('role_id', 'in', UserService::instance()->getUserRoleIds());
+        // }
     }
 }

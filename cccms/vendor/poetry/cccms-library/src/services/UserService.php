@@ -59,6 +59,7 @@ class UserService extends Service
 
     /**
      * 判断是否是管理员
+     * @param int $user_id
      * @return bool
      */
     public static function isAdmin(int $user_id = 0): bool

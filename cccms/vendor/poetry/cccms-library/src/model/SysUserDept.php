@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace cccms\model;
 
 use think\model\Pivot;
-use think\model\relation\HasMany;
 
 class SysUserDept extends Pivot
 {

@@ -15,7 +15,7 @@ class LocalStorage extends Storage
      * @param int|string $pathOrId int 则为文件类型ID，string则为文件夹名称
      * @return array
      */
-    public function upload($files, $pathOrId = 0): array
+    public function upload($files, int|string $pathOrId = 0): array
     {
         if (empty($pathOrId)) return [];
         $res = $this->validateFile($files);

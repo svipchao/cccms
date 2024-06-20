@@ -23,17 +23,17 @@ class SysLog extends Model
         return $this->hasOne(SysLogInfo::class, 'log_id', 'id');
     }
 
-    public function searchUserAttr($query, $value)
+    public function searchUserAttr($query, $value): void
     {
         $query->where('user_id', 'in', $value);
     }
 
-    public function searchReqMethodAttr($query, $value)
+    public function searchReqMethodAttr($query, $value): void
     {
         $query->where('log.req_method', '=', $value);
     }
 
-    public function searchReqParamAttr($query, $value)
+    public function searchReqParamAttr($query, $value): void
     {
         $query->where('log.req_param', 'like', "%" . $value . "%");
     }

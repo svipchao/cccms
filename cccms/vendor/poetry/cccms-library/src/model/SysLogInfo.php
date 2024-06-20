@@ -11,7 +11,7 @@ class SysLogInfo extends Model
 
     protected $jsonAssoc = true;
 
-    public function searchReqParamAttr($query, $value)
+    public function searchReqParamAttr($query, $value): void
     {
         $query->where('log.req_param', 'like', "%" . $value . "%");
     }

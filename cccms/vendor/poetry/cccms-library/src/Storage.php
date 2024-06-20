@@ -146,7 +146,7 @@ abstract class Storage
      * 安全检查
      * @param $file
      */
-    public function safeFile($file)
+    public function safeFile($file): void
     {
         if (!is_uploaded_file($file->getPathname())) {
             _result(['code' => 412, 'msg' => '这不是一个上传文件'], _getEnCode());
@@ -182,7 +182,7 @@ abstract class Storage
      */
     public static function name(string $url, string $ext = '', string $pre = '', string $fun = 'md5'): string
     {
-        [$hah, $ext] = [$fun($url), trim($ext ?: pathinfo($url, 4), '.\\/')];
+        [$hah, $ext] = [$fun($url), trim($ext ?: pathinfo($url, PATHINFO_FILENAME), '.\\/')];
         $attr = [trim($pre, '.\\/'), substr($hah, 0, 2), substr($hah, 2, 30)];
         return trim(join('/', $attr), '/') . '.' . strtolower($ext ?: 'tmp');
     }
@@ -215,7 +215,7 @@ abstract class Storage
      * @param array $mime 文件信息
      * @return string
      */
-    public static function mime($exts, array $mime = []): string
+    public static function mime(array|string $exts, array $mime = []): string
     {
         $mimes = static::mimes();
         foreach (is_string($exts) ? explode(',', $exts) : $exts as $ext) {
@@ -241,18 +241,18 @@ abstract class Storage
      * @param int|string $pathOrId int 则为文件类型ID，string则为文件夹名称
      * @return mixed
      */
-    abstract public function upload($files, $pathOrId = 0);
+    abstract public function upload($files, int|string $pathOrId = 0): mixed;
 
     /**
      * 删除文件
-     * @param int|string $pathOrId int 则为文件类型ID，string则为文件夹名称
+     * @param int $pathOrId int 则为文件类型ID，string则为文件夹名称
      * @return mixed
      */
-    abstract public function delete(int $pathOrId);
+    abstract public function delete(int $pathOrId): mixed;
 
     /**
      * 文件列表
      * @return mixed
      */
-    abstract public function read();
+    abstract public function read(): mixed;
 }

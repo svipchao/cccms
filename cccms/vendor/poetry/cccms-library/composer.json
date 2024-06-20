@@ -16,7 +16,11 @@
         "topthink/think-orm": "^3.0",
         "topthink/think-view": "^2.0",
         "topthink/think-image": "^1.0",
-        "topthink/think-filesystem": "^2.0"
+        "topthink/think-filesystem": "^2.0",
+        "ext-iconv": "*",
+        "ext-curl": "*",
+        "ext-openssl": "*",
+        "ext-gd": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "v9.5.11"

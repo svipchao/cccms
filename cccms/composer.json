@@ -25,7 +25,11 @@
         "topthink/think-orm": "^3.0",
         "topthink/think-filesystem": "^2.0",
         "poetry/cccms-app": "^2.0",
-        "poetry/cccms-library": "^2.0"
+        "poetry/cccms-library": "^2.0",
+        "ext-iconv": "*",
+        "ext-curl": "*",
+        "ext-openssl": "*",
+        "ext-gd": "*"
     },
     "require-dev": {
         "symfony/var-dumper": ">=4.2",

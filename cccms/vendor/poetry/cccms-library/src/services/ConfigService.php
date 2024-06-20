@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace cccms\services;
 
-use think\Request;
 use cccms\Service;
 use cccms\model\{SysConfig, SysConfigCate};
 

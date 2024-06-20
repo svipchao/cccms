@@ -11,7 +11,7 @@ class ArrExtend
     public static function recursionMergeArray($arr1, $arr2)
     {
         $merged = $arr1;
-        foreach ($arr2 as $key => &$value) {
+        foreach ($arr2 as $key => $value) {
             if (is_array($value) && isset($merged[$key]) && is_array($merged[$key])) {
                 $merged[$key] = static::recursionMergeArray($merged[$key], $value);
             } elseif (is_numeric($key)) {
@@ -166,13 +166,13 @@ class ArrExtend
 
     /**
      * 获取数据树子ID集合
-     * @param array $list 数据列表
-     * @param mixed $value 起始有效ID值
-     * @param string $ckey 当前主键ID名称
-     * @param string $pkey 上级主键ID名称
+     * @param array $array
+     * @param null|int $value 起始有效ID值
+     * @param string $cKey
+     * @param string $pKey
      * @return array
      */
-    public static function toChildrenIds(array $array = [], $value = 0, string $cKey = 'id', string $pKey = 'pid'): array
+    public static function toChildrenIds(array $array = [], null|int $value = 0, string $cKey = 'id', string $pKey = 'pid'): array
     {
         $ids = [intval($value)];
         foreach ($array as $vo) {

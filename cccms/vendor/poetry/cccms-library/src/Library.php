@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace cccms;
 
-use think\{Request, Service};
+use think\{App, Request, Service};
 use cccms\support\Url;
-use cccms\services\{BaseService, NodeService};
+use cccms\services\BaseService;
 use cccms\support\middleware\{Cors, MultiApp, Log};
 
 class Library extends Service
@@ -15,7 +15,7 @@ class Library extends Service
      * 静态应用实例
      * @var App
      */
-    public static $sapp;
+    public static App $sapp;
 
     // 启动服务
     public function boot(): void

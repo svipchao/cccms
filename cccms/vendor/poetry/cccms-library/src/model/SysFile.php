@@ -5,7 +5,6 @@ namespace cccms\model;
 
 use cccms\Model;
 use cccms\extend\FormatExtend;
-use think\model\concern\SoftDelete;
 use think\model\relation\HasOne;
 
 class SysFile extends Model
