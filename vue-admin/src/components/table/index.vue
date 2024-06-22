@@ -79,6 +79,14 @@ watch(
   () => attrs.data,
   () => {
     loading.value = false;
+    if (props.pagination !== false) {
+      let pagination = deepClone(props.pagination);
+      if (attrs.data.length === 0 && pagination.page > 1) {
+        pagination.page--;
+        emits('update:pagination', pagination);
+        reloadData();
+      }
+    }
   }
 );
 
