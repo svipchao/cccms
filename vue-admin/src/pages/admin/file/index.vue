@@ -178,13 +178,6 @@ const editData = (row) => {
 };
 
 const delData = (record, type = null) => {
-  if (table.data.length === 1) {
-    if (table.pagination.page > 1) {
-      table.pagination.page--;
-    } else {
-      table.pagination.page = 1;
-    }
-  }
   fileDelete({ id: record.id, type: type }).then((res) => {
     Message.success('删除成功');
     getDatas();
