@@ -70,17 +70,23 @@
         </a-typography-paragraph>
       </template>
       <template #fileUrl="{ record, rowIndex }">
-        <a-typography-paragraph
-          copyable
-          :ellipsis="{
-            rows: 1,
-            showTooltip: true,
-          }"
-          :copy-text="record.file_link"
-        >
-          <template #copy-tooltip>复制外部链接</template>
-          <span @click="showImage(rowIndex)">预览</span>
-        </a-typography-paragraph>
+        <a-space>
+          <a-typography-paragraph copyable :copy-text="record.file_share">
+            分享
+          </a-typography-paragraph>
+          <a-divider direction="vertical" :margin="2" />
+          <a-typography-paragraph copyable :copy-text="record.file_url">
+            直链
+          </a-typography-paragraph>
+          <a-divider direction="vertical" :margin="2" />
+          <span
+            v-if="record.file_mime.includes('image')"
+            style="cursor: pointer"
+            @click="showImage(rowIndex)"
+          >
+            预览
+          </span>
+        </a-space>
       </template>
       <template #status="{ record, rowIndex }">
         <a-switch
@@ -167,7 +173,9 @@ const getDatas = async () => {
   table.pagination.total = data.total;
   // 图片预览
   for (const index in table.data) {
-    image.list.push(table.data[index].file_link);
+    if (table.data[index].file_mime.includes('image')) {
+      image.list.push(table.data[index].file_url);
+    }
   }
 };
 
@@ -227,7 +235,7 @@ const table = reactive({
     {
       dataIndex: 'user_id',
       title: '用户昵称(账号)',
-      width: 160,
+      width: 220,
       slotName: 'user',
       filterable: {
         slotName: 'userFilter',
@@ -236,13 +244,13 @@ const table = reactive({
     {
       dataIndex: 'file_name',
       title: '文件名',
-      width: 230,
+      minWidth: 200,
       slotName: 'fileName',
     },
     {
-      dataIndex: 'file_url',
+      dataIndex: 'file_path',
       title: '外链地址',
-      width: 100,
+      width: 210,
       slotName: 'fileUrl',
     },
     { dataIndex: 'file_size', title: '文件大小', width: 100 },
