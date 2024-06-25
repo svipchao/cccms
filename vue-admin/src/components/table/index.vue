@@ -146,6 +146,7 @@ const handlePageChange = (current) => {
 // 数据条数改变时触发
 const handleSizeChange = (pageSize) => {
   let pagination = deepClone(props.pagination);
+  pagination.page = 1;
   pagination.limit = pageSize;
   // pagination.pageSize = current;
   emits('update:pagination', pagination);
