@@ -351,7 +351,7 @@ VALUES (1, 'default', '默认类别');
 CREATE TABLE `sys_file`
 (
     `id`           int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
-    `file_id`      int unsigned NOT NULL DEFAULT 0 COMMENT '附件ID',
+    `cate_id`      int unsigned NOT NULL DEFAULT 0 COMMENT '类别ID',
     `user_id`      int unsigned NOT NULL DEFAULT 0 COMMENT '用户ID',
     `file_size`    int unsigned NOT NULL DEFAULT 0 COMMENT '文件大小',
     `file_url`     varchar(255) NOT NULL DEFAULT '' COMMENT '文件路径',
@@ -366,7 +366,7 @@ CREATE TABLE `sys_file`
     `update_time`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE KEY `idx_file_code` (`file_code`),
-    INDEX `idx_file_id` (`file_id`) USING BTREE,
+    INDEX `idx_cate_id` (`cate_id`) USING BTREE,
     INDEX `idx_user_id` (`user_id`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
