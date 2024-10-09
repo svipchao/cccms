@@ -268,6 +268,8 @@ export const randColor = () => {
  */
 export const copyText = (text, success, error) => {
   const copyDom = document.createElement('textarea');
+  copyDom.style.position = 'absolute';
+  copyDom.style.top = '-9999px';
   copyDom.value = text;
   document.body.appendChild(copyDom);
   return new Promise((resolve) => {
