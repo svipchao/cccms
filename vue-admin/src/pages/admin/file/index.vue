@@ -225,7 +225,7 @@ const table = reactive({
   pagination: {
     page: 1,
     limit: 15,
-    total: 1,
+    total: 0,
   },
   user: [],
   cate: [], // 类别
