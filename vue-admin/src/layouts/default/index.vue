@@ -14,7 +14,7 @@
           <div class="cccms-tabs">
             <Tabs />
           </div>
-          <router-view v-slot="{ Component }">
+          <router-view v-slot="{ Component }" :key="$route.fullPath">
             <transition duration="500" name="nested">
               <div class="cccms-content" v-if="!tabsStore.isRefresh">
                 <keep-alive :include="tabsStore.getCacheTabs">
