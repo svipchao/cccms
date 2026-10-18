@@ -91,7 +91,7 @@ final class LogChain
      * 会让所有历史行被误判为「内容被篡改」。版本号写在行上（`hash_version`），
      * 校验时按行取对应字段集，新旧行都能通过。
      *
-     * ⚠️ v1 一旦发布就不可再改：以后新增字段请开 v2，并同步 `cccms:db-upgrade`。
+     * ⚠️ v1 一旦发布就不可再改：以后新增字段请开 v2，并同步 `db/schema.sql` 的列定义。
      */
     private const FIELDS_V1 = [
         'user_id'     => ['int', 0, 0],

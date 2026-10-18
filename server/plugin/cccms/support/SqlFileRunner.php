@@ -53,7 +53,7 @@ final class SqlFileRunner
     }
 
     /**
-     * 业务插件的 schema 文件（排除 cccms 自身：它由 db-upgrade 的增量逻辑负责）。
+     * 业务插件的 schema 文件（排除 cccms 自身：它的 db/schema.sql 由 db-upgrade 直接执行）。
      *
      * @return array<int,string>
      */
