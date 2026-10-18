@@ -74,8 +74,22 @@ html.dark .el-table {
   font-weight: 600;
 }
 
+/*
+ * 单元格内边距按密度档位取值：紧凑 4px / 默认 9px / 宽松 12px。
+ * 不能只写一个固定值 —— 本文件在 Element Plus 之后加载，同权重的
+ * `.el-table .el-table__cell` 会把 `el-table--small` 的 4px 覆盖掉，
+ * 结果选了「紧凑」内边距仍按默认档渲染。
+ */
 .el-table .el-table__cell {
   padding: 9px 0;
+}
+
+.el-table--small .el-table__cell {
+  padding: 4px 0;
+}
+
+.el-table--large .el-table__cell {
+  padding: 12px 0;
 }
 
 /* 分页 */
