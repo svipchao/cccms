@@ -27,11 +27,14 @@ final class Result
     {
         $payload = ['code' => $code, 'message' => $message, 'data' => $data];
 
-        // 链路 ID（Cors 中间件生成）：出错时一并返回，便于用户报障时直接提供。
+        // 三个 ID 出错时一并返回，便于用户报障时直接提供（前端会把 action_id 拼进提示）：
+        //   trace_id  = 本次请求；action_id = 本次操作；session_id = 本次会话。
         // 只在失败响应里加，成功响应保持原有信封不变。
-        $traceId = self::currentTraceId();
-        if ($traceId !== '') {
-            $payload['trace_id'] = $traceId;
+        foreach (['trace_id' => 'traceId', 'action_id' => 'actionId', 'session_id' => 'sessionId'] as $key => $field) {
+            $value = self::currentRequestValue($field);
+            if ($value !== '') {
+                $payload[$key] = $value;
+            }
         }
 
         return self::encode($payload, self::httpStatus($code));
@@ -59,12 +62,14 @@ final class Result
         return (string)($request->encode ?? 'json');
     }
 
-    /** 当前请求的链路 ID；CLI / 无请求上下文时为空串 */
-    private static function currentTraceId(): string
+    /** 当前请求上的某个 ID（traceId / actionId / sessionId）；CLI / 无请求上下文时为空串 */
+    private static function currentRequestValue(string $field): string
     {
-        $request = function_exists('request') ? request() : null;
+        if (!function_exists('request')) {
+            return '';
+        }
 
-        return (string)($request?->traceId ?? '');
+        return (string)(request()->{$field} ?? '');
     }
 
     private static function json(array $payload, int $status): Response

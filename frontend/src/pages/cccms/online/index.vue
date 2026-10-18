@@ -62,7 +62,12 @@ interface Query {
 
 // 表格列文案跟随语言切换，用 computed 包裹
 const columns = computed<ArtTableColumn[]>(() => [
-  { prop: 'username', label: t('online.user'), slot: 'username', filter: { type: 'text' } },
+  {
+    prop: 'username',
+    label: t('online.user'),
+    slot: 'username',
+    filter: { type: 'text' },
+  },
   { prop: 'device', label: t('online.device'), width: 90 },
   { prop: 'os', label: t('online.os'), width: 110 },
   { prop: 'browser', label: t('online.browser'), width: 100 },
@@ -73,12 +78,14 @@ const columns = computed<ArtTableColumn[]>(() => [
     label: t('online.loginAt'),
     width: 170,
     filter: { type: 'date', startKey: 'login_start', endKey: 'login_end' },
+    sortable: 'custom',
   },
   {
     prop: 'last_at',
     label: t('online.lastActive'),
     width: 170,
     filter: { type: 'date', startKey: 'active_start', endKey: 'active_end' },
+    sortable: 'custom',
   },
   {
     prop: 'expire_at',

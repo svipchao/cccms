@@ -9,6 +9,7 @@ use plugin\cccms\app\model\UserPost;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\SortInput;
 use plugin\cccms\support\Tree;
 
 /**
@@ -26,6 +27,12 @@ final class PostLogic
      */
     private const FIELDS = ['code', 'name', 'sort', 'status'];
 
+    /** 列头可排序列：前端 prop => 真实列名（未登记的列回落默认排序） */
+    private const SORTABLE = [
+        // 岗位只按「排序号」调整展示顺序；编码/名称/状态不提供排序
+        'sort' => 'sort',
+    ];
+
     public static function paginate(array $params): array
     {
         // trashed=1 → 回收站视图（只看已删除），与正常列表共用同一套列
@@ -41,7 +48,8 @@ final class PostLogic
         $page  = max(1, (int)($params['page'] ?? 1));
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
-        $list  = $query->page($page, $limit)->order('sort', 'asc')->order('id', 'asc')->select()->toArray();
+        SortInput::apply($query, $params, self::SORTABLE, 'sort', 'asc', 'asc');
+        $list = $query->page($page, $limit)->select()->toArray();
 
         return ['total' => $total, 'list' => $list];
     }

@@ -12,6 +12,7 @@ use plugin\cccms\support\ExportTask;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
 use plugin\cccms\support\LogChain;
+use plugin\cccms\support\SortInput;
 use support\Log;
 use Throwable;
 
@@ -35,8 +36,24 @@ final class LogLogic
      */
     private const LOGIN_PATH = '/auth/login';
 
-    /** 链路视图上限：一次请求正常只有个位数记录，给足余量即可 */
+    /** 请求链路上限：一次请求正常只有几条记录，给足余量即可 */
     private const TRACE_LIMIT = 200;
+
+    /** 操作链路上限：一次操作（进页面并发拉数据 / 保存 + 回读）通常几条到几十条 */
+    private const ACTION_LIMIT = 500;
+
+    /** 会话轨迹单次读取条数（游标分页，前端「加载更多」） */
+    private const SESSION_PAGE = 200;
+
+    /** 会话轨迹单次上限：再大只会让首屏变慢，需要更多就继续游标 */
+    private const SESSION_PAGE_MAX = 500;
+
+    /** 列头可排序列：前端 prop => 真实列名（未登记的列回落默认排序） */
+    private const SORTABLE = [
+        // 日志排障只关心「多久以前」和「多慢」；标题/用户/方法/路径/IP 等不提供排序
+        'cost'        => 'cost',
+        'create_time' => 'create_time',
+    ];
 
     // ------------------------------------------------------------------
     // 写入
@@ -68,6 +85,11 @@ final class LogLogic
                 'path'        => self::LOGIN_PATH,
                 'title'       => '登录',
                 'status_code' => $success ? 200 : 400,
+                // 登录接口不走 OperationLog，这条就是整条链里唯一的记录；
+                // 三个 ID 都写，报错弹窗里的操作 ID 才能在日志页搜到
+                'trace_id'    => $request === null ? '' : (string)($request->traceId ?? ''),
+                'action_id'   => $request === null ? '' : (string)($request->actionId ?? ''),
+                'session_id'  => $request === null ? '' : (string)($request->sessionId ?? ''),
                 'ip'          => $request === null ? '' : ClientIp::resolve($request),
                 'ua'          => mb_substr((string)($request?->header('user-agent', '') ?? ''), 0, 255),
                 'create_time' => date('Y-m-d H:i:s'),
@@ -88,7 +110,8 @@ final class LogLogic
         $page  = max(1, (int)($params['page'] ?? 1));
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
-        $list  = $query->page($page, $limit)->order('id', 'desc')->select()->toArray();
+        SortInput::apply($query, $params, self::SORTABLE);
+        $list = $query->page($page, $limit)->select()->toArray();
 
         return ['total' => $total, 'list' => $list];
     }
@@ -160,7 +183,10 @@ final class LogLogic
     /** 导出列头（同步 / 异步共用，避免两处漂移） */
     private static function columns(): array
     {
-        return ['ID', '账号', '操作', '结果', '说明', '方法', '路径', '节点', 'IP', '状态码', '耗时(ms)', '链路ID', '时间'];
+        return [
+            'ID', '账号', '操作', '结果', '说明', '方法', '路径', '节点',
+            '操作ID', '请求ID', '会话ID', 'IP', '状态码', '耗时(ms)', '时间',
+        ];
     }
 
     /** 一行日志 → CSV 单元格（同步 / 异步共用） */
@@ -175,19 +201,23 @@ final class LogLogic
             (string)($row['method'] ?? ''),
             (string)($row['path'] ?? ''),
             (string)($row['node'] ?? ''),
+            (string)($row['action_id'] ?? ''),
+            (string)($row['trace_id'] ?? ''),
+            (string)($row['session_id'] ?? ''),
             (string)($row['ip'] ?? ''),
             (string)($row['status_code'] ?? ''),
             (string)($row['cost'] ?? ''),
-            (string)($row['trace_id'] ?? ''),
             (string)($row['create_time'] ?? ''),
         ];
     }
 
     /**
-     * 按 `trace_id` 聚合一次请求的全部日志（P2-6 链路视图）。
+     * 按 `trace_id` 聚合**一次请求**的日志（请求级，报错定位用）。
+     *
+     * 正常只有一条（一个请求写一条日志）；保留它是为了「响应头 / 失败响应体里的
+     * trace_id 能直接查到那条记录」，而不是当作操作链路用。
      *
      * 走同一份 `newScopedQuery()`：看不见的日志自然不出现（越权行不泄露）。
-     * 按 `id` 升序返回，即请求内的时间顺序（同一请求的多条记录 id 递增）。
      * 未传 / 空 `trace_id` 抛 422，避免「不带条件」把整表捞出来。
      */
     public static function trace(string $traceId): array
@@ -213,11 +243,97 @@ final class LogLogic
         }
 
         return [
-            'trace_id' => $traceId,
-            'total'    => count($list),
-            'failed'   => $failed,
-            'cost'     => $cost,
-            'list'     => $list,
+            'trace_id'  => $traceId,
+            'total'     => count($list),
+            'failed'    => $failed,
+            'cost'      => $cost,
+            'truncated' => count($list) >= self::TRACE_LIMIT,
+            'list'      => $list,
+        ];
+    }
+
+    /**
+     * 按 `action_id` 聚合**一次用户操作**的全部日志（链路视图的主视图）。
+     *
+     * 一次操作 = 前端标记的一个边界（进页面 / 一次提交），其间的多个请求共用
+     * `action_id`。按 `id` 升序返回，即操作内的时间顺序；`session_id` 取自记录，
+     * 前端可据此继续跳到「会话轨迹」。数据范围与列表、trace 完全一致。
+     */
+    public static function action(string $actionId): array
+    {
+        $actionId = trim($actionId);
+        if ($actionId === '') {
+            throw new ApiException(I18n::t('log.action_id_required'), 422);
+        }
+
+        $list = OperationLog::newScopedQuery()
+            ->where('action_id', $actionId)
+            ->order('id', 'asc')
+            ->limit(self::ACTION_LIMIT)
+            ->select()->toArray();
+
+        $failed    = 0;
+        $cost      = 0;
+        $sessionId = '';
+        foreach ($list as $row) {
+            if ((int)($row['status'] ?? 1) !== 1) {
+                $failed++;
+            }
+            $cost += (int)($row['cost'] ?? 0);
+            if ($sessionId === '') {
+                $sessionId = (string)($row['session_id'] ?? '');
+            }
+        }
+
+        return [
+            'action_id'  => $actionId,
+            'session_id' => $sessionId,
+            'total'      => count($list),
+            'failed'     => $failed,
+            'cost'       => $cost,
+            'truncated'  => count($list) >= self::ACTION_LIMIT,
+            'list'       => $list,
+        ];
+    }
+
+    /**
+     * 会话轨迹：按 `session_id` 读取一段日志（审计视角）。
+     *
+     * 用 `after_id` 游标而不是页码：日志会持续写入，页码分页在「加载下一页」时
+     * 会重复/跳过（偏移量漂移）；游标只依赖不可变的 `id`，追加式加载不会错位。
+     *
+     * `total` 是**整个会话**的记录数（受数据范围约束），用于前端显示「已加载 / 总数」。
+     */
+    public static function session(string $sessionId, int $afterId = 0, int $limit = self::SESSION_PAGE): array
+    {
+        $sessionId = trim($sessionId);
+        if ($sessionId === '') {
+            throw new ApiException(I18n::t('log.session_id_required'), 422);
+        }
+
+        $limit = max(1, min(self::SESSION_PAGE_MAX, $limit));
+        $base  = static fn () => OperationLog::newScopedQuery()->where('session_id', $sessionId);
+
+        $total = (int)$base()->count();
+        $rows  = $base()
+            ->where('id', '>', max(0, $afterId))
+            ->order('id', 'asc')
+            ->limit($limit + 1)
+            ->select()->toArray();
+
+        $hasMore = count($rows) > $limit;
+        if ($hasMore) {
+            $rows = array_slice($rows, 0, $limit);
+        }
+
+        $last = $rows === [] ? $afterId : (int)end($rows)['id'];
+
+        return [
+            'session_id'  => $sessionId,
+            'total'       => $total,
+            'next_cursor' => $last,
+            'has_more'    => $hasMore,
+            'list'        => $rows,
         ];
     }
 
@@ -252,9 +368,17 @@ final class LogLogic
         if ($statuses !== []) {
             $query->whereIn('status', $statuses);
         }
-        // 链路 ID：拿到一次请求的报错 trace 后可直接检索
+        // 请求 ID：拿到一次请求的报错 trace 后可直接检索
         if (!empty($params['trace_id'])) {
             $query->where('trace_id', trim((string)$params['trace_id']));
+        }
+        // 操作 ID：一次用户操作（多个请求）的链路
+        if (!empty($params['action_id'])) {
+            $query->where('action_id', trim((string)$params['action_id']));
+        }
+        // 会话 ID：一次页面会话的全部轨迹
+        if (!empty($params['session_id'])) {
+            $query->where('session_id', trim((string)$params['session_id']));
         }
         // 操作时间范围（列头时间筛选，值已归一化为 Y-m-d H:i:s）
         [$start, $end] = FilterInput::range($params['start'] ?? null, $params['end'] ?? null);

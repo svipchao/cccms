@@ -105,7 +105,11 @@ final class LogVerifier
                     continue;
                 }
 
-                $expected = LogChain::hash((string)($row['prev_hash'] ?? ''), LogChain::normalize($row));
+                // 按行上的哈希版本重算：历史行是 16 字段（v0），新行含 action_id / session_id（v1）
+                $expected = LogChain::hash(
+                    (string)($row['prev_hash'] ?? ''),
+                    LogChain::normalize($row, (int)($row['hash_version'] ?? 0))
+                );
                 if ($expected !== $hash) {
                     self::addBreak($totals, $id, 'content_modified', '重算哈希与库中 row_hash 不一致（行内容被改过）');
                 } elseif ($prevHash !== null && (string)($row['prev_hash'] ?? '') !== $prevHash) {

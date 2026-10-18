@@ -137,7 +137,14 @@ const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'contact', label: t('tenant.contactLabel'), minWidth: 110, filter: { type: 'text' } },
   { prop: 'phone', label: t('tenant.phoneLabel'), minWidth: 130, filter: { type: 'text' } },
   { prop: 'user_count', label: t('tenant.userCountLabel'), width: 90, align: 'center', slot: 'userCount' },
-  { prop: 'expire_at', label: t('tenant.expireLabel'), minWidth: 170, slot: 'expire', filter: { type: 'date' } },
+  {
+    prop: 'expire_at',
+    label: t('tenant.expireLabel'),
+    minWidth: 170,
+    slot: 'expire',
+    filter: { type: 'date' },
+    sortable: 'custom',
+  },
   {
     prop: 'status',
     label: t('tenant.statusLabel'),

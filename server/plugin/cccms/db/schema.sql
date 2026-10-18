@@ -343,7 +343,9 @@ CREATE TABLE IF NOT EXISTS `sys_log` (
   `title`       varchar(128) NOT NULL DEFAULT '' COMMENT '语义化操作名(取自权限注解)',
   `status`      tinyint      NOT NULL DEFAULT 1 COMMENT '1成功 0失败',
   `message`     varchar(255) NOT NULL DEFAULT '' COMMENT '结果说明(登录失败原因等)',
-  `trace_id`    varchar(32)  NOT NULL DEFAULT '' COMMENT '请求链路 ID(把一次请求的多条记录串起来)',
+  `trace_id`    varchar(32)  NOT NULL DEFAULT '' COMMENT '请求链路 ID(一次 HTTP 请求一条记录)',
+  `action_id`   varchar(32)  NOT NULL DEFAULT '' COMMENT '操作 ID(一次用户操作触发的多个请求共用，链路视图按它聚合)',
+  `session_id`  varchar(32)  NOT NULL DEFAULT '' COMMENT '会话 ID(刷新/重开页面即换，用于审计轨迹)',
   `ip`          varchar(64)  NOT NULL DEFAULT '',
   `ua`          varchar(255) NOT NULL DEFAULT '',
   `params`      text         COMMENT '请求参数(query + body，已脱敏)',
@@ -351,14 +353,17 @@ CREATE TABLE IF NOT EXISTS `sys_log` (
   `status_code` int          NOT NULL DEFAULT 200,
   `cost`        int          NOT NULL DEFAULT 0 COMMENT '耗时(ms)',
   -- 链式哈希（防篡改）：空串 = 未纳入链（本能力上线前的历史行，或被降级写入的行）
-  `prev_hash`   char(64)     NOT NULL DEFAULT '' COMMENT '上一条记录的 row_hash',
-  `row_hash`    char(64)     NOT NULL DEFAULT '' COMMENT '本行内容哈希 sha256(prev_hash + 规范化的行内容)',
-  `create_time` datetime     NULL DEFAULT CURRENT_TIMESTAMP,
+  `prev_hash`    char(64)     NOT NULL DEFAULT '' COMMENT '上一条记录的 row_hash',
+  `row_hash`     char(64)     NOT NULL DEFAULT '' COMMENT '本行内容哈希 sha256(prev_hash + 规范化的行内容)',
+  `hash_version` tinyint unsigned NOT NULL DEFAULT 0 COMMENT '哈希字段集版本(0=16 字段；1=含 action_id/session_id)',
+  `create_time`  datetime     NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_user` (`user_id`),
   KEY `idx_create_time` (`create_time`),
   KEY `idx_node` (`node`),
-  KEY `idx_trace_id` (`trace_id`)
+  KEY `idx_trace_id` (`trace_id`),
+  KEY `idx_action_id` (`action_id`),
+  KEY `idx_session_id` (`session_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='日志(操作 + 登录；登录记录 path=/auth/login)';
 
 -- ---------------------------------------------------------------------

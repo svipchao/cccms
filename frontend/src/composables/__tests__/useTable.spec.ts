@@ -131,6 +131,48 @@ describe('useTable 筛选方案', () => {
     expect(saved).not.toHaveProperty('page')
   })
 
+  it('排序写入会回到第 1 页、下发 sort/order，并写进筛选快照', async () => {
+    const api = vi.fn(async () => emptyPage())
+    const { table } = mountUseTable(api)
+
+    table.page.value = 4
+    table.writeSort('create_time', 'asc')
+
+    await vi.waitFor(() => expect(api).toHaveBeenCalled())
+    expect(api).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, limit: 15, sort: 'create_time', order: 'asc' }),
+    )
+    expect(table.page.value).toBe(1)
+    expect(table.sort.value).toEqual({ prop: 'create_time', order: 'asc' })
+
+    await nextTick()
+    expect(JSON.parse(localStorage.getItem(FILTER_KEY) ?? '{}').sort).toEqual({
+      prop: 'create_time',
+      order: 'asc',
+    })
+  })
+
+  it('恢复记忆的排序：请求带 sort/order；清除后不再下发', async () => {
+    localStorage.setItem(
+      FILTER_KEY,
+      JSON.stringify({ query: { username: '' }, limit: 15, sort: { prop: 'login_time', order: 'desc' } }),
+    )
+
+    const api = vi.fn(async () => emptyPage())
+    const { table } = mountUseTable(api)
+
+    await table.load()
+    expect(api).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'login_time', order: 'desc' }))
+
+    table.writeSort('', '')
+    await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(2))
+    expect(api).toHaveBeenLastCalledWith(expect.not.objectContaining({ sort: expect.anything() }))
+    expect(table.sort.value).toBeNull()
+
+    await nextTick()
+    expect(JSON.parse(localStorage.getItem(FILTER_KEY) ?? '{}')).not.toHaveProperty('sort')
+  })
+
   it('回填只认页面声明过的字段（initialQuery 的 key 即白名单）', async () => {
     localStorage.setItem(
       FILTER_KEY,

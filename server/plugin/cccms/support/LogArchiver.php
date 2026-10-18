@@ -218,7 +218,10 @@ final class LogArchiver
                 continue;
             }
 
-            $expected = LogChain::hash((string)($row['prev_hash'] ?? ''), LogChain::normalize($row));
+            $expected = LogChain::hash(
+                (string)($row['prev_hash'] ?? ''),
+                LogChain::normalize($row, (int)($row['hash_version'] ?? 0))
+            );
             if ($expected !== $stored && $brokenAt === 0) {
                 $brokenAt = (int)($row['id'] ?? 0);
             }

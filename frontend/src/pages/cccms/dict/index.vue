@@ -360,6 +360,7 @@ const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
   { prop: 'name', label: t('dict.name'), minWidth: 150, filter: { type: 'text' } },
   { prop: 'type', label: t('dict.typeName'), minWidth: 150, filter: { type: 'text' } },
+  // category_name 是后端逐行补的分类名，没有对应库列
   { prop: 'category_name', label: t('dict.category'), width: 140 },
   { prop: 'remark', label: t('dict.remark'), minWidth: 160 },
   { prop: 'action', label: t('table.action'), width: 230, fixed: 'right', slot: 'action', lockVisible: true },

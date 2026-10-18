@@ -261,8 +261,8 @@ const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'original_name', label: t('file.nameLabel'), minWidth: 200, filter: { type: 'text' } },
   { prop: 'category_name', label: t('file.categoryColumnLabel'), width: 140 },
   { prop: 'ext', label: t('file.typeLabel'), width: 100, align: 'center', slot: 'ext', filter: { type: 'text' } },
-  { prop: 'size', label: t('file.sizeLabel'), width: 110, align: 'right', slot: 'size' },
-  { prop: 'create_time', label: t('file.uploadTimeLabel'), width: 170, filter: { type: 'date' } },
+  { prop: 'size', label: t('file.sizeLabel'), width: 110, align: 'right', slot: 'size', sortable: 'custom' },
+  { prop: 'create_time', label: t('file.uploadTimeLabel'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
   { prop: 'action', label: t('table.action'), width: 130, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 

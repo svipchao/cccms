@@ -40,7 +40,16 @@ export interface ArtTableColumn {
   minWidth?: number | string
   fixed?: boolean | 'left' | 'right'
   align?: 'left' | 'center' | 'right'
-  /** 传 'custom' 需自行监听 sort-change */
+  /**
+   * 列头排序。
+   *
+   * - `true`：el-table **本地**排序（仅当前页，分页列表不要用）；
+   * - `'custom'`：**服务端**排序 —— 接口负责排序。页面用 `useTable` 时 ArtTable 会自动接管：
+   *   点表头 → 写排序状态 → 回第 1 页 → 重新请求，页面零接线；
+   *   未用 `useTable` 的页面仍需自己监听 `sort-change`。
+   *   同时它也是「该列具备排序能力」的声明：列设置里只有这类列能勾选「排序」，
+   *   计算列（分类名、统计数等）不要声明。
+   */
   sortable?: boolean | 'custom'
   /** 具名插槽名：<template #xxx="{ row, value }">，不写则直接显示字段值 */
   slot?: string

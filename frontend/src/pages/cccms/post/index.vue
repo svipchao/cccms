@@ -148,7 +148,7 @@ const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
   { prop: 'code', label: t('post.codeLabel'), minWidth: 150 },
   { prop: 'name', label: t('post.nameLabel'), minWidth: 150, filter: { type: 'text' } },
-  { prop: 'sort', label: t('post.sortLabel'), width: 90, align: 'center' },
+  { prop: 'sort', label: t('post.sortLabel'), width: 90, align: 'center', sortable: 'custom' },
   {
     prop: 'status',
     label: t('post.statusLabel'),

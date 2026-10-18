@@ -21,6 +21,8 @@ export default {
   requestError: '请求错误 ({status})',
   networkError: '网络异常，请检查服务是否启动',
   loginExpired: '登录已失效，请重新登录',
+  // 报错文案后缀：带上操作 ID，用户可直接到「日志 → 操作ID」检索
+  actionIdSuffix: '（操作 {id}）',
   // 节点选择器（ArtNodePicker）内置文案，调用方无需感知
   nodePicker: {
     clear: '清空',

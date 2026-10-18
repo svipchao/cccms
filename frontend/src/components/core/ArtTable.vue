@@ -218,6 +218,7 @@
 
         <el-table
           v-else
+          ref="tableRef"
           :key="columnKey"
           v-loading="loading"
           :data="data"
@@ -226,7 +227,7 @@
           :height="tableHeight"
           :default-expand-all="tree"
           :tree-props="{ children: 'children' }"
-          :default-sort="defaultSort"
+          :default-sort="effectiveDefaultSort"
           :show-summary="showSummary"
           :summary-method="resolvedSummaryMethod"
           :sum-text="summaryText || t('table.summary')"
@@ -379,7 +380,7 @@
     <el-dialog
       v-model="columnDialogVisible"
       :title="t('table.columnSetting')"
-      width="600px"
+      width="720px"
       append-to-body
       class="art-column-dialog"
     >
@@ -388,6 +389,8 @@
           <span class="art-column-drag" />
           <span class="art-column-name">{{ t('table.columnName') }}</span>
           <span class="art-column-cell">{{ t('table.columnVisible') }}</span>
+          <span class="art-column-cell">{{ t('table.columnSort') }}</span>
+          <span class="art-column-cell">{{ t('table.columnPrivacy') }}</span>
           <span class="art-column-cell">
             {{ t('table.columnSummary') }}（{{ summaryDraftCount }}/{{ dialogColumns.length }}）
           </span>
@@ -433,7 +436,23 @@
             </span>
             <span class="art-column-cell">
               <el-checkbox
-                :model-value="!draftSummaryHidden.includes(col.prop)"
+                :model-value="col.sortable === 'custom' && !draftSortDisabled.includes(col.prop)"
+                :disabled="col.sortable !== 'custom'"
+                :title="col.sortable === 'custom' ? '' : t('table.sortUnavailable')"
+                @change="(checked: string | number | boolean) => toggleDraftSort(col.prop, Boolean(checked))"
+              />
+            </span>
+            <span class="art-column-cell">
+              <el-checkbox
+                :model-value="draftPrivacy.includes(col.prop)"
+                :disabled="col.lockVisible"
+                :title="col.lockVisible ? t('table.privacyLocked') : t('table.privacyHint')"
+                @change="(checked: string | number | boolean) => toggleDraftPrivacy(col.prop, Boolean(checked))"
+              />
+            </span>
+            <span class="art-column-cell">
+              <el-checkbox
+                :model-value="summaryEnabled && !draftSummaryHidden.includes(col.prop)"
                 :disabled="!summaryEnabled"
                 :title="summaryEnabled ? '' : t('table.summaryUnavailable')"
                 @change="(checked: string | number | boolean) => toggleDraftSummary(col.prop, Boolean(checked))"
@@ -453,7 +472,13 @@
       </div>
       <template #footer>
         <div class="art-column-footer">
-          <el-button link type="primary" @click="resetColumnDraft">{{ t('table.reset') }}</el-button>
+          <div class="art-column-footer-resets">
+            <el-button link type="primary" @click="resetDraftWidths">{{ t('table.resetWidth') }}</el-button>
+            <el-button link type="primary" @click="resetColumnDraft">{{ t('table.resetColumns') }}</el-button>
+            <el-button link type="primary" @click="resetAllDraft">{{ t('table.resetAll') }}</el-button>
+            <!-- 列宽在弹窗里看不到，用一行小字说明这次重置会在「确定」后生效 -->
+            <span v-if="draftResetWidths" class="art-column-reset-hint">{{ t('table.resetWidthPending') }}</span>
+          </div>
           <div class="art-column-footer-actions">
             <el-button @click="columnDialogVisible = false">{{ t('common.cancel') }}</el-button>
             <el-button type="primary" @click="applyColumnSetting">{{ t('common.confirm') }}</el-button>
@@ -482,7 +507,7 @@ import {
   Search,
   Setting,
 } from '@element-plus/icons-vue'
-import { TABLE_FILTER_KEY } from '@/composables/useTable'
+import { TABLE_FILTER_KEY, TABLE_SORT_KEY } from '@/composables/useTable'
 import { densityPreference, setDensityPreference, type TableSize } from '@/composables/useTableSize'
 import type { ArtTableColumn } from '@/types/table'
 
@@ -663,8 +688,18 @@ const route = useRoute()
 /** 当前勾选行（仅用于回收站模式的批量按钮） */
 const selected = ref<any[]>([])
 
-/* ---- 筛选方案（控制器由页面 useTable provide，页面零配置） ---- */
+/* ---- 筛选方案 / 排序（控制器由页面 useTable provide，页面零配置） ---- */
 const tableFilter = inject(TABLE_FILTER_KEY, null)
+const tableSort = inject(TABLE_SORT_KEY, null)
+
+/**
+ * el-table 实例：服务端排序由接口负责，但表头箭头是组件内部状态，
+ * 载入筛选方案 / 重置 / 清除排序时需要手动同步（`default-sort` 只在挂载时生效）。
+ */
+const tableRef = ref<{
+  sort: (prop: string, order: 'ascending' | 'descending') => void
+  clearSort: () => void
+}>()
 const filterSchemes = ref<string[]>([])
 const filterName = ref('')
 const filterHasSaved = ref(false)
@@ -973,11 +1008,13 @@ function resetSearch(): void {
   syncSearchDraft()
 }
 
-/* ---- 列设置：显隐 / 排序 / 汇总展示（均按页面持久化） ---- */
+/* ---- 列设置：显隐 / 排序 / 隐私 / 汇总展示（均按页面持久化） ---- */
 // 前缀带版本号：旧版本存过「默认隐藏某列」的记录，换前缀可让老缓存一次性失效
 const HIDDEN_PREFIX = 'cccms_table_hidden:v2:'
 const ORDER_PREFIX = 'cccms_table_order:v1:'
 const SUMMARY_PREFIX = 'cccms_table_summary:v1:'
+const SORTABLE_PREFIX = 'cccms_table_sortable:v1:'
+const PRIVACY_PREFIX = 'cccms_table_privacy:v1:'
 
 function storageId(): string {
   return props.storageKey || route.path
@@ -1017,6 +1054,10 @@ const hiddenColumns = ref<string[]>(readStoredList(HIDDEN_PREFIX) ?? [...props.d
 const columnOrder = ref<string[]>(readStoredList(ORDER_PREFIX) ?? [])
 /** 汇总行里**不展示**的列（空数组 = 全部展示，列设置里勾掉哪列就记哪列） */
 const summaryHiddenColumns = ref<string[]>(readStoredList(SUMMARY_PREFIX) ?? [])
+/** 用户关掉列头排序的列（空数组 = 页面声明 `sortable: 'custom'` 的列全部开启） */
+const sortDisabledColumns = ref<string[]>(readStoredList(SORTABLE_PREFIX) ?? [])
+/** 开启隐私遮罩的列（默认关闭；开启后单元格先显示小眼睛，悬停才显示内容） */
+const privacyColumns = ref<string[]>(readStoredList(PRIVACY_PREFIX) ?? [])
 
 watch(
   () => props.columns,
@@ -1024,6 +1065,8 @@ watch(
     hiddenColumns.value = readStoredList(HIDDEN_PREFIX) ?? [...props.defaultHidden]
     columnOrder.value = readStoredList(ORDER_PREFIX) ?? []
     summaryHiddenColumns.value = readStoredList(SUMMARY_PREFIX) ?? []
+    sortDisabledColumns.value = readStoredList(SORTABLE_PREFIX) ?? []
+    privacyColumns.value = readStoredList(PRIVACY_PREFIX) ?? []
   },
 )
 
@@ -1039,8 +1082,68 @@ function persistSummary(): void {
   writeStoredList(SUMMARY_PREFIX, summaryHiddenColumns.value)
 }
 
+function persistSortable(): void {
+  writeStoredList(SORTABLE_PREFIX, sortDisabledColumns.value)
+}
+
+function persistPrivacy(): void {
+  writeStoredList(PRIVACY_PREFIX, privacyColumns.value)
+}
+
+/** 列是否开启隐私遮罩（操作列等锁定列不参与，避免把按钮藏起来） */
+function isPrivacyEnabled(col: ArtTableColumn): boolean {
+  return !col.lockVisible && privacyColumns.value.includes(col.prop)
+}
+
+/**
+ * 列是否**具备**服务端排序能力：由页面在列配置里声明 `sortable: 'custom'`。
+ *
+ * 计算列（分类名、统计数、拼接文案等）没有对应的库列，页面不会声明，
+ * 列设置里的排序勾选框因此是灰色的 —— 避免「勾了但后端只能忽略」。
+ */
+function isServerSortable(col: ArtTableColumn): boolean {
+  return col.sortable === 'custom'
+}
+
+/** 列头排序是否被用户开启（页面声明了能力，且用户没在列设置里关掉） */
+function isSortEnabled(col: ArtTableColumn): boolean {
+  return isServerSortable(col) && !sortDisabledColumns.value.includes(col.prop)
+}
+
+/** 恢复的记忆排序 → el-table 的 default-sort（只决定表头箭头初始状态） */
+const effectiveDefaultSort = computed(() => {
+  const state = tableSort?.sort.value
+  if (state) {
+    return { prop: state.prop, order: state.order === 'asc' ? ('ascending' as const) : ('descending' as const) }
+  }
+  return props.defaultSort
+})
+
 /** prop → 列定义：弹窗与排序都按 prop 索引，列被页面删掉后不会留下僵尸行 */
 const columnMap = computed(() => new Map(ownColumns.value.map((col) => [col.prop, col])))
+
+/**
+ * 兜底：记忆的排序如果落在「被关掉排序 / 已隐藏 / 已不存在」的列上，就清掉。
+ *
+ * 正常情况下列设置点「确定」时已经清过了，这里防的是历史快照或命名方案里的脏数据 ——
+ * 否则会出现「表头没有箭头，数据却按某列排着」的鬼状态。
+ *
+ * 注意 `immediate: true` 会在 setup 阶段同步执行，所以必须放在 `columnMap` 声明之后。
+ */
+watch(
+  [() => tableSort?.sort.value, sortDisabledColumns, hiddenColumns],
+  () => {
+    const current = tableSort?.sort.value
+    if (!current) {
+      return
+    }
+    const col = columnMap.value.get(current.prop)
+    if (!col || hiddenColumns.value.includes(current.prop) || !isSortEnabled(col)) {
+      tableSort?.writeSort('', '')
+    }
+  },
+  { immediate: true },
+)
 
 /**
  * 锁定列（操作列等）固定在末尾：`fixed: 'right'` 要求必须是最后几列，
@@ -1079,8 +1182,12 @@ const columnDialogVisible = ref(false)
 const draftOrder = ref<string[]>([])
 const draftHidden = ref<string[]>([])
 const draftSummaryHidden = ref<string[]>([])
-/** 草稿里点过「重置」：点确定时连列宽一起恢复默认 */
-const draftClearWidths = ref(false)
+/** 草稿里被关掉列头排序的列 */
+const draftSortDisabled = ref<string[]>([])
+/** 草稿里开启隐私遮罩的列 */
+const draftPrivacy = ref<string[]>([])
+/** 草稿里点过「重置列宽」：点确定时才真正恢复默认列宽 */
+const draftResetWidths = ref(false)
 
 /** 弹窗列表：按草稿顺序映射回列定义 */
 const dialogColumns = computed(() =>
@@ -1096,7 +1203,9 @@ function openColumnDialog(): void {
   draftOrder.value = orderedColumns.value.map((col) => col.prop)
   draftHidden.value = [...hiddenColumns.value]
   draftSummaryHidden.value = [...summaryHiddenColumns.value]
-  draftClearWidths.value = false
+  draftSortDisabled.value = [...sortDisabledColumns.value]
+  draftPrivacy.value = [...privacyColumns.value]
+  draftResetWidths.value = false
   columnDialogVisible.value = true
 }
 
@@ -1125,6 +1234,28 @@ function toggleDraftSummary(prop: string, selected: boolean): void {
   draftSummaryHidden.value = [...next]
 }
 
+/** 开关某列的列头排序（仅对页面声明了 `sortable: 'custom'` 的列生效） */
+function toggleDraftSort(prop: string, enabled: boolean): void {
+  const next = new Set(draftSortDisabled.value)
+  if (enabled) {
+    next.delete(prop)
+  } else {
+    next.add(prop)
+  }
+  draftSortDisabled.value = [...next]
+}
+
+/** 开关某列的隐私遮罩：开启后单元格先显示小眼睛，鼠标悬停才显示内容 */
+function toggleDraftPrivacy(prop: string, enabled: boolean): void {
+  const next = new Set(draftPrivacy.value)
+  if (enabled) {
+    next.add(prop)
+  } else {
+    next.delete(prop)
+  }
+  draftPrivacy.value = [...next]
+}
+
 /** 行尾「清空」：取消该列的汇总展示 */
 function clearDraftSummary(prop: string): void {
   toggleDraftSummary(prop, false)
@@ -1135,12 +1266,24 @@ function clearAllDraftSummary(): void {
   draftSummaryHidden.value = dialogColumns.value.map((col) => col.prop)
 }
 
-/** 重置：回到页面声明顺序 + 全部显示 + 全部汇总，并标记确定时清掉列宽 */
+/** 重置列宽：只清掉拖拽过的列宽（确定后生效，与其它草稿改动保持一致） */
+function resetDraftWidths(): void {
+  draftResetWidths.value = true
+}
+
+/** 重置列：回到页面声明顺序 + 全部显示 + 全部汇总 + 全部开启排序 + 关闭隐私，**不动列宽** */
 function resetColumnDraft(): void {
   draftOrder.value = ownColumns.value.map((col) => col.prop)
   draftHidden.value = []
   draftSummaryHidden.value = []
-  draftClearWidths.value = true
+  draftSortDisabled.value = []
+  draftPrivacy.value = []
+}
+
+/** 全部重置：列设置 + 列宽一起回默认 */
+function resetAllDraft(): void {
+  resetColumnDraft()
+  draftResetWidths.value = true
 }
 
 function applyColumnSetting(): void {
@@ -1154,11 +1297,34 @@ function applyColumnSetting(): void {
   summaryHiddenColumns.value = sanitizeDraftList(draftSummaryHidden.value)
   persistSummary()
 
-  if (draftClearWidths.value) {
+  // 只保留「页面确实声明了服务端排序能力」的列，避免页面改列后留下僵尸开关
+  sortDisabledColumns.value = sanitizeDraftList(draftSortDisabled.value).filter(
+    (prop) => columnMap.value.get(prop)?.sortable === 'custom',
+  )
+  persistSortable()
+
+  // 只保留仍存在、且不是锁定列（操作列）的隐私开关
+  privacyColumns.value = sanitizeDraftList(draftPrivacy.value).filter(
+    (prop) => !columnMap.value.get(prop)?.lockVisible,
+  )
+  persistPrivacy()
+
+  /*
+   * 当前排序列被关掉 / 被隐藏时清掉排序：
+   * 箭头已经不在表头上了，数据却还按它排，用户会以为「排序坏了」。
+   * writeSort 会顺带回到第 1 页重新请求。
+   */
+  const currentSort = tableSort?.sort.value
+  const currentCol = currentSort ? columnMap.value.get(currentSort.prop) : undefined
+  if (currentSort && (!currentCol || hiddenColumns.value.includes(currentSort.prop) || !isSortEnabled(currentCol))) {
+    tableSort?.writeSort('', '')
+  }
+
+  if (draftResetWidths.value) {
     columnWidths.value = {}
     persistWidths()
   }
-  draftClearWidths.value = false
+  draftResetWidths.value = false
   columnDialogVisible.value = false
 }
 
@@ -1281,7 +1447,12 @@ const visibleColumns = computed(() =>
  * 列设置属于低频操作，重挂载代价可以接受。
  * 指纹里带**顺序**，所以拖拽排序后也会重挂载，列宽与固定列重新计算。
  */
-const columnKey = computed(() => visibleColumns.value.map((c) => c.prop).join('|'))
+const columnKey = computed(() =>
+  // 排序 / 隐私开关也进指纹：`sortable` 与 `class-name` 都是在列注册时读取的
+  visibleColumns.value
+    .map((c) => `${c.prop}${isSortEnabled(c) ? ':sort' : ''}${isPrivacyEnabled(c) ? ':private' : ''}`)
+    .join('|'),
+)
 
 /* ---- 底部汇总行（按列的「汇总展示」开关过滤） ---- */
 /** 页面提供了汇总来源（方法或按列取值）才谈得上展示汇总 */
@@ -1338,11 +1509,18 @@ function columnProps(col: ArtTableColumn): Record<string, unknown> {
   if (col.fixed !== undefined) {
     out.fixed = col.fixed
   }
-  if (col.sortable !== undefined) {
+  if (col.sortable === 'custom') {
+    // 服务端排序：由列设置的开关决定表头是否出现排序箭头
+    out.sortable = isSortEnabled(col) ? 'custom' : false
+  } else if (col.sortable !== undefined) {
     out.sortable = col.sortable
   }
   if (col.formatter !== undefined) {
     out.formatter = col.formatter
+  }
+  // 隐私遮罩：给正文单元格打标，内容默认隐藏、悬停才显示（见下方样式）
+  if (isPrivacyEnabled(col)) {
+    out['class-name'] = 'art-private-cell'
   }
   // 列筛选（枚举 / 文本）统一由 #header 插槽自绘，不使用 el-table 原生 filters
   return out
@@ -1490,9 +1668,46 @@ function onSelectionChange(rows: any[]): void {
   emit('selection-change', rows)
 }
 
+/**
+ * 记录「来自表头点击」的最后一次排序，供下方 watcher 辨别改动来源：
+ * 表头点击时 el-table 自己已经更新了箭头，不需要再调一次 `sort()`。
+ */
+let lastTableSortKey = ''
+
+function sortKeyOf(value: { prop: string; order: string } | null | undefined): string {
+  return value ? `${value.prop}|${value.order}` : ''
+}
+
 function onSortChange(payload: { prop: string | null; order: string | null }): void {
+  // 页面用 useTable 时自动接管：写状态 → 回第 1 页 → 重新请求（页面零接线）
+  if (tableSort) {
+    const order = payload.order === 'ascending' ? 'asc' : payload.order === 'descending' ? 'desc' : ''
+    lastTableSortKey = sortKeyOf(payload.prop && order ? { prop: payload.prop, order } : null)
+    tableSort.writeSort(payload.prop ?? '', order)
+  }
+  // 未用 useTable 的页面保持原有事件契约，自行监听处理
   emit('sort-change', { prop: payload.prop ?? '', order: payload.order })
 }
+
+// 排序状态被「外部」改动（载入筛选方案 / 重置 / 列设置清空排序）时，同步表头箭头
+watch(
+  () => tableSort?.sort.value,
+  (value) => {
+    if (sortKeyOf(value) === lastTableSortKey) {
+      return
+    }
+    lastTableSortKey = sortKeyOf(value)
+    const table = tableRef.value
+    if (!table) {
+      return
+    }
+    if (!value) {
+      table.clearSort()
+      return
+    }
+    table.sort(value.prop, value.order === 'asc' ? 'ascending' : 'descending')
+  },
+)
 </script>
 
 <style scoped>
@@ -1622,10 +1837,10 @@ function onSortChange(payload: { prop: string | null; order: string | null }): v
   min-height: 0;
 }
 
-/* 表头与数据行共用同一套网格列宽，保证四列严格对齐 */
+/* 表头与数据行共用同一套网格列宽，保证每一列严格对齐 */
 .art-column-row {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 72px 132px 48px;
+  grid-template-columns: 24px minmax(0, 1fr) 64px 64px 64px 128px 44px;
   gap: 8px;
   align-items: center;
   padding: 6px 8px;
@@ -1738,12 +1953,32 @@ function onSortChange(payload: { prop: string | null; order: string | null }): v
 
 .art-column-footer {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   align-items: center;
   justify-content: space-between;
 }
 
+/* 三个重置入口都是 link 按钮，el-button 默认的相邻左边距在这里多余 */
+.art-column-footer-resets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: center;
+}
+
+.art-column-footer-resets :deep(.el-button) {
+  margin-left: 0;
+}
+
+.art-column-reset-hint {
+  font-size: 12px;
+  color: var(--art-muted);
+}
+
 .art-column-footer-actions {
   display: flex;
+  flex-shrink: 0;
   gap: 8px;
 }
 
@@ -1754,6 +1989,39 @@ function onSortChange(payload: { prop: string | null; order: string | null }): v
 
 :global(.art-column-dialog .el-dialog__body) {
   padding-top: 8px;
+}
+
+/* ---- 隐私遮罩：默认只显示小眼睛，鼠标悬停单元格才显示真实内容 ---- */
+:deep(.el-table__body td.art-private-cell) {
+  position: relative;
+  cursor: help;
+}
+
+:deep(.el-table__body td.art-private-cell .cell) {
+  visibility: hidden;
+}
+
+/* 眼睛图标用内联 SVG，不额外引资源；颜色跟随次要文字色 */
+:deep(.el-table__body td.art-private-cell::after) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  content: '';
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23909399' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E")
+    center / 16px 16px no-repeat;
+  opacity: 0.7;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+:deep(.el-table__body td.art-private-cell:hover .cell) {
+  visibility: visible;
+}
+
+:deep(.el-table__body td.art-private-cell:hover::after) {
+  content: none;
 }
 
 /* 密度下拉里当前生效的档位：加粗 + 主题色，一眼看出现在用的是哪档 */

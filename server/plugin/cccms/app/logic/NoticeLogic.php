@@ -16,6 +16,7 @@ use plugin\cccms\support\ApiException;
 use plugin\cccms\support\AuthService;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\SortInput;
 use plugin\cccms\support\Tree;
 use plugin\cccms\support\UserContext;
 use think\db\BaseQuery;
@@ -64,6 +65,14 @@ final class NoticeLogic
     // ------------------------------------------------------------------
     // 管理侧
     // ------------------------------------------------------------------
+
+    /** 列头可排序列：前端 prop => 真实列名（未登记的列回落默认排序） */
+    private const SORTABLE = [
+        // 只留「时间 + 阅读量」：标题/类型/级别/状态/范围排序对运营没有意义
+        'publish_at' => 'publish_at',
+        'expire_at'  => 'expire_at',
+        'read_count' => 'read_count',
+    ];
 
     public static function paginate(array $params): array
     {
@@ -123,7 +132,8 @@ final class NoticeLogic
         $page  = max(1, (int)($params['page'] ?? 1));
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
-        $list  = $query->page($page, $limit)->order('level', 'desc')->order('id', 'desc')->select()->toArray();
+        SortInput::apply($query, $params, self::SORTABLE, 'level', 'desc');
+        $list = $query->page($page, $limit)->select()->toArray();
 
         return ['total' => $total, 'list' => $list];
     }

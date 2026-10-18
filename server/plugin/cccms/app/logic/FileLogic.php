@@ -10,6 +10,7 @@ use plugin\cccms\support\ApiException;
 use plugin\cccms\support\FileStorage;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\SortInput;
 use Webman\Http\UploadFile;
 
 /**
@@ -23,6 +24,17 @@ use Webman\Http\UploadFile;
  */
 final class FileLogic
 {
+    /**
+     * 列头可排序列：前端 prop => 真实列名。
+     *
+     * `category_name` / `preview` / `size_text` 等展示字段不在表里（或由前端派生），不登记。
+     */
+    private const SORTABLE = [
+        // 附件只关心「大小」和「上传时间」；文件名/扩展名排序没有实际用途
+        'size'        => 'size',
+        'create_time' => 'create_time',
+    ];
+
     public static function paginate(array $params): array
     {
         // trashed=1 → 回收站视图（只看已删除），与正常列表共用同一套列
@@ -50,7 +62,8 @@ final class FileLogic
         $page  = max(1, (int)($params['page'] ?? 1));
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
-        $list  = $query->page($page, $limit)->order('id', 'desc')->select()->toArray();
+        SortInput::apply($query, $params, self::SORTABLE);
+        $list = $query->page($page, $limit)->select()->toArray();
 
         // 分类是公共基础数据（模型声明不参与数据权限），这里用模型统一查询入口
         $categories = Category::withoutGlobalScope()->column('name', 'id');

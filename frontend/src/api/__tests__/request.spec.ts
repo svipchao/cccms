@@ -50,6 +50,7 @@ if (typeof Blob !== 'undefined' && typeof FileReader !== 'undefined' && typeof B
 
 import instance, { downloadFile, downloadFileByPost, http } from '@/api/request'
 import { getToken } from '@/utils/auth'
+import { resetTrace } from '@/utils/trace'
 
 type AdapterConfig = InternalAxiosRequestConfig & { responseType?: string }
 
@@ -81,6 +82,7 @@ function mockAdapterFailure(status: number, data: unknown) {
 describe('请求拦截器', () => {
   beforeEach(() => {
     localStorage.clear()
+    resetTrace()
     vi.clearAllMocks()
   })
 
@@ -103,11 +105,35 @@ describe('请求拦截器', () => {
     const headers = lastConfig()?.headers as unknown as Record<string, string>
     expect(headers.Authorization).toBeUndefined()
   })
+
+  it('带上操作 / 会话 ID：同一页面的并发请求共用一个 action', async () => {
+    const seen: Array<Record<string, string>> = []
+    instance.defaults.adapter = (async (config: AdapterConfig) => {
+      seen.push({ ...(config.headers as unknown as Record<string, string>) })
+      return {
+        data: { code: 0, message: 'ok', data: null },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      }
+    }) as never
+
+    await Promise.all([http.get('/config/ui'), http.get('/menu/routes')])
+
+    expect(seen).toHaveLength(2)
+    // 格式与后端 Cors::correlationId() 的校验规则一致
+    expect(seen[0]['X-Action-Id']).toMatch(/^a\d{12}-[0-9a-f]{8}$/)
+    expect(seen[1]['X-Action-Id']).toBe(seen[0]['X-Action-Id'])
+    expect(seen[0]['X-Session-Id']).toMatch(/^s\d{12}-[0-9a-f]{8}$/)
+    expect(seen[1]['X-Session-Id']).toBe(seen[0]['X-Session-Id'])
+  })
 })
 
 describe('响应拦截器', () => {
   beforeEach(() => {
     localStorage.clear()
+    resetTrace()
     vi.clearAllMocks()
   })
 
@@ -165,6 +191,7 @@ describe('响应拦截器', () => {
 describe('错误分支', () => {
   beforeEach(() => {
     localStorage.clear()
+    resetTrace()
     vi.clearAllMocks()
   })
 
@@ -220,6 +247,39 @@ describe('错误分支', () => {
     await expect(http.get('/x')).rejects.toBeTruthy()
 
     expect(mocks.messageError).toHaveBeenCalledWith('t:common.networkError')
+  })
+
+  it('报错文案带上操作 ID（用户可直接到日志页检索本次操作）', async () => {
+    mockAdapterFailure(500, { message: '数据库连接失败', action_id: 'a260918143012-a1b2c3d4' })
+
+    await expect(http.get('/x')).rejects.toBeTruthy()
+
+    expect(mocks.messageError).toHaveBeenCalledWith('数据库连接失败t:common.actionIdSuffix')
+  })
+
+  it('后端未返回 action_id 时回落到 trace_id，提示里至少要有一个可查的 ID', async () => {
+    mockAdapterFailure(502, { message: 'bad gateway', trace_id: '260918143012-abcd1234' })
+
+    await expect(http.get('/x')).rejects.toBeTruthy()
+
+    expect(mocks.messageError).toHaveBeenCalledWith('bad gatewayt:common.actionIdSuffix')
+  })
+})
+
+describe('业务错误（HTTP 200 + code != 0）', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    resetTrace()
+    vi.clearAllMocks()
+  })
+
+  it('同样把操作 ID 带进提示与抛出的错误里', async () => {
+    mockAdapter({
+      data: { code: 422, message: '用户名已存在', data: null, action_id: 'a260918143012-deadbeef' },
+    })
+
+    await expect(http.post('/user/save', {})).rejects.toThrow('用户名已存在t:common.actionIdSuffix')
+    expect(mocks.messageError).toHaveBeenCalledWith('用户名已存在t:common.actionIdSuffix')
   })
 })
 

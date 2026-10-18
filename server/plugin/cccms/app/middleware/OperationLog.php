@@ -17,7 +17,7 @@ use Webman\Http\Response;
 use Webman\MiddlewareInterface;
 
 /**
- * 操作日志：写操作落库 sys_log。
+ * 操作日志：写操作与失败请求落库 sys_log。
  *
  * 落库内容分三类，便于事后回放：
  *   1. 语义化定位：`node`（权限节点 slug）+ `title`（注解里的操作名）。
@@ -113,9 +113,19 @@ class OperationLog implements MiddlewareInterface
             return;
         }
 
-        // 写操作必记；读操作默认不记，可由 log.record_read 打开（日志量会明显增加）
+        // 失败状态码在「是否记录」之前算出来：读请求默认不记，但**失败必须记**
+        $statusCode = $error !== null
+            ? ($error instanceof ApiException ? (int)$error->getCode() : 500)
+            : ($response?->getStatusCode() ?? 200);
+        $failed = $error !== null || $statusCode >= 400;
+
+        // 写操作必记；读操作默认不记，可由 log.record_read 打开（日志量会明显增加）。
+        // 但**已登录用户的失败请求一律记录**：报障大多来自 GET（列表 / 详情 / 导出），
+        // 不记的话按 trace_id 打开链路视图是空的 —— 功能看着有、实际用不了。
+        // 匿名请求（登录失败、扫描器 404 等）仍不记，避免把攻击流量写进审计表。
         if (!in_array($request->method(), self::WRITE_METHODS, true)
-            && !SysConfig::getBool('log.record_read', false)) {
+            && !SysConfig::getBool('log.record_read', false)
+            && !($failed && $request->user !== null)) {
             return;
         }
 
@@ -136,27 +146,25 @@ class OperationLog implements MiddlewareInterface
                 $params['_files'] = $files;
             }
 
-            if ($error !== null) {
-                $statusCode = $error instanceof ApiException ? $error->getCode() : 500;
-                $result     = $error->getMessage();
-            } else {
-                $statusCode = $response?->getStatusCode() ?? 200;
-                $result     = (string)$response?->rawBody();
-            }
+            $result = $error !== null ? $error->getMessage() : (string)$response?->rawBody();
 
             // 统一走 LogChain：它一边算链式哈希（防篡改），一边负责这一次插入。
             // 直接 Db::name('log')->insert() 会绕过链，留下无法校验的"空洞"。
             LogChain::write([
                 'user_id'     => $user?->id ?? 0,
                 'username'    => $user?->username ?? '',
-                'status'      => $error !== null ? 0 : 1,
+                // 与链路视图的 failed 口径保持一致：异常或 4xx/5xx 都算失败
+                'status'      => $failed ? 0 : 1,
                 'message'     => $error !== null ? self::clip($error->getMessage(), 255) : '',
                 'method'      => $request->method(),
                 'path'        => '/' . ltrim($request->path(), '/'),
                 'node'        => (string)($meta['slug'] ?? ''),
                 'title'       => (string)($meta['title'] ?? ''),
-                // 由 Cors（中间件链第一环）生成，可把一次请求的多条记录串起来
+                // 三个 ID 分工：trace = 一次请求；action = 一次操作（多个请求）；
+                // session = 一次页面会话（刷新即换）。均由 Cors（第一环）落到 $request。
                 'trace_id'    => (string)($request->traceId ?? ''),
+                'action_id'   => (string)($request->actionId ?? ''),
+                'session_id'  => (string)($request->sessionId ?? ''),
                 // 可信代理 + 取最右非可信 IP；不能用 getRealIp()（反代下取 XFF 首值，可伪造）
                 'ip'          => ClientIp::resolve($request),
                 'ua'          => self::clip((string)$request->header('User-Agent', ''), 255),

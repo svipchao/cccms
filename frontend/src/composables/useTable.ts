@@ -11,12 +11,20 @@ const FILTER_PREFIX = 'cccms_table_filter:'
 /** 命名筛选方案的存储前缀 */
 const FILTER_SCHEME_PREFIX = 'cccms_table_filter_scheme:'
 
-/** 持久化的筛选快照：查询条件 + 每页条数（**不含 page**，页码不属于筛选方案） */
+/** 列头排序状态；`prop` 是列的 prop，`order` 是服务端认识的方向 */
+export interface TableSortState {
+  prop: string
+  order: 'asc' | 'desc'
+}
+
+/** 持久化的筛选快照：查询条件 + 每页条数 + 排序（**不含 page**，页码不属于筛选方案） */
 export interface TableFilterSnapshot {
   /** 查询条件（普通对象，JSON 可序列化） */
   query: Record<string, unknown>
   /** 每页条数（无分页的树表不存该字段） */
   limit?: number
+  /** 列头排序（无排序时不写该字段） */
+  sort?: TableSortState
 }
 
 /**
@@ -50,6 +58,22 @@ export interface TableFilterController {
 
 /** ArtTable 通过它拿到所属页面的筛选方案控制器 */
 export const TABLE_FILTER_KEY: InjectionKey<TableFilterController> = Symbol('cccms-table-filter')
+
+/**
+ * 表格「列头排序」控制器。
+ *
+ * 传 `sort` 用 Ref 而不是普通值，便于 ArtTable 在列设置关闭排序、或恢复记忆的排序时
+ * 响应式地重算 `default-sort`（服务端排序只认接口返回的顺序，前端不排）。
+ */
+export interface TableSortController {
+  /** 当前排序（null = 未排序，走接口默认顺序） */
+  sort: Ref<TableSortState | null>
+  /** 写入排序并重新查询；`prop` / `order` 为空表示清除排序 */
+  writeSort: (prop: string, order: 'asc' | 'desc' | '') => void
+}
+
+/** ArtTable 通过它拿到所属页面的排序控制器 */
+export const TABLE_SORT_KEY: InjectionKey<TableSortController> = Symbol('cccms-table-sort')
 
 function readJson<T>(key: string): T | null {
   try {
@@ -104,6 +128,10 @@ interface FilterStoreOptions {
   restoreLimit?: (limit: number) => void
   /** 生成快照时读取当前每页条数（无分页的树表不传） */
   readLimit?: () => number
+  /** 从快照回填排序（无服务端排序的树表不传） */
+  restoreSort?: (sort: TableSortState | null) => void
+  /** 生成快照时读取当前排序（无服务端排序的树表不传） */
+  readSort?: () => TableSortState | null
   /** 条件变化后的回调：服务端分页场景回到第 1 页并重新请求；纯前端过滤场景无需传 */
   onChange?: () => void
 }
@@ -143,7 +171,15 @@ function createFilterStore<Q extends object>(initialQuery: Q, options: FilterSto
 
   function snapshot(): TableFilterSnapshot {
     const limit = options.readLimit?.()
-    return limit ? { query: toQueryRecord(query), limit } : { query: toQueryRecord(query) }
+    const sort = options.readSort?.() ?? null
+    const snap: TableFilterSnapshot = { query: toQueryRecord(query) }
+    if (limit) {
+      snap.limit = limit
+    }
+    if (sort) {
+      snap.sort = sort
+    }
+    return snap
   }
 
   function applySnapshot(snap: TableFilterSnapshot): void {
@@ -151,6 +187,7 @@ function createFilterStore<Q extends object>(initialQuery: Q, options: FilterSto
     if (typeof snap.limit === 'number' && snap.limit > 0) {
       options.restoreLimit?.(snap.limit)
     }
+    options.restoreSort?.(snap.sort ?? null)
   }
 
   // 进页面先回填上次的条件；此时 watch 尚未注册，不会回写
@@ -255,12 +292,20 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
 
   const initialQuery = { ...(options.initialQuery ?? ({} as Q)) } as Q
 
+  /** 列头排序状态（服务端排序，前端不对数据重排） */
+  const sort = ref<TableSortState | null>(null)
+
   /* ---- 筛选方案：自动记忆 + 命名方案（页面零配置） ---- */
   const store = createFilterStore(initialQuery, {
     restoreLimit: (value) => {
       limit.value = value
     },
     readLimit: () => limit.value,
+    // 排序与筛选条件一起记忆：刷新后表头箭头与数据顺序都能对上
+    restoreSort: (value) => {
+      sort.value = value
+    },
+    readSort: () => sort.value,
     // 列头筛选改的是查询条件，和「查询」按钮一样要回到第 1 页重新请求
     onChange: () => {
       page.value = 1
@@ -279,12 +324,14 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
     void load()
   }
 
-  // 条件或每页条数一变就自动记忆（页码不存）
+  // 条件、每页条数或排序一变就自动记忆（页码不存）
   watch(query, store.persist, { deep: true })
   watch(limit, store.persist)
+  watch(sort, store.persist, { deep: true })
 
   if (getCurrentInstance()) {
     provide(TABLE_FILTER_KEY, store.controller(applyScheme))
+    provide(TABLE_SORT_KEY, { sort, writeSort })
   }
 
   // 请求序号：快速连续翻页/筛选时，先发起的慢请求可能后返回并覆盖较新的结果
@@ -295,7 +342,13 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
     loading.value = true
     const startedAt = Date.now()
     try {
-      const res = await options.api({ ...query, page: page.value, limit: limit.value })
+      const params: Record<string, unknown> = { ...query, page: page.value, limit: limit.value }
+      // 只在有排序时下发；清除排序后不带参数，由后端回到默认顺序
+      if (sort.value) {
+        params.sort = sort.value.prop
+        params.order = sort.value.order
+      }
+      const res = await options.api(params)
       // 过期响应直接丢弃，避免「翻到第 2 页却显示第 1 页数据」
       if (seq !== requestSeq) {
         return
@@ -325,9 +378,32 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
     void load()
   }
 
-  /** 重置查询条件并重新加载 */
+  /** 重置查询条件与排序并重新加载 */
   function reset(): void {
     Object.assign(query, initialQuery)
+    sort.value = null
+    page.value = 1
+    void load()
+  }
+
+  /**
+   * 列头排序：写入状态并回到第 1 页重新请求。
+   *
+   * 传空 `prop` / `order` 表示清除排序（走接口默认顺序）。
+   * 排序由 `ArtTable` 通过 `TABLE_SORT_KEY` 自动调用，页面无需接线。
+   */
+  function writeSort(prop: string, order: 'asc' | 'desc' | ''): void {
+    if (!prop || order === '') {
+      if (sort.value === null) {
+        return
+      }
+      sort.value = null
+    } else {
+      if (sort.value?.prop === prop && sort.value.order === order) {
+        return
+      }
+      sort.value = { prop, order }
+    }
     page.value = 1
     void load()
   }
@@ -358,10 +434,12 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
     page,
     limit,
     query,
+    sort,
     selection,
     load,
     search,
     reset,
+    writeSort,
     onPageChange,
     onLimitChange,
     onSelectionChange,

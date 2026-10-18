@@ -88,7 +88,8 @@ final class DataRuleLogic
         $page  = max(1, (int)($params['page'] ?? 1));
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
-        $list  = $query->page($page, $limit)->order('id', 'asc')->select()->toArray();
+        // 规则列表固定按创建顺序（id asc）输出，不提供列头排序
+        $list = $query->page($page, $limit)->order('id', 'asc')->select()->toArray();
 
         return ['total' => $total, 'list' => self::decorate($list)];
     }

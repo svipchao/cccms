@@ -11,6 +11,7 @@ use plugin\cccms\support\AuthService;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
 use plugin\cccms\support\OnlineSession;
+use plugin\cccms\support\SortInput;
 use plugin\cccms\support\TenantContext;
 use plugin\cccms\support\TokenService;
 use plugin\cccms\support\UserContext;
@@ -30,6 +31,17 @@ final class TenantLogic
 {
     /** 允许写入的字段（白名单） */
     private const FIELDS = ['name', 'code', 'contact', 'phone', 'status', 'expire_at', 'remark'];
+
+    /**
+     * 列头可排序列：前端 prop => 真实列名。
+     *
+     * `user_count` 是逐行统计出来的，不在表里，故意不登记；
+     * 平台虚拟行（id=0）始终置顶，排序只作用于真实租户行。
+     */
+    private const SORTABLE = [
+        // 到期时间：管理员最关心的「谁快过期了」
+        'expire_at' => 'expire_at',
+    ];
 
     /**
      * 租户列表（分页）。
@@ -69,7 +81,8 @@ final class TenantLogic
         $page  = max(1, (int)($params['page'] ?? 1));
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
-        $list  = $query->page($page, $limit)->order('id', 'asc')->select()->toArray();
+        SortInput::apply($query, $params, self::SORTABLE, 'id', 'asc', 'asc');
+        $list = $query->page($page, $limit)->select()->toArray();
 
         $counts = self::userCounts(array_column($list, 'id'));
         foreach ($list as &$row) {

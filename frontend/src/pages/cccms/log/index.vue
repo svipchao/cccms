@@ -14,6 +14,7 @@
       :data="list"
       :loading="loading"
       :total="total"
+      :default-hidden="['trace_id']"
       selection
       v-model:page="page"
       v-model:limit="limit"
@@ -64,18 +65,28 @@
         </el-tag>
       </template>
 
-      <!-- 链路ID：点一下看同一次请求的全部记录 -->
-      <template #trace_id="{ row }">
-        <el-button v-if="row.trace_id" link type="primary" @click="openTrace(row.trace_id)">
-          {{ row.trace_id }}
+      <!-- 操作ID：点一下看本次操作的全部请求；无权限时只展示，不给会 403 的入口 -->
+      <template #action_id="{ row }">
+        <el-button v-if="row.action_id && canAction" link type="primary" @click="openAction(row.action_id)">
+          {{ row.action_id }}
         </el-button>
+        <span v-else-if="row.action_id" class="log-trace">{{ row.action_id }}</span>
+        <span v-else>—</span>
+      </template>
+
+      <!-- 会话ID：点一下看本次页面会话的轨迹（审计视角） -->
+      <template #session_id="{ row }">
+        <el-button v-if="row.session_id && canSession" link type="primary" @click="openSession(row.session_id)">
+          {{ row.session_id }}
+        </el-button>
+        <span v-else-if="row.session_id" class="log-trace">{{ row.session_id }}</span>
         <span v-else>—</span>
       </template>
 
       <template #action="{ row }">
         <el-button link type="primary" @click="openDetail(row)">{{ t('log.detail') }}</el-button>
-        <el-button v-auth="'cccms:log:trace'" link type="primary" @click="openTrace(row.trace_id)">
-          {{ t('log.sameTrace') }}
+        <el-button v-if="row.action_id && canAction" link type="primary" @click="openAction(row.action_id)">
+          {{ t('log.viewAction') }}
         </el-button>
         <el-button v-auth="'cccms:log:delete'" link type="danger" @click="onDeleteOne(row.id)">
           {{ t('common.delete') }}
@@ -164,17 +175,33 @@
           </el-descriptions-item>
           <el-descriptions-item label="IP">{{ current.ip || '—' }}</el-descriptions-item>
           <el-descriptions-item :label="t('log.cost')">{{ current.cost ?? 0 }} ms</el-descriptions-item>
-          <el-descriptions-item :label="t('log.traceId')" :span="2">
+          <el-descriptions-item :label="t('log.requestId')">
             <span class="log-trace">{{ current.trace_id || '—' }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('log.actionId')" :span="2">
+            <span class="log-trace">{{ current.action_id || '—' }}</span>
             <el-button
-              v-if="current.trace_id"
-              v-auth="'cccms:log:trace'"
+              v-if="current.action_id"
+              v-auth="'cccms:log:action'"
               link
               type="primary"
               class="log-trace-btn"
-              @click="openTrace(current.trace_id)"
+              @click="openAction(current.action_id)"
             >
-              {{ t('log.viewSameTrace') }}
+              {{ t('log.viewAction') }}
+            </el-button>
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('log.sessionId')" :span="2">
+            <span class="log-trace">{{ current.session_id || '—' }}</span>
+            <el-button
+              v-if="current.session_id"
+              v-auth="'cccms:log:session'"
+              link
+              type="primary"
+              class="log-trace-btn"
+              @click="openSession(current.session_id)"
+            >
+              {{ t('log.viewSession') }}
             </el-button>
           </el-descriptions-item>
           <el-descriptions-item v-if="current.message" :label="t('log.message')" :span="2">
@@ -197,47 +224,136 @@
       </template>
     </el-drawer>
 
-    <!-- 链路视图：一次请求的全部记录按时间升序 -->
-    <el-drawer v-model="traceVisible" :title="t('log.traceTitle', { id: trace?.trace_id ?? '' })" size="720px">
-      <template v-if="trace">
-        <el-descriptions :column="3" border size="small">
-          <el-descriptions-item :label="t('log.recordCount')">{{ trace.total }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.failedCount')">
-            <el-tag :type="trace.failed > 0 ? 'danger' : 'success'" effect="light" size="small">
-              {{ trace.failed }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item :label="t('log.totalCost')">{{ trace.cost }} ms</el-descriptions-item>
-        </el-descriptions>
+    <!-- 链路视图：同一次用户操作的全部记录按时间升序 -->
+    <el-drawer
+      v-model="actionVisible"
+      :title="t('log.actionTitle', { id: actionId || '—' })"
+      size="760px"
+      @closed="onActionClosed"
+    >
+      <div v-loading="actionLoading" class="trace-body">
+        <template v-if="action">
+          <el-descriptions :column="3" border size="small">
+            <el-descriptions-item :label="t('log.recordCount')">{{ action.total }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.failedCount')">
+              <el-tag :type="action.failed > 0 ? 'danger' : 'success'" effect="light" size="small">
+                {{ action.failed }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('log.totalCost')">{{ action.cost }} ms</el-descriptions-item>
+          </el-descriptions>
 
-        <el-empty v-if="trace.total === 0" :description="t('log.traceEmpty')" />
-        <el-timeline v-else class="trace-timeline">
-          <el-timeline-item
-            v-for="row in trace.list"
-            :key="row.id"
-            :timestamp="row.create_time"
-            :type="row.status === 1 ? 'primary' : 'danger'"
-            placement="top"
-          >
-            <div class="trace-item">
-              <div class="trace-head">
-                <el-tag effect="plain" size="small">{{ row.method }}</el-tag>
-                <span class="trace-path">{{ row.path }}</span>
-                <el-tag :type="statusTag(row.status_code)" effect="light" size="small">
-                  {{ row.status_code }}
-                </el-tag>
-                <span class="trace-cost">{{ row.cost }} ms</span>
-              </div>
-              <div class="trace-meta">
-                {{ row.title || '—' }}
-                <span v-if="row.node"> · {{ row.node }}</span>
-                · {{ row.username || '—' }}
-              </div>
-              <div v-if="row.message" class="trace-msg">{{ row.message }}</div>
+          <div class="trace-toolbar">
+            <el-button size="small" @click="copyActionId">
+              <template #icon><i class="ri-file-copy-line" /></template>{{ t('log.actionCopy') }}
+            </el-button>
+            <el-button size="small" :loading="actionLoading" @click="reloadAction">
+              <template #icon><i class="ri-refresh-line" /></template>{{ t('common.refresh') }}
+            </el-button>
+          </div>
+
+          <!-- 一次操作属于某次页面会话：从这里可以继续往上看整段轨迹 -->
+          <div v-if="action.session_id && canSession" class="trace-jump">
+            <span
+              >{{ t('log.sessionId') }}: <span class="log-trace">{{ action.session_id }}</span></span
+            >
+            <el-button link type="primary" @click="openSession(action.session_id)">
+              {{ t('log.viewSession') }}
+            </el-button>
+          </div>
+
+          <el-alert
+            v-if="action.truncated"
+            class="trace-alert"
+            type="warning"
+            :closable="false"
+            show-icon
+            :title="t('log.chainTruncated', { limit: ACTION_LIMIT })"
+          />
+
+          <el-empty v-if="action.total === 0" :description="t('log.actionEmpty')">
+            <div class="trace-empty-hint">{{ t('log.actionEmptyHint') }}</div>
+          </el-empty>
+
+          <el-timeline v-else class="trace-timeline">
+            <el-timeline-item
+              v-for="row in action.list"
+              :key="row.id"
+              :timestamp="row.create_time"
+              :type="row.status === 1 ? 'primary' : 'danger'"
+              placement="top"
+            >
+              <TraceRecord :row="row" />
+            </el-timeline-item>
+          </el-timeline>
+
+          <div class="trace-hint">{{ t('log.chainScopeHint') }}</div>
+        </template>
+
+        <!-- 加载失败：明确区分「没有记录」与「没取到」，并给重试入口 -->
+        <el-empty v-else-if="!actionLoading" :description="actionError ? t('log.chainFailed') : t('log.actionEmpty')">
+          <el-button size="small" @click="reloadAction">{{ t('common.refresh') }}</el-button>
+        </el-empty>
+      </div>
+    </el-drawer>
+
+    <!-- 会话轨迹（审计视角）：一次页面会话内的操作按时间串联，操作内再展开请求 -->
+    <el-drawer
+      v-model="sessionVisible"
+      :title="t('log.sessionTitle', { id: sessionId || '—' })"
+      size="760px"
+      @closed="onSessionClosed"
+    >
+      <div v-loading="sessionLoading && sessionRows.length === 0" class="trace-body">
+        <template v-if="sessionGroups.length > 0">
+          <el-descriptions :column="3" border size="small">
+            <el-descriptions-item :label="t('log.recordCount')">{{ sessionTotal }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.sessionActions')">{{ sessionGroups.length }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.sessionLoaded')">{{ sessionRows.length }}</el-descriptions-item>
+          </el-descriptions>
+
+          <div class="trace-toolbar">
+            <el-button size="small" :loading="sessionLoading" @click="reloadSession">
+              <template #icon><i class="ri-refresh-line" /></template>{{ t('common.refresh') }}
+            </el-button>
+          </div>
+
+          <div v-for="group in sessionGroups" :key="group.key" class="session-group">
+            <div class="session-head">
+              <span class="session-time">{{ group.time }}</span>
+              <el-button v-if="group.actionId && canAction" link type="primary" @click="openAction(group.actionId)">
+                {{ group.actionId }}
+              </el-button>
+              <span v-else-if="group.actionId" class="log-trace">{{ group.actionId }}</span>
+              <span v-else class="session-unknown">{{ t('log.sessionUnknownAction') }}</span>
+              <el-tag effect="plain" size="small">
+                {{ t('log.sessionRequestCount', { count: group.rows.length }) }}
+              </el-tag>
+              <el-tag v-if="group.failed > 0" type="danger" effect="light" size="small">
+                {{ t('log.sessionActionFailed', { count: group.failed }) }}
+              </el-tag>
+              <span class="session-cost">{{ group.cost }} ms</span>
             </div>
-          </el-timeline-item>
-        </el-timeline>
-      </template>
+            <TraceRecord v-for="row in group.rows" :key="row.id" :row="row" />
+          </div>
+
+          <div class="session-more">
+            <el-button v-if="sessionHasMore" size="small" :loading="sessionLoading" @click="loadSessionPage(false)">
+              {{ t('log.sessionLoadMore') }}
+            </el-button>
+            <span v-else class="trace-hint">{{ t('log.sessionNoMore') }}</span>
+          </div>
+
+          <div class="trace-hint">{{ t('log.chainScopeHint') }}</div>
+        </template>
+
+        <el-empty
+          v-else-if="!sessionLoading"
+          :description="sessionError ? t('log.chainFailed') : t('log.sessionEmpty')"
+        >
+          <el-button size="small" @click="reloadSession">{{ t('common.refresh') }}</el-button>
+        </el-empty>
+      </div>
     </el-drawer>
   </div>
 </template>
@@ -257,9 +373,19 @@ import ArtTable from '@/components/core/ArtTable.vue'
 import { useTable } from '@/composables/useTable'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
-import { logDelete, logExport, logList, logLoginAnalysis, logTrace, type LogRow, type LogTrace } from '@/api/log'
+import {
+  logAction,
+  logDelete,
+  logExport,
+  logList,
+  logLoginAnalysis,
+  logSession,
+  type LogAction,
+  type LogRow,
+} from '@/api/log'
 import { useExportTaskStore } from '@/stores/exportTask'
 import type { ArtTableColumn } from '@/types/table'
+import TraceRecord from './TraceRecord.vue'
 
 // 按需引入：与工作台同一取舍（只用到折线图，不必整包）
 echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
@@ -270,7 +396,12 @@ interface Query {
   username: string
   title: string
   path: string
+  /** 请求 ID（单条记录） */
   trace_id: string
+  /** 操作 ID（一次操作，多个请求） */
+  action_id: string
+  /** 会话 ID（一次页面会话） */
+  session_id: string
   /** 结果 1 成功 / 0 失败，多选值以逗号串传递 */
   status: string
   /** 请求方法，多选值以逗号串传递 */
@@ -315,34 +446,57 @@ const columns = computed<ArtTableColumn[]>(() => [
     filter: { type: 'enum', options: METHOD_OPTIONS },
   },
   { prop: 'path', label: t('log.path'), minWidth: 200, filter: { type: 'text' } },
-  { prop: 'trace_id', label: t('log.traceId'), width: 240, slot: 'trace_id', filter: { type: 'text' } },
+  { prop: 'action_id', label: t('log.actionId'), width: 220, slot: 'action_id', filter: { type: 'text' } },
+  { prop: 'trace_id', label: t('log.requestId'), width: 220, filter: { type: 'text' } },
+  { prop: 'session_id', label: t('log.sessionId'), width: 220, slot: 'session_id', filter: { type: 'text' } },
   { prop: 'ip', label: 'IP', width: 140, filter: { type: 'text' } },
   { prop: 'status_code', label: t('log.statusCode'), width: 100, align: 'center', slot: 'status_code' },
-  { prop: 'cost', label: t('log.costMs'), width: 100, align: 'right' },
-  { prop: 'create_time', label: t('log.time'), width: 170, filter: { type: 'date' } },
-  { prop: 'action', label: t('table.action'), width: 160, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'cost', label: t('log.costMs'), width: 100, align: 'right', sortable: 'custom' },
+  { prop: 'create_time', label: t('log.time'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
+  { prop: 'action', label: t('table.action'), width: 240, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
-/** 支持从报错弹窗直接跳进来：/log?trace_id=xxx */
+/**
+ * 支持从报错弹窗直接跳进来：
+ *   /log?action_id=xxx  看本次操作；
+ *   /log?session_id=xxx 看本次会话轨迹；
+ *   /log?trace_id=xxx   按请求 ID 过滤列表（单条记录）。
+ */
 const route = useRoute()
 const initialTraceId = typeof route.query.trace_id === 'string' ? route.query.trace_id : ''
+const initialActionId = typeof route.query.action_id === 'string' ? route.query.action_id : ''
+const initialSessionId = typeof route.query.session_id === 'string' ? route.query.session_id : ''
 
-const { list, loading, total, page, limit, query, selection, load, onPageChange, onLimitChange, onSelectionChange } =
-  useTable<LogRow, Query>({
-    api: logList,
-    initialQuery: {
-      username: '',
-      title: '',
-      path: '',
-      trace_id: initialTraceId,
-      status: '',
-      method: '',
-      ip: '',
-      start: '',
-      end: '',
-    },
-    pageSize: 15,
-  })
+const {
+  list,
+  loading,
+  total,
+  page,
+  limit,
+  query,
+  selection,
+  load,
+  search,
+  onPageChange,
+  onLimitChange,
+  onSelectionChange,
+} = useTable<LogRow, Query>({
+  api: logList,
+  initialQuery: {
+    username: '',
+    title: '',
+    path: '',
+    trace_id: initialTraceId,
+    action_id: initialActionId,
+    session_id: initialSessionId,
+    status: '',
+    method: '',
+    ip: '',
+    start: '',
+    end: '',
+  },
+  pageSize: 15,
+})
 
 /* ---- 登录分析（P2-13） ---- */
 const activeTab = ref<'operation' | 'login'>('operation')
@@ -484,25 +638,292 @@ function onResize(): void {
   trendChart?.resize()
 }
 
-/* ---- 链路视图 ---- */
-const traceVisible = ref(false)
-const trace = ref<LogTrace | null>(null)
+/* ---- 链路视图（一次操作） + 会话轨迹（审计） ---- */
+/** 与后端 `LogLogic::ACTION_LIMIT` 一致，仅用于「已截断」提示 */
+const ACTION_LIMIT = 500
+/** 排障（操作链路）与审计（会话轨迹）是两个权限节点：无权限时不渲染入口，避免「点一下就 403」 */
+const canAction = computed(() => userStore.hasAuth('cccms:log:action'))
+const canSession = computed(() => userStore.hasAuth('cccms:log:session'))
 
-async function openTrace(traceId: string): Promise<void> {
-  if (!traceId) {
+const actionVisible = ref(false)
+const actionLoading = ref(false)
+const actionError = ref(false)
+const actionId = ref('')
+const action = ref<LogAction | null>(null)
+/** 请求序号：连续点开不同链路时，先发后至的旧结果不能覆盖新结果 */
+let actionSeq = 0
+
+async function loadAction(id: string, keepOnError = false): Promise<void> {
+  const seq = ++actionSeq
+  actionId.value = id
+  actionLoading.value = true
+  actionError.value = false
+  if (!keepOnError) {
+    action.value = null
+  }
+
+  try {
+    const result = await logAction(id)
+    if (seq !== actionSeq) {
+      return
+    }
+    action.value = result
+  } catch {
+    if (seq !== actionSeq) {
+      return
+    }
+    actionError.value = true
+    if (!keepOnError) {
+      action.value = null
+    }
+  } finally {
+    if (seq === actionSeq) {
+      actionLoading.value = false
+    }
+  }
+}
+
+async function openAction(id: string): Promise<void> {
+  if (!id) {
     return
   }
-  trace.value = await logTrace(traceId)
-  traceVisible.value = true
+  if (!canAction.value) {
+    ElMessage.warning(t('log.chainNoAuth'))
+    return
+  }
+
+  // 抽屉叠在一起会互相遮挡：从详情 / 会话里点进来时先收起上层
+  detailVisible.value = false
+  sessionVisible.value = false
+  actionVisible.value = true
+  await loadAction(id)
+}
+
+function reloadAction(): void {
+  if (actionId.value) {
+    void loadAction(actionId.value, action.value !== null)
+  }
+}
+
+/** 抽屉关闭即失效：迟到的响应不能把旧链路塞回下一次打开的抽屉 */
+function onActionClosed(): void {
+  actionSeq++
+  actionLoading.value = false
+  actionError.value = false
+  action.value = null
+  actionId.value = ''
+}
+
+async function copyActionId(): Promise<void> {
+  const id = action.value?.action_id || actionId.value
+  if (!id) {
+    return
+  }
+  await copyText(id, t('log.actionCopied'), t('log.actionCopyFailed'))
+}
+
+/* ---- 会话轨迹（审计视角） ---- */
+const sessionVisible = ref(false)
+const sessionLoading = ref(false)
+const sessionError = ref(false)
+const sessionId = ref('')
+const sessionRows = ref<LogRow[]>([])
+const sessionTotal = ref(0)
+const sessionCursor = ref(0)
+const sessionHasMore = ref(false)
+let sessionSeq = 0
+
+interface SessionGroup {
+  key: string
+  actionId: string
+  time: string
+  cost: number
+  failed: number
+  rows: LogRow[]
+}
+
+/**
+ * 会话记录按操作分组。
+ *
+ * 只合并**相邻**同 operation 的记录：会话是时间序，同一操作的请求本就连续；
+ * 这样"加载更多"把同一条操作切在两页时，第二次计算仍会把它们接上，
+ * 也不会因为按 action 聚合而打乱时间顺序。
+ */
+const sessionGroups = computed<SessionGroup[]>(() => {
+  const groups: SessionGroup[] = []
+
+  for (const row of sessionRows.value) {
+    const key = row.action_id || row.trace_id || `row-${row.id}`
+    let group = groups[groups.length - 1]
+
+    if (!group || group.key !== key) {
+      group = {
+        key,
+        actionId: row.action_id || '',
+        time: row.create_time,
+        cost: 0,
+        failed: 0,
+        rows: [],
+      }
+      groups.push(group)
+    }
+
+    group.rows.push(row)
+    group.cost += Number(row.cost || 0)
+    if (row.status !== 1) {
+      group.failed++
+    }
+  }
+
+  return groups
+})
+
+async function loadSessionPage(reset: boolean): Promise<void> {
+  const id = sessionId.value
+  if (!id) {
+    return
+  }
+
+  const seq = ++sessionSeq
+  sessionLoading.value = true
+  sessionError.value = false
+
+  if (reset) {
+    sessionRows.value = []
+    sessionTotal.value = 0
+    sessionCursor.value = 0
+    sessionHasMore.value = false
+  }
+
+  try {
+    const result = await logSession({
+      session_id: id,
+      after_id: reset ? 0 : sessionCursor.value,
+      limit: 200,
+    })
+    if (seq !== sessionSeq) {
+      return
+    }
+
+    sessionTotal.value = result.total
+    sessionCursor.value = result.next_cursor
+    sessionHasMore.value = result.has_more
+    sessionRows.value = reset ? result.list : [...sessionRows.value, ...result.list]
+  } catch {
+    if (seq !== sessionSeq) {
+      return
+    }
+    sessionError.value = true
+  } finally {
+    if (seq === sessionSeq) {
+      sessionLoading.value = false
+    }
+  }
+}
+
+async function openSession(id: string): Promise<void> {
+  if (!id) {
+    return
+  }
+  if (!canSession.value) {
+    ElMessage.warning(t('log.chainNoAuth'))
+    return
+  }
+
+  detailVisible.value = false
+  actionVisible.value = false
+  // 先记 id 再打开：避免上一次会话的旧行在新标题下闪一下
+  sessionId.value = id
+  sessionVisible.value = true
+  await loadSessionPage(true)
+}
+
+function reloadSession(): void {
+  void loadSessionPage(true)
+}
+
+function onSessionClosed(): void {
+  sessionSeq++
+  sessionLoading.value = false
+  sessionError.value = false
+  sessionRows.value = []
+  sessionTotal.value = 0
+  sessionCursor.value = 0
+  sessionHasMore.value = false
+  sessionId.value = ''
+}
+
+/** 复制文本：http 内网等非安全上下文没有 navigator.clipboard，用临时 textarea 兜底 */
+async function copyText(text: string, okMessage: string, failMessage: string): Promise<void> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else if (!fallbackCopy(text)) {
+      throw new Error('clipboard unavailable')
+    }
+    ElMessage.success(okMessage)
+  } catch {
+    ElMessage.warning(failMessage)
+  }
+}
+
+function fallbackCopy(text: string): boolean {
+  const area = document.createElement('textarea')
+  area.value = text
+  area.style.position = 'fixed'
+  area.style.opacity = '0'
+  document.body.appendChild(area)
+  area.select()
+  const copied = document.execCommand('copy')
+  area.remove()
+  return copied
 }
 
 onMounted(() => {
-  // 带 trace_id 进来时直接展开链路，省去再点一次
-  if (initialTraceId) {
-    void openTrace(initialTraceId)
+  // 带 action_id / session_id 进来时直接展开对应视图，省去再点一次
+  if (initialActionId) {
+    void openAction(initialActionId)
+  } else if (initialSessionId) {
+    void openSession(initialSessionId)
   }
   window.addEventListener('resize', onResize)
 })
+
+// keep-alive 下页面已存在时再次跳进来不会重新挂载：跟上查询参数
+watch(
+  () => route.query.trace_id,
+  (value) => {
+    if (typeof value !== 'string' || !value) {
+      return
+    }
+    query.trace_id = value
+    search()
+  },
+)
+
+watch(
+  () => route.query.action_id,
+  (value) => {
+    if (typeof value !== 'string' || !value) {
+      return
+    }
+    query.action_id = value
+    search()
+    void openAction(value)
+  },
+)
+
+watch(
+  () => route.query.session_id,
+  (value) => {
+    if (typeof value !== 'string' || !value) {
+      return
+    }
+    query.session_id = value
+    search()
+    void openSession(value)
+  },
+)
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
@@ -697,47 +1118,87 @@ async function onDeleteOne(id: number): Promise<void> {
 }
 
 /* ---- 链路视图 ---- */
-.trace-timeline {
-  padding-left: 4px;
-  margin-top: 18px;
+.trace-body {
+  min-height: 240px;
 }
 
-.trace-item {
+.trace-toolbar {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.trace-alert {
+  margin-top: 12px;
+}
+
+.trace-empty-hint {
+  max-width: 460px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--art-muted);
+  text-align: center;
+}
+
+.trace-hint {
+  padding: 12px 0 4px;
+  font-size: 12px;
+  color: var(--art-muted);
+}
+
+.trace-jump {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
   padding: 8px 10px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--art-muted);
   background: var(--art-hover-bg);
   border-radius: calc(var(--art-radius) - 2px);
 }
 
-.trace-head {
+.trace-timeline {
+  padding-left: 4px;
+  margin-top: 14px;
+}
+
+/* ---- 会话轨迹 ---- */
+.session-group {
+  margin-top: 18px;
+}
+
+.session-group + .session-group {
+  padding-top: 14px;
+  border-top: 1px dashed var(--art-card-border);
+}
+
+.session-head {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  margin-bottom: 8px;
 }
 
-.trace-path {
-  font-family: Consolas, Monaco, monospace;
+.session-time,
+.session-unknown {
   font-size: 12px;
-  color: var(--art-main);
-  word-break: break-all;
+  color: var(--art-muted);
 }
 
-.trace-cost {
+.session-cost {
   margin-left: auto;
   font-size: 12px;
   color: var(--art-muted);
 }
 
-.trace-meta {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--art-muted);
-}
-
-.trace-msg {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--art-danger);
+.session-more {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 4px;
 }
 
 .log-block {

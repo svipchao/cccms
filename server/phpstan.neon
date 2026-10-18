@@ -38,6 +38,10 @@ parameters:
                 - plugin/cccms/support/HealthProbe.php
                 - plugin/cccms/support/Metrics.php
                 - plugin/cccms/support/ChunkUpload.php
+                # 审计链的列就绪检查（information_schema）与 db-upgrade 的增量 ALTER：
+                # think-orm 的 query/execute 同样是 __callStatic 转发，静态分析看不到。
+                - plugin/cccms/support/LogChain.php
+                - plugin/cccms/command/DbUpgradeCommand.php
 
         # Webman 的 Request 由中间件在运行时挂载动态属性（`$user` / `$jti` / `$traceId` /
         # `$controller` / `$action` 等），静态分析看不到这些属性。既有代码的同类报错

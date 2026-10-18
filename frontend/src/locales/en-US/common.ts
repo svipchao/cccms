@@ -21,6 +21,8 @@ export default {
   requestError: 'Request error ({status})',
   networkError: 'Network error, please check whether the service is running',
   loginExpired: 'Your session has expired, please sign in again',
+  // Appended to error messages so users can search the action in the log page
+  actionIdSuffix: ' (action {id})',
   // Built-in copy for the node picker (ArtNodePicker); callers need not be aware of it
   nodePicker: {
     clear: 'Clear',

@@ -12,6 +12,7 @@ use plugin\cccms\support\CrontabRunner;
 use plugin\cccms\support\CrontabTask;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\SortInput;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use think\facade\Db;
@@ -25,6 +26,17 @@ use think\facade\Db;
  */
 final class CrontabLogic
 {
+    /**
+     * 列头可排序列：前端 prop => 真实列名。
+     *
+     * `next_run_time` 在查询后被 `CronMatcher` 重算了一遍（按当前时间），
+     * 按库里的值排序会和展示值对不上，故意不登记；`desc` 是前端派生的表达式说明，同样不登记。
+     */
+    private const SORTABLE = [
+        // 只留「上次执行」：任务名/分组/表达式/目标/状态排序没有实际价值
+        'last_run_time' => 'last_run_time',
+    ];
+
     /**
      * 可写字段白名单。
      *
@@ -70,7 +82,8 @@ final class CrontabLogic
         $page  = max(1, (int)($params['page'] ?? 1));
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
-        $list  = $query->page($page, $limit)->order('id', 'desc')->select()->toArray();
+        SortInput::apply($query, $params, self::SORTABLE);
+        $list = $query->page($page, $limit)->select()->toArray();
 
         foreach ($list as &$row) {
             $next = CronMatcher::nextRunTime((string)$row['expression'], time());

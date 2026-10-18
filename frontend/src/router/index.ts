@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 import { getToken } from '@/utils/auth'
 import { ROUTE_PROGRESS, progressDone, progressStart } from '@/utils/progress'
+import { newAction, resetTrace } from '@/utils/trace'
 import { translateTitle } from '@/locales/title'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
@@ -185,6 +186,9 @@ router.beforeEach(async (to) => {
 router.afterEach((to) => {
   progressDone(ROUTE_PROGRESS)
   syncDocumentTitle(String(to.meta.title ?? ''))
+  // 进入新页面 = 新的一次操作：页面加载的并发请求归到同一条链路里，
+  // 不会和上一个页面的操作混在一起（session 不动，它只随刷新变化）
+  newAction()
 })
 
 /**
@@ -205,10 +209,12 @@ router.onError(() => {
   progressDone(ROUTE_PROGRESS)
 })
 
-/** 退出登录后统一清理（路由 + 标签页） */
+/** 退出登录后统一清理（路由 + 标签页 + 链路上下文） */
 export function resetAfterLogout(): void {
   resetDynamicRoutes()
   useWorktabStore().reset()
+  // 链路 ID 不能跨账号复用：否则换账号后的请求会落进上一个人的链路
+  resetTrace()
 }
 
 export default router

@@ -16,6 +16,7 @@ use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
 use plugin\cccms\support\PasswordPolicy;
 use plugin\cccms\support\PermissionCache;
+use plugin\cccms\support\SortInput;
 use plugin\cccms\support\Tree;
 use plugin\cccms\support\UserContext;
 use Throwable;
@@ -36,6 +37,12 @@ final class UserLogic
 {
     /** 对外安全字段（不含 password）。 */
     private const SAFE_FIELDS = 'id,username,nickname,avatar,email,phone,status,remark,login_time,login_ip,create_time,update_time';
+
+    /** 列头可排序列：前端 prop => 真实列名（未登记的列回落默认排序） */
+    private const SORTABLE = [
+        // 只开放「最近登录」：用户名/昵称/手机号这类标识列排序没有实际意义
+        'login_time' => 'login_time',
+    ];
 
     /**
      * 可写字段白名单（防 Mass Assignment）。
@@ -78,8 +85,9 @@ final class UserLogic
         $page  = max(1, (int)($params['page'] ?? 1));
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
+        SortInput::apply($query, $params, self::SORTABLE);
         // 字段级规则（hidden / mask / encrypt）已由 User::toArray() 统一处理
-        $list = $query->field(self::SAFE_FIELDS)->page($page, $limit)->order('id', 'desc')->select()->toArray();
+        $list = $query->field(self::SAFE_FIELDS)->page($page, $limit)->select()->toArray();
 
         return ['total' => $total, 'list' => $list];
     }

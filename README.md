@@ -220,8 +220,8 @@ docker compose exec webman php webman cccms:perm-scan
 | [docs/10-前端组件参考.md](docs/10-前端组件参考.md) | `ArtTable` / `useTable` 等组件与 Hooks API |
 | [docs/11-常用命令与运维.md](docs/11-常用命令与运维.md) | CLI 命令、Redis 键、配置项、备份、安全加固、CI |
 | [docs/12-常见问题与排错.md](docs/12-常见问题与排错.md) | 按现象检索的 FAQ |
-| [docs/更新日志.md](docs/更新日志.md) | 版本变更记录 + 未发布待办 + 历史决策与验证记录 |
-| [docs/开发计划.md](docs/开发计划.md) | 里程碑、功能清单（已开发 / 未开发）、后续规划 |
+| [docs/更新日志.md](docs/更新日志.md) | 已交付的版本变更 + 已决策不做的事项 |
+| [docs/开发计划.md](docs/开发计划.md) | 待办清单（要做但尚未做的功能与质量项） |
 
 ---
 

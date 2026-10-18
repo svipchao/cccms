@@ -23,9 +23,15 @@ use Throwable;
  *   - `prev_hash`：**上一条**记录的 `row_hash`（链）；
  *   - `row_hash` ：`sha256(prev_hash + "\n" + 规范化后的行内容)`。
  *
- * 规范化（`normalize()`）把 16 个字段按**固定顺序**、**固定类型**、**固定长度**取值，
+ * 规范化（`normalize()`）把该**哈希版本**的字段按固定顺序、固定类型、固定长度取值，
  * 再 `json_encode`，因此"同一行内容"在写入侧与校验侧得到的字节完全一致 ——
  * 否则光是 PDO 把 int 读成字符串就会让校验全线误报。
+ *
+ * ## 哈希版本（`hash_version`）
+ *
+ * 新增参与哈希的列不能直接改字段集：那会让**所有历史行**重算哈希失败、被判成篡改。
+ * 因此行上带版本号：`0` = 最初的 16 字段，`1` = 追加 `action_id` / `session_id`。
+ * 校验时按行取版本；新写入一律用当前版本。
  *
  * 链尾（`tail_id` / `tail_hash`）与校验起点（`anchor_id`）存在单行表 `sys_log_chain` 里：
  * 只靠"查最大 id"无法发现**尾行被删**，而删除尾行正是最常见的掩盖手段。
@@ -51,13 +57,15 @@ final class LogChain
     /** 链表不可用时的重检间隔（秒）：避免每次写日志都白跑一次失败的查询 */
     private const RECHECK_SECONDS = 60;
 
+    /** 当前哈希版本：1 = 在 v0 的 16 个字段基础上加入 action_id / session_id */
+    public const VERSION = 1;
+
     /**
-     * 参与哈希的字段：`字段 => [类型, 长度, 默认值]`。
+     * v0：最早的字段集（历史行 `hash_version = 0`，必须**逐字保持不变**）。
      *
-     * **顺序即哈希顺序**，改动这里等于让历史行全部失效 —— 新增字段时必须同步
-     * 写一条 `cccms:db-upgrade` 的说明，并接受"旧行需要重新锚定"。
+     * `字段 => [类型, 长度, 默认值]`；**顺序即哈希顺序**。
      */
-    private const FIELDS = [
+    private const FIELDS_V0 = [
         'user_id'     => ['int', 0, 0],
         'username'    => ['str', 64, ''],
         'method'      => ['str', 16, ''],
@@ -76,9 +84,42 @@ final class LogChain
         'create_time' => ['str', 19, ''],
     ];
 
+    /**
+     * v1：加入「操作 ID / 会话 ID」。
+     *
+     * 为什么不在 v0 上直接加字段：校验侧要用**同一份字段集**重算哈希，直接改 v0
+     * 会让所有历史行被误判为「内容被篡改」。版本号写在行上（`hash_version`），
+     * 校验时按行取对应字段集，新旧行都能通过。
+     *
+     * ⚠️ v1 一旦发布就不可再改：以后新增字段请开 v2，并同步 `cccms:db-upgrade`。
+     */
+    private const FIELDS_V1 = [
+        'user_id'     => ['int', 0, 0],
+        'username'    => ['str', 64, ''],
+        'method'      => ['str', 16, ''],
+        'path'        => ['str', 255, ''],
+        'node'        => ['str', 128, ''],
+        'title'       => ['str', 128, ''],
+        'status'      => ['int', 0, 1],
+        'message'     => ['str', 255, ''],
+        'trace_id'    => ['str', 32, ''],
+        'action_id'   => ['str', 32, ''],
+        'session_id'  => ['str', 32, ''],
+        'ip'          => ['str', 64, ''],
+        'ua'          => ['str', 255, ''],
+        'params'      => ['str', 8000, ''],
+        'result'      => ['str', 8000, ''],
+        'status_code' => ['int', 0, 200],
+        'cost'        => ['int', 0, 0],
+        'create_time' => ['str', 19, ''],
+    ];
+
     private static ?bool $ready = null;
 
     private static int $checkedAt = 0;
+
+    /** 新增列是否就绪（迁移未执行时降级为不带新列的普通写入，日志比链路更重要） */
+    private static bool $columnsReady = true;
 
     /**
      * 写入一条日志（**唯一入口**：中间件与登录逻辑都走这里）。
@@ -87,7 +128,7 @@ final class LogChain
      */
     public static function write(array $row): int
     {
-        $data = self::normalize($row);
+        $data = self::normalize($row, self::VERSION);
 
         if (!self::ready()) {
             return self::plainInsert($data);
@@ -117,8 +158,10 @@ final class LogChain
             // 永远算不出同一个值 —— 表现为「所有行都被判为已篡改」。
             $rowHash = self::hash($prev, $data);
 
-            $data['prev_hash'] = $prev;
-            $data['row_hash']  = $rowHash;
+            // 版本号 / 链字段都不参与哈希：它们由链自身维护，混进载荷会让校验侧算不出同一个值
+            $data['hash_version'] = self::VERSION;
+            $data['prev_hash']    = $prev;
+            $data['row_hash']     = $rowHash;
 
             $id = (int)Db::name('log')->insertGetId($data);
 
@@ -205,15 +248,18 @@ final class LogChain
     }
 
     /**
-     * 规范化为固定顺序 / 类型 / 长度的字段集（**写入与校验共用**，保证字节一致）。
+     * 规范化某一版本的字段集（**写入与校验共用**，保证字节一致）。
+     *
+     * 校验侧必须按行上的 `hash_version` 传入对应版本：0 = 历史行（16 字段），
+     * 1 = 含 action_id / session_id 的新行。传错版本会把整段链判成「被篡改」。
      *
      * @param  array<string,mixed> $row
      * @return array<string,mixed>
      */
-    public static function normalize(array $row): array
+    public static function normalize(array $row, int $version = self::VERSION): array
     {
         $out = [];
-        foreach (self::FIELDS as $field => [$type, $limit, $default]) {
+        foreach (self::fields($version) as $field => [$type, $limit, $default]) {
             $value = $row[$field] ?? null;
 
             if ($type === 'int') {
@@ -231,6 +277,18 @@ final class LogChain
         }
 
         return $out;
+    }
+
+    /**
+     * 版本 → 字段集。
+     *
+     * 未知版本按当前版本处理（例如代码回滚后读到更新的行）：此时校验会报
+     * `content_modified`，属于**宁可误报也不放过**的取舍 —— 版本号本身已在链外，
+     * 无法用旧算法证明新行。
+     */
+    private static function fields(int $version): array
+    {
+        return $version >= self::VERSION ? self::FIELDS_V1 : self::FIELDS_V0;
     }
 
     /**
@@ -260,7 +318,16 @@ final class LogChain
 
         try {
             Db::name('log_chain')->where('id', self::CHAIN_ID)->count();
-            self::$ready = true;
+
+            // 新列是否已迁移：缺列时插入会整体失败。此时退回「不带新列」的普通写入，
+            // 宁可少 action_id / session_id，也不能把审计日志本身弄丢。
+            self::$columnsReady = (bool)Db::query(
+                'SELECT 1 FROM information_schema.COLUMNS'
+                . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1',
+                ['sys_log', 'hash_version']
+            );
+
+            self::$ready = self::$columnsReady;
         } catch (Throwable) {
             self::$ready = false;
         }
@@ -278,6 +345,11 @@ final class LogChain
      */
     private static function plainInsert(array $data): int
     {
+        // 迁移未执行时不写新列（否则插入会因未知列直接失败，日志就没了）
+        if (!self::$columnsReady) {
+            unset($data['action_id'], $data['session_id'], $data['hash_version']);
+        }
+
         $data['prev_hash'] = '';
         $data['row_hash']  = '';
 

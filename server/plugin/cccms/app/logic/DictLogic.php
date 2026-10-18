@@ -46,7 +46,8 @@ final class DictLogic
         $page  = max(1, (int)($params['page'] ?? 1));
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
-        $list  = $query->page($page, $limit)->order('id', 'desc')->select()->toArray();
+        // 字典类型是低频基础数据，按创建时间倒序即可（不提供列头排序）
+        $list = $query->page($page, $limit)->order('id', 'desc')->select()->toArray();
 
         $categories = SoftDelete::apply(TenantContext::table('category'))->column('name', 'id');
         foreach ($list as &$row) {

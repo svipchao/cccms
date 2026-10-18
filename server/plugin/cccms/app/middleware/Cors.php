@@ -9,14 +9,22 @@ use Webman\Http\Response;
 use Webman\MiddlewareInterface;
 
 /**
- * 跨域处理 + 链路 ID。
+ * 跨域处理 + 请求标识（trace / action / session）。
  *
- * 这里是中间件链的**第一环**，所以顺手在这里生成链路 ID（traceId）：
- *   1. 挂到 `$request->traceId`，后续中间件（OperationLog）与控制器都能读到；
- *   2. 回写响应头 `X-Trace-Id`，用户报障时可直接提供该值定位整条链路；
- *   3. 出错时 `Result::fail()` 也会把它放进响应体，页面报错弹窗里就能看到。
+ * 这里是中间件链的**第一环**，三个 ID 都在这里落到 `$request` 上，后续中间件
+ * （OperationLog）与控制器直接读：
+ *   - `traceId`：**一次 HTTP 请求**，后端生成，回写响应头 `X-Trace-Id`；
+ *   - `actionId`：**一次用户操作**（进页面 / 点保存），由前端生成并经 `X-Action-Id` 传入，
+ *     一次操作的多个请求共用它，日志页的「链路视图」按它聚合；
+ *   - `sessionId`：**一次页面会话**（刷新即换），由前端生成并经 `X-Session-Id` 传入，
+ *     用于审计视角的「会话轨迹」。
  *
- * 跨域下非简单响应头默认不可读，因此同时声明 `Access-Control-Expose-Headers`。
+ * 为什么 action / session 由前端给：只有前端知道"一次操作"从哪开始 —— 后端若按请求生成，
+ * 一个请求只有一条日志，"链路"永远只有一行；若按时间窗口猜，又会把连续操作并成一条。
+ *
+ * 传入值必须通过格式与长度校验（与日志表 32 字节一致），不合法一律丢弃：
+ * 避免把任意文本写进日志 / 响应头。跨域下前端要发这两个自定义头，必须出现在
+ * `Access-Control-Allow-Headers` 里。
  *
  * 跨域来源取 `plugin.cccms.cors.origin` 白名单（`.env` 的 `CORS_ORIGIN`，逗号分隔）：
  * 命中才回显具体 Origin，未命中**一个 CORS 头都不下发**，由浏览器自行拦截。
@@ -28,6 +36,8 @@ class Cors implements MiddlewareInterface
     {
         $traceId = self::traceId();
         $request->traceId = $traceId;
+        $request->actionId = self::correlationId($request->header('X-Action-Id', ''));
+        $request->sessionId = self::correlationId($request->header('X-Session-Id', ''));
 
         $origin = self::allowedOrigin($request);
 
@@ -46,7 +56,8 @@ class Cors implements MiddlewareInterface
             $headers += [
                 'Access-Control-Allow-Origin'      => $origin,
                 'Access-Control-Allow-Methods'     => 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-                'Access-Control-Allow-Headers'     => 'Authorization, Content-Type, X-Requested-With',
+                // X-Trace-Id 保留给旧前端（已不参与生成，仅避免预检失败）
+                'Access-Control-Allow-Headers'     => 'Authorization, Content-Type, X-Requested-With, X-Trace-Id, X-Action-Id, X-Session-Id',
                 'Access-Control-Allow-Credentials' => 'false',
                 'Access-Control-Max-Age'           => '86400',
                 // 跨域下响应头默认不可读：滑动续期的 X-Refresh-Token 必须在此声明，
@@ -92,9 +103,28 @@ class Cors implements MiddlewareInterface
         return '';
     }
 
-    /** 形如 `260918143012-a1b2c3d4e5f6`：时间前缀便于排序，随机段避免碰撞 */
+    /**
+     * 本次请求的 ID：形如 `260918143012-a1b2c3d4e5f6`。
+     *
+     * 时间前缀便于排序，随机段避免碰撞；**不接受客户端传入** —— 请求级 ID
+     * 由服务端掌握，才能保证每条日志都有、且不会被伪造。
+     */
     private static function traceId(): string
     {
         return date('ymdHis') . '-' . bin2hex(random_bytes(6));
+    }
+
+    /**
+     * 校验前端传来的关联 ID（action / session）。
+     *
+     * 只允许字母/数字与 `.` `_` `-`，且不超过 32 字节（与日志表列宽一致）：
+     * 既挡住头注入，也避免写入时被截断成两个不同的 ID。不合法返回空串，
+     * 该条日志就没有这个关联信息（不影响日志本身写入）。
+     */
+    private static function correlationId(mixed $raw): string
+    {
+        $value = trim((string)$raw);
+
+        return preg_match('/^[A-Za-z0-9._-]{1,32}$/', $value) === 1 ? $value : '';
     }
 }

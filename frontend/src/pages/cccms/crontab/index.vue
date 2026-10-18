@@ -141,47 +141,129 @@
       </template>
     </el-dialog>
 
-    <!-- 执行日志 -->
-    <el-drawer v-model="logVisible" :title="t('crontab.logsTitle', { name: currentTask.name })" size="880px">
+    <!-- 执行日志 + 运行详情：宽屏左右分栏，窄屏自动上下排列 -->
+    <el-drawer
+      v-model="logVisible"
+      :title="t('crontab.logsTitle', { name: currentTask?.name ?? '' })"
+      :size="logDrawerSize"
+      class="crontab-log-drawer"
+    >
       <!-- 按列表页表格的方式组织：工具条 + 撑满的表格 + 底部固定分页（而不是塞进 drawer footer） -->
       <div class="log-panel">
         <div class="log-toolbar">
-          <el-select
-            v-model="logStatus"
-            clearable
-            :placeholder="t('crontab.allPlaceholder')"
-            style="width: 140px"
-            @change="onLogFilterChange"
-          >
-            <el-option :label="t('crontab.logSuccess')" :value="1" />
-            <el-option :label="t('crontab.logFailed')" :value="0" />
-            <el-option :label="t('crontab.logSkipped')" :value="2" />
-            <el-option :label="t('crontab.logTimeout')" :value="3" />
-          </el-select>
+          <div class="log-toolbar-left">
+            <el-select
+              v-model="logStatus"
+              clearable
+              :placeholder="t('crontab.allPlaceholder')"
+              style="width: 140px"
+              @change="onLogFilterChange"
+            >
+              <el-option :label="t('crontab.logSuccess')" :value="1" />
+              <el-option :label="t('crontab.logFailed')" :value="0" />
+              <el-option :label="t('crontab.logSkipped')" :value="2" />
+              <el-option :label="t('crontab.logTimeout')" :value="3" />
+            </el-select>
+            <span class="log-tip">{{ t('crontab.logDetailTip') }}</span>
+          </div>
 
           <el-button text circle :title="t('table.refresh')" @click="loadLogs">
             <i class="ri-refresh-line" />
           </el-button>
         </div>
 
-        <div class="log-table-wrap">
-          <el-table v-loading="logLoading" :data="logs" row-key="id" stripe border height="100%">
-            <el-table-column prop="run_time" :label="t('crontab.logTime')" width="170" />
-            <el-table-column :label="t('crontab.logResult')" width="100" align="center">
-              <template #default="{ row }">
-                <el-tag :type="logStatusMeta(row.status).type" effect="light" size="small">
-                  {{ t(logStatusMeta(row.status).labelKey) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column :label="t('crontab.logSource')" width="90" align="center">
-              <template #default="{ row }">
-                {{ sourceLabel(row.source) }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="cost" :label="t('crontab.logCost')" width="100" align="right" />
-            <el-table-column prop="output" :label="t('crontab.logOutput')" min-width="200" show-overflow-tooltip />
-          </el-table>
+        <div class="log-layout" :class="{ 'is-stacked': isStacked }">
+          <div class="log-table-wrap">
+            <el-table
+              ref="logTableRef"
+              v-loading="logLoading"
+              :data="logs"
+              row-key="id"
+              stripe
+              border
+              height="100%"
+              highlight-current-row
+              class="log-table"
+              @row-click="onLogRowClick"
+            >
+              <el-table-column prop="run_time" :label="t('crontab.logTime')" width="170" />
+              <el-table-column :label="t('crontab.logResult')" width="100" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="logStatusMeta(row.status).type" effect="light" size="small">
+                    {{ t(logStatusMeta(row.status).labelKey) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column :label="t('crontab.logSource')" width="90" align="center">
+                <template #default="{ row }">
+                  {{ sourceLabel(row.source) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="cost" :label="t('crontab.logCost')" width="100" align="right" />
+              <el-table-column prop="output" :label="t('crontab.logOutput')" min-width="200" show-overflow-tooltip />
+            </el-table>
+          </div>
+
+          <div v-if="!isStacked || selectedLog" class="log-detail">
+            <template v-if="selectedLog">
+              <div class="log-detail-head">
+                <span class="log-detail-title">{{ t('crontab.logDetailTitle') }}</span>
+                <el-button link type="primary" @click="closeLogDetail">
+                  {{ t('crontab.logDetailClose') }}
+                </el-button>
+              </div>
+
+              <el-descriptions :column="1" size="small" border>
+                <el-descriptions-item :label="t('crontab.logResult')">
+                  <el-tag :type="logStatusMeta(selectedLog.status).type" effect="light" size="small">
+                    {{ t(logStatusMeta(selectedLog.status).labelKey) }}
+                  </el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item :label="t('crontab.logTime')">
+                  {{ selectedLog.run_time || '—' }}
+                </el-descriptions-item>
+                <el-descriptions-item :label="t('crontab.logSource')">
+                  {{ sourceLabel(selectedLog.source) }}
+                </el-descriptions-item>
+                <el-descriptions-item :label="t('crontab.logCost')">{{ selectedLog.cost }} ms</el-descriptions-item>
+                <el-descriptions-item :label="t('crontab.logId')">#{{ selectedLog.id }}</el-descriptions-item>
+                <el-descriptions-item :label="t('crontab.logTask')">
+                  {{ currentTask?.name || '—' }}
+                </el-descriptions-item>
+                <el-descriptions-item :label="t('crontab.expressionLabel')">
+                  <code class="log-code">{{ currentTask?.expression || '—' }}</code>
+                  <span v-if="currentTask?.expression" class="log-desc-text">
+                    {{ describe(currentTask.expression) }}
+                  </span>
+                </el-descriptions-item>
+                <el-descriptions-item :label="t('crontab.targetLabel')">
+                  <span class="log-break">{{ currentTask?.target || '—' }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item :label="t('crontab.timeoutLabel')">
+                  {{ currentTask?.timeout ? `${currentTask.timeout}s` : t('crontab.logUnlimited') }}
+                </el-descriptions-item>
+                <el-descriptions-item :label="t('crontab.retryLabel')">
+                  {{
+                    currentTask?.retry_times
+                      ? `${currentTask.retry_times} × / ${currentTask.retry_interval}s`
+                      : t('crontab.logNone')
+                  }}
+                </el-descriptions-item>
+              </el-descriptions>
+
+              <div class="log-detail-section">
+                <div class="log-detail-label">{{ t('crontab.paramsLabel') }}</div>
+                <pre class="log-pre">{{ logParamsText }}</pre>
+              </div>
+
+              <div class="log-detail-section">
+                <div class="log-detail-label">{{ t('crontab.logOutput') }}</div>
+                <pre class="log-pre log-pre--output">{{ selectedLog.output || t('crontab.logOutputEmpty') }}</pre>
+              </div>
+            </template>
+
+            <el-empty v-else :description="t('crontab.logDetailEmpty')" :image-size="70" />
+          </div>
         </div>
 
         <div class="log-pager">
@@ -248,8 +330,20 @@ const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 70 },
   { prop: 'name', label: t('crontab.nameLabel'), minWidth: 170, filter: { type: 'text' } },
   // 分组列的自定义插槽：分组名可点击，点一下筛选该分组，再点取消筛选
-  { prop: 'group_name', label: t('crontab.groupLabel'), width: 130, slot: 'group_name', filter: { type: 'text' } },
-  { prop: 'expression', label: t('crontab.expressionColumnLabel'), width: 160, align: 'center', slot: 'expression' },
+  {
+    prop: 'group_name',
+    label: t('crontab.groupLabel'),
+    width: 130,
+    slot: 'group_name',
+    filter: { type: 'text' },
+  },
+  {
+    prop: 'expression',
+    label: t('crontab.expressionColumnLabel'),
+    width: 160,
+    align: 'center',
+    slot: 'expression',
+  },
   // 表达式说明（与 CronEditor 共用 describeCron，避免两处口径漂移）
   { prop: 'desc', label: t('crontab.descColumnLabel'), minWidth: 180, slot: 'desc' },
   { prop: 'target', label: t('crontab.targetColumnLabel'), minWidth: 210 },
@@ -267,11 +361,12 @@ const columns = computed<ArtTableColumn[]>(() => [
       ],
     },
   },
-  { prop: 'last_run_time', label: t('crontab.lastRunLabel'), width: 170, filter: { type: 'date' } },
+  { prop: 'last_run_time', label: t('crontab.lastRunLabel'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
   {
     prop: 'next_run_time',
     label: t('crontab.nextRunLabel'),
     width: 170,
+    // next_run_time 由后端用当前时间重算，按库里的值排序会和展示值对不上
     filter: { type: 'date', startKey: 'next_start', endKey: 'next_end' },
   },
   { prop: 'action', label: t('table.action'), width: 260, fixed: 'right', slot: 'action', lockVisible: true },
@@ -417,28 +512,67 @@ const logLimit = ref(10)
 const logTotal = ref(0)
 /** 结果筛选：'' = 全部 */
 const logStatus = ref<number | ''>('')
-const currentTask = reactive({ id: 0, name: '' })
+/** 当前任务（日志抽屉标题 / 运行详情里的任务配置都从这里取） */
+const currentTask = ref<CrontabRow | null>(null)
+/** 当前选中的执行日志；null = 未选中，右侧（或下方）显示空态 */
+const selectedLog = ref<CrontabLogRow | null>(null)
+/** 日志表格实例：关闭详情时清掉当前行高亮 */
+const logTableRef = ref<{ setCurrentRow: (row?: unknown) => void }>()
 
 /** 窄屏收起「每页条数 / 跳页」（与 ArtTable 的分页器口径一致） */
 const isNarrow = useMediaQuery('(max-width: 768px)')
+/** 左右空间不够时改为上下排版：表格在上、运行详情在下 */
+const isStacked = useMediaQuery('(max-width: 1200px)')
 const logPagerLayout = computed(() =>
   isNarrow.value ? 'prev, pager, next' : 'total, sizes, prev, pager, next, jumper',
 )
+/** 抽屉宽度：窄屏铺满，宽屏最多 1280px */
+const logDrawerSize = computed(() => (isNarrow.value ? '100%' : 'min(1280px, 94vw)'))
+
+/** 任务参数格式化：空对象 / 空串显示占位，其余按 JSON 美化 */
+const logParamsText = computed(() => {
+  const params = currentTask.value?.params
+  if (params === undefined || params === null || params === '') {
+    return t('crontab.logParamsEmpty')
+  }
+  if (typeof params === 'object' && Object.keys(params as Record<string, unknown>).length === 0) {
+    return t('crontab.logParamsEmpty')
+  }
+  try {
+    return typeof params === 'string' ? params : JSON.stringify(params, null, 2)
+  } catch {
+    return String(params)
+  }
+})
 
 function openLogs(record: CrontabRow): void {
-  currentTask.id = record.id
-  currentTask.name = record.name
+  currentTask.value = record
+  selectedLog.value = null
   logPage.value = 1
   logStatus.value = ''
   logVisible.value = true
   void loadLogs()
 }
 
+/** 点击日志行：在右侧（窄屏为下方）展开运行详情 */
+function onLogRowClick(row: CrontabLogRow): void {
+  selectedLog.value = row
+}
+
+/** 关闭详情：同时清掉表格的当前行高亮 */
+function closeLogDetail(): void {
+  selectedLog.value = null
+  logTableRef.value?.setCurrentRow()
+}
+
 async function loadLogs(): Promise<void> {
   logLoading.value = true
+  // 翻页 / 筛选后旧的选中行已经不在了，清掉避免详情和列表对不上
+  selectedLog.value = null
+  logTableRef.value?.setCurrentRow()
   try {
     const res = await crontabLogs({
-      crontab_id: currentTask.id,
+      crontab_id: currentTask.value?.id ?? 0,
       page: logPage.value,
       limit: logLimit.value,
       ...(logStatus.value === '' ? {} : { status: logStatus.value }),
@@ -545,7 +679,7 @@ onMounted(async () => {
   color: var(--art-muted);
 }
 
-/* ---- 执行日志抽屉：工具条 + 撑满表格 + 底部固定分页 ---- */
+/* ---- 执行日志抽屉：工具条 + 左右分栏（表格 / 运行详情）+ 底部固定分页 ---- */
 .log-panel {
   display: flex;
   flex-direction: column;
@@ -562,9 +696,122 @@ onMounted(async () => {
   margin-bottom: 10px;
 }
 
-.log-table-wrap {
+.log-toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.log-tip {
+  font-size: 12px;
+  color: var(--art-muted);
+}
+
+.log-layout {
+  display: flex;
   flex: 1;
+  gap: 16px;
   min-height: 0;
+}
+
+.log-table-wrap {
+  flex: 1 1 58%;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 运行详情：宽屏在右侧独立滚动 */
+.log-detail {
+  flex: 1 1 42%;
+  min-width: 0;
+  padding-left: 16px;
+  overflow-y: auto;
+  border-left: 1px solid var(--art-card-border);
+}
+
+/* 窄屏上下排版：表格在上，详情在下（各自滚动，互不挤占） */
+.log-layout.is-stacked {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.log-layout.is-stacked .log-table-wrap {
+  flex: 1 1 50%;
+}
+
+.log-layout.is-stacked .log-detail {
+  flex: 0 0 auto;
+  max-height: 46%;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--art-card-border);
+  border-left: 0;
+}
+
+.log-table :deep(.el-table__body tr) {
+  cursor: pointer;
+}
+
+.log-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.log-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--art-main);
+}
+
+.log-detail-label {
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--art-main);
+}
+
+.log-detail-section {
+  margin-top: 14px;
+}
+
+.log-code {
+  padding: 1px 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--art-main);
+  background: var(--el-fill-color-light);
+  border-radius: 4px;
+}
+
+.log-desc-text {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--art-muted);
+}
+
+.log-break {
+  word-break: break-all;
+}
+
+.log-pre {
+  max-height: 220px;
+  padding: 10px 12px;
+  margin: 0;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--art-main);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--el-fill-color-lighter);
+  border-radius: 6px;
+}
+
+.log-pre--output {
+  min-height: 80px;
 }
 
 .log-pager {

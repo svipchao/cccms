@@ -19,7 +19,12 @@ export interface LogRow {
   ua: string
   status_code: number
   cost: number
+  /** 一次请求（后端生成） */
   trace_id: string
+  /** 一次用户操作（前端生成，多个请求共用） */
+  action_id: string
+  /** 一次页面会话（前端生成，刷新即换） */
+  session_id: string
   create_time: string
 }
 
@@ -36,19 +41,54 @@ export function logDelete(ids: number[]) {
   return http.post<null>('/log/delete', { ids })
 }
 
-/** 一次请求的链路聚合结果（P2-6） */
+/** 一次用户操作的链路聚合结果（P2-6）：同一次操作的多个请求共用一个 trace_id */
 export interface LogTrace {
   trace_id: string
   total: number
   failed: number
   /** 该链路所有记录的耗时之和（ms） */
   cost: number
+  /** 是否因超过后端上限被截断（true 时提示「链路不完整」） */
+  truncated: boolean
   list: LogRow[]
 }
 
-/** 按 trace_id 聚合查看同一次请求的全部日志 */
+/** 按 trace_id 查看一次请求的日志（报错定位） */
 export function logTrace(traceId: string) {
   return http.get<LogTrace>('/log/trace', { trace_id: traceId })
+}
+
+/** 一次用户操作的链路：本次操作触发的全部请求 */
+export interface LogAction {
+  action_id: string
+  /** 记录所属会话（为空表示旧数据 / 未带会话头） */
+  session_id: string
+  total: number
+  failed: number
+  /** 本次操作各请求耗时之和（ms） */
+  cost: number
+  truncated: boolean
+  list: LogRow[]
+}
+
+/** 按 action_id 聚合查看一次操作的全部日志 */
+export function logAction(actionId: string) {
+  return http.get<LogAction>('/log/action', { action_id: actionId })
+}
+
+/** 一次页面会话的轨迹（审计视角），游标分页 */
+export interface LogSession {
+  session_id: string
+  /** 整个会话的记录数（受数据权限约束） */
+  total: number
+  next_cursor: number
+  has_more: boolean
+  list: LogRow[]
+}
+
+/** 按 session_id 读取会话轨迹；`after_id` 传上一页的 `next_cursor` */
+export function logSession(params: { session_id: string; after_id?: number; limit?: number }) {
+  return http.get<LogSession>('/log/session', params)
 }
 
 /** 登录安全分析（P2-13）：失败趋势 / TOP 用户名 / TOP IP / 异地登录 */

@@ -3,6 +3,7 @@ import { ElMessage } from 'element-plus'
 import { currentLocale, t } from '@/locales'
 import { clearToken, getToken, setToken } from '@/utils/auth'
 import { progressDone, progressStart } from '@/utils/progress'
+import { acquireTraceContext } from '@/utils/trace'
 
 export interface ApiEnvelope<T = unknown> {
   code: number
@@ -24,12 +25,36 @@ const instance: AxiosInstance = axios.create({
   timeout: 15000,
 })
 
-/** 请求结束（成功/失败/超时/取消）统一收尾，避免进度条卡住 */
+/** 进度条收尾（成功/失败/超时/取消都要走到），避免进度条卡住 */
 function endProgress(config?: TrackedConfig): void {
   const token = config?.__progressToken
   if (token !== undefined) {
     progressDone(token)
   }
+}
+
+/**
+ * 取操作 ID：优先响应体（`Result::fail` 会带上 `action_id`），其次 `trace_id`。
+ *
+ * 提示里给的是**操作 ID**：一次失败用户想查的是"这次操作发了什么"，
+ * 而不是孤零零的一条请求；后端保留 `trace_id` 作为兜底。
+ */
+function responseActionId(response?: { data?: unknown }): string {
+  const body = response?.data as { action_id?: unknown; trace_id?: unknown } | undefined
+
+  if (typeof body?.action_id === 'string' && body.action_id) {
+    return body.action_id
+  }
+  if (typeof body?.trace_id === 'string' && body.trace_id) {
+    return body.trace_id
+  }
+
+  return ''
+}
+
+/** 报错文案带上操作 ID（没有则原样返回），便于复制后到日志页检索 */
+function withActionId(message: string, actionId: string): string {
+  return actionId ? `${message}${t('common.actionIdSuffix', { id: actionId })}` : message
 }
 
 instance.interceptors.request.use((config) => {
@@ -40,6 +65,12 @@ instance.interceptors.request.use((config) => {
 
   // 带上当前语言，后端据此返回对应语言的错误文案（优先 ?lang=，其次该请求头）
   config.headers['Accept-Language'] = currentLocale.value
+
+  // 操作 / 会话 ID：一次操作的多个请求共用同一 action，刷新页面即换 session。
+  // 写请求会开启新操作（见 utils/trace.ts 的边界规则），后端按 action 聚合成链路。
+  const context = acquireTraceContext(String(config.method ?? 'GET'))
+  config.headers['X-Action-Id'] = context.actionId
+  config.headers['X-Session-Id'] = context.sessionId
 
   // 每个请求都推进度条：并发请求按令牌聚合，全部结束才收尾
   const tracked = config as typeof config & TrackedConfig
@@ -74,7 +105,7 @@ instance.interceptors.response.use(
       if (body.code === 0) {
         return body.data as never
       }
-      const failed = body.message || t('common.requestFailed')
+      const failed = withActionId(body.message || t('common.requestFailed'), responseActionId(response))
       ElMessage.error(failed)
       return Promise.reject(new Error(failed))
     }
@@ -85,8 +116,10 @@ instance.interceptors.response.use(
 
     const status = error?.response?.status
     const message = error?.response?.data?.message
+    const actionId = responseActionId(error?.response)
 
     if (status === 401) {
+      // 已登录态失效时用户看不到日志页，这里不追加操作 ID，避免提示变长
       clearToken()
       ElMessage.error(message || t('common.loginExpired'))
       if (!redirecting && !window.location.hash.startsWith('#/login')) {
@@ -109,15 +142,16 @@ instance.interceptors.response.use(
         .text()
         .then((text: string) => {
           try {
-            const parsed = JSON.parse(text) as { message?: string }
-            ElMessage.error(parsed.message || t('common.requestError', { status }))
+            const parsed = JSON.parse(text) as { message?: string; action_id?: string; trace_id?: string }
+            const failed = parsed.message || t('common.requestError', { status })
+            ElMessage.error(withActionId(failed, parsed.action_id || parsed.trace_id || actionId))
           } catch {
-            ElMessage.error(t('common.requestError', { status }))
+            ElMessage.error(withActionId(t('common.requestError', { status }), actionId))
           }
         })
-        .catch(() => ElMessage.error(t('common.requestError', { status })))
+        .catch(() => ElMessage.error(withActionId(t('common.requestError', { status }), actionId)))
     } else if (status) {
-      ElMessage.error(message || t('common.requestError', { status }))
+      ElMessage.error(withActionId(message || t('common.requestError', { status }), actionId))
     } else {
       ElMessage.error(t('common.networkError'))
     }

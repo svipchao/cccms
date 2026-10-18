@@ -46,6 +46,18 @@ final class OnlineSession
     private const FILTER_FIELDS = ['username', 'ip'];
 
     /**
+     * 列头可排序列：前端 prop => `decorate()` 之后的字段名。
+     *
+     * 会话数据在 Redis Hash 里，没有 SQL 可排，只能在内存里排；
+     * 因此排序请求会走「全量扫描 + 排序 + 切片」，未指定排序时仍走 Redis 服务端分页。
+     */
+    private const SORTABLE = [
+        // 在线会话只留「登录时间 / 最后活跃」：用户名、IP、设备等排序没有排障价值
+        'login_at' => 'login_at',
+        'last_at'  => 'last_at',
+    ];
+
+    /**
      * 支持列头筛选的时间字段：入参前缀 => 会话 Hash 里的时间戳字段。
      *
      * 入参形如 `login_start` / `login_end`，比较前统一归一成 Unix 时间戳
@@ -312,17 +324,65 @@ final class OnlineSession
      * @param array<string,string> $filters
      * @return array{total:int,list:array<int,array<string,mixed>>}
      */
-    public static function paginate(array $filters = [], int $page = 1, int $limit = 15): array
-    {
+    public static function paginate(
+        array $filters = [],
+        int $page = 1,
+        int $limit = 15,
+        string $sort = '',
+        string $order = '',
+    ): array {
         $page  = max(1, $page);
         $limit = max(1, $limit);
 
         $filters = self::normalizeFilters($filters);
+
+        // 指定了可排序列：内存排序（Redis 无法按 Hash 字段排序）
+        $field = self::SORTABLE[$sort] ?? '';
+        if ($field !== '') {
+            return self::paginateSorted($filters, $page, $limit, $field, $order === 'asc' ? 'asc' : 'desc');
+        }
+
         if ($filters['text'] === [] && $filters['ranges'] === []) {
             return self::paginatePlain($page, $limit);
         }
 
         return self::paginateFiltered($filters, $page, $limit);
+    }
+
+    /**
+     * 按指定列排序：全量扫描 → 过滤 → 排序 → 切片。
+     *
+     * 在线会话量级有限（且 `SCAN_BATCH` 分段拉取，不会一次性读全量），
+     * 用内存排序换取「所有列都能排」是划算的；未指定排序时仍走服务端分页。
+     *
+     * @param array{text:array<string,string>,ranges:array<string,array{0:int,1:int}>} $filters
+     */
+    private static function paginateSorted(
+        array $filters,
+        int $page,
+        int $limit,
+        string $field,
+        string $dir,
+    ): array {
+        $matched = [];
+        $orphans = self::scanAll(static function (string $jti, array $row) use ($filters, &$matched): void {
+            if (self::match($row, $filters)) {
+                $matched[] = self::decorate($jti, $row);
+            }
+        });
+        self::dropOrphans($orphans);
+
+        usort($matched, static function (array $left, array $right) use ($field, $dir): int {
+            $a = $left[$field] ?? '';
+            $b = $right[$field] ?? '';
+            $cmp = is_numeric($a) && is_numeric($b)
+                ? ((float)$a <=> (float)$b)
+                : strcmp((string)$a, (string)$b);
+
+            return $dir === 'asc' ? $cmp : -$cmp;
+        });
+
+        return ['total' => count($matched), 'list' => array_slice($matched, ($page - 1) * $limit, $limit)];
     }
 
     /**

@@ -275,7 +275,7 @@ const columns = computed<ArtTableColumn[]>(() => [
       ],
     },
   },
-  { prop: 'login_time', label: t('user.lastLogin'), width: 170, filter: { type: 'date' } },
+  { prop: 'login_time', label: t('user.lastLogin'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
   { prop: 'action', label: t('table.action'), width: 210, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 

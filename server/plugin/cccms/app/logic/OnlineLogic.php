@@ -38,6 +38,8 @@ final class OnlineLogic
             ],
             max(1, (int)($params['page'] ?? 1)),
             max(1, (int)($params['limit'] ?? 15)),
+            is_string($params['sort'] ?? null) ? trim($params['sort']) : '',
+            strtolower(is_string($params['order'] ?? null) ? trim($params['order']) : ''),
         );
     }
 

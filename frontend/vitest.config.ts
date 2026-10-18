@@ -19,6 +19,7 @@ const CORE_MODULES = [
   'src/utils/cron.ts',
   'src/utils/password.ts',
   'src/utils/richText.ts',
+  'src/utils/trace.ts',
   'src/composables/useTable.ts',
   'src/stores/user.ts',
   'src/api/request.ts',

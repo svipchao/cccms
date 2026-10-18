@@ -71,6 +71,16 @@ export default {
   sourceRetry: '重试',
   sourceManual: '手工',
   sourceTimeout: '超时',
+  logDetailTitle: '运行详情',
+  logDetailClose: '关闭',
+  logDetailTip: '点击任意行查看运行详情',
+  logDetailEmpty: '点击左侧日志查看运行详情',
+  logTask: '任务',
+  logId: '日志 ID',
+  logParamsEmpty: '无参数',
+  logOutputEmpty: '无输出',
+  logUnlimited: '不限',
+  logNone: '无',
 
   /* ---- 提示 ---- */
   invalidParams: '参数不是合法 JSON',

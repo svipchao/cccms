@@ -164,7 +164,12 @@ Route::get('/log/export', [LogController::class, 'export']);
 Route::get('/export/task/list', [ExportController::class, 'list']);
 Route::get('/export/task/download', [ExportController::class, 'download']);
 
+// 请求级：按 trace_id 查单条（报错定位）
 Route::get('/log/trace', [LogController::class, 'trace']);
+// 操作级：按 action_id 查一次操作的全部请求（链路视图）
+Route::get('/log/action', [LogController::class, 'action']);
+// 会话级：按 session_id 查一次页面会话的轨迹（审计，游标分页）
+Route::get('/log/session', [LogController::class, 'session']);
 // 登录安全分析（失败趋势 / TOP 用户名 / TOP IP / 异地登录）
 Route::get('/log/login/analysis', [LogController::class, 'loginAnalysis']);
 Route::post('/log/delete', [LogController::class, 'delete']);

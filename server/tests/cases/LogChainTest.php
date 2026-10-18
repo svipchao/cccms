@@ -71,16 +71,21 @@ return static function (): void {
                 'username' => str_repeat('长', 100),   // 超过 varchar(64)
             ]);
 
-            // 顺序固定（数组顺序即哈希顺序）
+            // 顺序固定（数组顺序即哈希顺序）；当前版本含 action_id / session_id
             same(
                 [
                     'user_id', 'username', 'method', 'path', 'node', 'title',
-                    'status', 'message', 'trace_id', 'ip', 'ua', 'params',
-                    'result', 'status_code', 'cost', 'create_time',
+                    'status', 'message', 'trace_id', 'action_id', 'session_id',
+                    'ip', 'ua', 'params', 'result', 'status_code', 'cost', 'create_time',
                 ],
                 array_keys($normalized),
                 '字段顺序必须固定'
             );
+
+            // 历史行（hash_version = 0）仍然用最初的 16 个字段校验，新增字段不参与
+            $legacy = LogChain::normalize(['action_id' => 'a', 'session_id' => 's'], 0);
+            same(16, count($legacy), 'v0 字段集必须保持 16 个');
+            ok(!array_key_exists('action_id', $legacy), 'v0 不包含后来新增的字段');
 
             same(7, $normalized['user_id'], '数值列按 int 取值');
             same(0, $normalized['status'], '字符串 "0" 也是 int 0');

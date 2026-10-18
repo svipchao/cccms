@@ -73,6 +73,16 @@ export default {
   sourceRetry: 'Retry',
   sourceManual: 'Manual',
   sourceTimeout: 'Timeout',
+  logDetailTitle: 'Run details',
+  logDetailClose: 'Close',
+  logDetailTip: 'Click any row to view run details',
+  logDetailEmpty: 'Click a log on the left to view run details',
+  logTask: 'Task',
+  logId: 'Log ID',
+  logParamsEmpty: 'No parameters',
+  logOutputEmpty: 'No output',
+  logUnlimited: 'Unlimited',
+  logNone: 'None',
 
   /* ---- Messages ---- */
   invalidParams: 'The parameters are not valid JSON',
