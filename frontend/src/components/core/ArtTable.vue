@@ -232,7 +232,7 @@
           :show-summary="showSummary"
           :summary-method="resolvedSummaryMethod"
           :sum-text="summaryText || t('table.summary')"
-          :stripe="stripeEnabled"
+          stripe
           border
           highlight-current-row
           @selection-change="onSelectionChange"
@@ -386,14 +386,6 @@
       class="art-column-dialog"
     >
       <div class="art-column-panel">
-        <!--
-          表格外观：斑马纹是整表开关而不是逐列设置，但用户要在「列设置」里找到它，
-          所以放在列表之上，与列设置一起走草稿态（确定才生效）。
-        -->
-        <div class="art-column-appearance">
-          <el-checkbox v-model="draftStripe">{{ t('table.stripe') }}</el-checkbox>
-          <span class="art-column-appearance-hint">{{ t('table.stripeHint') }}</span>
-        </div>
         <div class="art-column-row art-column-row--head">
           <span class="art-column-drag" />
           <span class="art-column-name">{{ t('table.columnName') }}</span>
@@ -616,12 +608,6 @@ const props = withDefaults(
      * localStorage 里的记录优先（尊重用户意图，不被页面默认值反复覆盖）。
      */
     defaultHidden?: string[]
-    /**
-     * 斑马纹的**默认值**：用户可在「列设置」里关掉，选择按页面记忆。
-     *
-     * 虚拟滚动模式没有 `stripe` 属性，用奇数行类名 + 底色模拟同样的效果。
-     */
-    stripe?: boolean
   }>(),
   {
     loading: false,
@@ -639,7 +625,6 @@ const props = withDefaults(
     summaryData: undefined,
     summaryText: '',
     defaultHidden: () => [],
-    stripe: true,
   },
 )
 
@@ -1031,7 +1016,6 @@ const ORDER_PREFIX = 'cccms_table_order:v1:'
 const SUMMARY_PREFIX = 'cccms_table_summary:v1:'
 const SORTABLE_PREFIX = 'cccms_table_sortable:v1:'
 const PRIVACY_PREFIX = 'cccms_table_privacy:v1:'
-const STRIPE_PREFIX = 'cccms_table_stripe:v1:'
 
 function storageId(): string {
   return props.storageKey || route.path
@@ -1077,31 +1061,12 @@ const sortDisabledColumns = ref<string[]>(readStoredList(SORTABLE_PREFIX) ?? [])
 const privacyColumns = ref<string[]>(readStoredList(PRIVACY_PREFIX) ?? [])
 
 /**
- * 斑马纹：`null` = 用户没设置过，回落到页面的 `stripe` prop（默认开启）。
- * 存字符串而不是布尔，才能和「没存过」区分开 —— 否则默认关的页面永远关不掉也开不了。
+ * 斑马纹固定开启（不提供开关）：隔行底色见 element.css 的 `--art-table-stripe-bg`。
+ *
+ * 虚拟滚动没有 `stripe` 属性，按奇数行加类名模拟同样的效果。
  */
-function readStoredFlag(prefix: string): boolean | null {
-  try {
-    const raw = localStorage.getItem(prefix + storageId())
-    return raw === null ? null : raw === '1'
-  } catch {
-    return null
-  }
-}
-
-function writeStoredFlag(prefix: string, value: boolean): void {
-  try {
-    localStorage.setItem(prefix + storageId(), value ? '1' : '0')
-  } catch {
-    // localStorage 不可用时忽略
-  }
-}
-
-const stripeEnabled = ref(readStoredFlag(STRIPE_PREFIX) ?? props.stripe)
-
-/** 虚拟滚动没有 stripe 属性，按奇数行加类名模拟（底色见样式段） */
 function virtualRowClass({ rowIndex }: { rowIndex: number }): string {
-  return stripeEnabled.value && rowIndex % 2 === 1 ? 'art-table-stripe' : ''
+  return rowIndex % 2 === 1 ? 'art-table-stripe' : ''
 }
 
 watch(
@@ -1231,8 +1196,6 @@ const draftSummaryHidden = ref<string[]>([])
 const draftSortDisabled = ref<string[]>([])
 /** 草稿里开启隐私遮罩的列 */
 const draftPrivacy = ref<string[]>([])
-/** 草稿里的斑马纹开关（整表外观，与列设置一起走草稿态） */
-const draftStripe = ref(props.stripe)
 /** 草稿里点过「重置列宽」：点确定时才真正恢复默认列宽 */
 const draftResetWidths = ref(false)
 
@@ -1252,7 +1215,6 @@ function openColumnDialog(): void {
   draftSummaryHidden.value = [...summaryHiddenColumns.value]
   draftSortDisabled.value = [...sortDisabledColumns.value]
   draftPrivacy.value = [...privacyColumns.value]
-  draftStripe.value = stripeEnabled.value
   draftResetWidths.value = false
   columnDialogVisible.value = true
 }
@@ -1328,10 +1290,9 @@ function resetColumnDraft(): void {
   draftPrivacy.value = []
 }
 
-/** 全部重置：列设置 + 列宽 + 斑马纹一起回默认 */
+/** 全部重置：列设置 + 列宽一起回默认 */
 function resetAllDraft(): void {
   resetColumnDraft()
-  draftStripe.value = props.stripe
   draftResetWidths.value = true
 }
 
@@ -1355,9 +1316,6 @@ function applyColumnSetting(): void {
   // 只保留仍存在、且不是锁定列（操作列）的隐私开关
   privacyColumns.value = sanitizeDraftList(draftPrivacy.value).filter((prop) => !columnMap.value.get(prop)?.lockVisible)
   persistPrivacy()
-
-  stripeEnabled.value = draftStripe.value
-  writeStoredFlag(STRIPE_PREFIX, stripeEnabled.value)
 
   /*
    * 当前排序列被关掉 / 被隐藏时清掉排序：
@@ -1815,13 +1773,13 @@ watch(
 
 /* 虚拟滚动没有 stripe 属性：按奇数行类名补底色，颜色与普通表格的斑马纹一致 */
 .art-table-wrap :deep(.el-table-v2__row.art-table-stripe) {
-  background-color: var(--el-fill-color-lighter);
+  background-color: var(--art-table-stripe-bg);
 }
 
 /* 斑马纹行的悬停要显式写回：上面那条选择器权重高于 el-table-v2 自带的 :hover */
 .art-table-wrap :deep(.el-table-v2__row.art-table-stripe:hover),
 .art-table-wrap :deep(.el-table-v2__row.art-table-stripe.is-hovered) {
-  background-color: var(--el-table-row-hover-bg-color);
+  background-color: var(--art-table-hover-bg);
 }
 
 /* ---- 搜索卡片（表格上方独立一张卡，折叠项用 v-show 隐藏，展开后换行铺开） ---- */
@@ -1896,22 +1854,6 @@ watch(
   display: flex;
   flex-direction: column;
   min-height: 0;
-}
-
-/* 列表上方的「表格外观」（斑马纹） */
-.art-column-appearance {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  padding: 0 8px 10px;
-  margin-bottom: 8px;
-  border-bottom: 1px dashed var(--art-card-border);
-}
-
-.art-column-appearance-hint {
-  font-size: 12px;
-  color: var(--art-muted);
 }
 
 /* 表头与数据行共用同一套网格列宽，保证每一列严格对齐 */

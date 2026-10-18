@@ -37,6 +37,10 @@
   --art-sub: #5b6474;
   --art-muted: #8f98a8;
 
+  /* ---- 表格（斑马纹固定开启，悬停色比隔行色再深一档） ---- */
+  --art-table-stripe-bg: #f2f5fa;
+  --art-table-hover-bg: #e9edf5;
+
   /* ---- 布局尺寸 ---- */
   --art-header-height: 56px;
   --art-tagbar-height: 40px;
@@ -65,6 +69,9 @@ html.dark {
   --art-main: #e8eaf0;
   --art-sub: #a3abba;
   --art-muted: #6f7787;
+
+  --art-table-stripe-bg: #22262f;
+  --art-table-hover-bg: #2c313c;
 
   --art-shadow-1: 0 1px 2px rgb(0 0 0 / 30%);
   --art-shadow-2: 0 4px 16px rgb(0 0 0 / 36%);

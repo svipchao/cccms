@@ -56,14 +56,19 @@
   border-bottom-color: var(--art-card-border);
 }
 
-/* 表格：表头浅底、边框与底色全部走 token */
+/*
+ * 表格：表头浅底、边框与底色全部走 token。
+ * 斑马纹固定开启（`stripe` 属性），EP 用 --el-fill-color-lighter 铺隔行底色；
+ * 它的默认值 #fafafa 在白卡上几乎看不出来，这里改成 token 里的明确色值。
+ */
 .el-table {
   --el-table-border-color: var(--art-card-border);
   --el-table-header-bg-color: var(--art-gray-100);
   --el-table-header-text-color: var(--art-main);
-  --el-table-row-hover-bg-color: var(--art-hover-bg);
+  --el-table-row-hover-bg-color: var(--art-table-hover-bg);
   --el-table-bg-color: var(--art-card-bg);
   --el-table-tr-bg-color: var(--art-card-bg);
+  --el-fill-color-lighter: var(--art-table-stripe-bg);
 }
 
 html.dark .el-table {

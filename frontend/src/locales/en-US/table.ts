@@ -14,8 +14,6 @@ export default {
   delete: 'Delete',
   refresh: 'Refresh',
   columnSetting: 'Columns',
-  stripe: 'Striped rows',
-  stripeHint: 'Alternate row colors for easier scanning',
   columnName: 'Column name',
   columnVisible: 'Show',
   columnSort: 'Sort',
