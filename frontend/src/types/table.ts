@@ -63,12 +63,19 @@ export interface ArtTableColumn {
   /** 锁定可见（如操作列、选择列） */
   lockVisible?: boolean
   /**
+   * 默认是否显示。`false` = 初始隐藏（仍可在「列设置」里打开）。
+   *
+   * 与组件级 `defaultHidden` 等价，写在列上更直观；两者可混用（取并集）。
+   * 仅在用户**从未调整过**本页列显隐时生效，之后以本地记录为准。
+   */
+  defaultShow?: boolean
+  /**
    * 默认开启隐私遮罩：单元格先显示小眼睛，鼠标悬停才显示内容。
    *
    * 只是**初始值** —— 用户在列设置里动过隐私开关后，本地记录优先。
    * `lockVisible` 列（操作列等）不参与，避免把按钮藏起来。
    */
-  privacy?: boolean
+  defaultPrivacy?: boolean
   showOverflowTooltip?: boolean
   /** 列头筛选配置（配置后该列表头出现筛选入口） */
   filter?: ArtTableColumnFilter

@@ -610,6 +610,7 @@ const props = withDefaults(
     /**
      * 默认隐藏的列（列多到铺不下时用它给一组「核心列」）。
      *
+     * 也可以直接写在各列上（`defaultShow: false`），两者取并集；
      * 仅在用户**从未调整过**本页列显隐时生效：一旦用户勾过列设置，
      * localStorage 里的记录优先（尊重用户意图，不被页面默认值反复覆盖）。
      */
@@ -1056,8 +1057,15 @@ function writeStoredList(prefix: string, value: string[]): void {
   }
 }
 
+/** 页面声明的默认隐藏列：组件级 `defaultHidden` + 列级 `defaultShow: false`（取并集，锁定列永远可见） */
+const defaultHiddenColumns = computed(() => {
+  const declared = ownColumns.value
+    .filter((col) => col.defaultShow === false && !col.lockVisible)
+    .map((col) => col.prop)
+  return [...new Set([...props.defaultHidden, ...declared])]
+})
 /** 隐藏列：页面声明了「默认隐藏」时以它为准；用户动过列设置后，本地记录优先 */
-const hiddenColumns = ref<string[]>(readStoredList(HIDDEN_PREFIX) ?? [...props.defaultHidden])
+const hiddenColumns = ref<string[]>(readStoredList(HIDDEN_PREFIX) ?? [...defaultHiddenColumns.value])
 /** 拖拽排序后的列顺序（只存 prop，页面后续新增的列自动追加到末尾） */
 const columnOrder = ref<string[]>(readStoredList(ORDER_PREFIX) ?? [])
 /** 汇总行里**不展示**的列（空数组 = 全部展示，列设置里勾掉哪列就记哪列） */
@@ -1066,9 +1074,9 @@ const summaryHiddenColumns = ref<string[]>(readStoredList(SUMMARY_PREFIX) ?? [])
 const sortDisabledColumns = ref<string[]>(readStoredList(SORTABLE_PREFIX) ?? [])
 /** 页面在列定义里声明的默认隐私列（锁定列不参与，避免把操作按钮藏起来） */
 const defaultPrivacyColumns = computed(() =>
-  ownColumns.value.filter((col) => col.privacy && !col.lockVisible).map((col) => col.prop),
+  ownColumns.value.filter((col) => col.defaultPrivacy && !col.lockVisible).map((col) => col.prop),
 )
-/** 开启隐私遮罩的列：页面声明的 `privacy` 为默认值，用户动过隐私开关后以本地记录为准 */
+/** 开启隐私遮罩的列：页面声明的 `defaultPrivacy` 为默认值，用户动过隐私开关后以本地记录为准 */
 const privacyColumns = ref<string[]>(readStoredList(PRIVACY_PREFIX) ?? [...defaultPrivacyColumns.value])
 
 /** 表格默认开斑马纹：虚拟滚动没有 `stripe` 属性，按奇数行加类名模拟同样的效果 */
@@ -1079,7 +1087,7 @@ function virtualRowClass({ rowIndex }: { rowIndex: number }): string {
 watch(
   () => props.columns,
   () => {
-    hiddenColumns.value = readStoredList(HIDDEN_PREFIX) ?? [...props.defaultHidden]
+    hiddenColumns.value = readStoredList(HIDDEN_PREFIX) ?? [...defaultHiddenColumns.value]
     columnOrder.value = readStoredList(ORDER_PREFIX) ?? []
     summaryHiddenColumns.value = readStoredList(SUMMARY_PREFIX) ?? []
     sortDisabledColumns.value = readStoredList(SORTABLE_PREFIX) ?? []
@@ -1291,20 +1299,20 @@ function resetDraftWidths(): void {
 /**
  * 重置列：回到**代码里声明的默认值**，而不是「全部显示」——
  * 声明顺序 + 页面 `default-hidden` 声明的隐藏列 + 汇总全部展示
- * + 页面声明了服务端排序的列全部开启 + 页面声明 `privacy` 的列开启遮罩，**不动列宽**。
+ * + 页面声明了服务端排序的列全部开启 + 页面声明 `defaultPrivacy` 的列开启遮罩，**不动列宽**。
  *
  * 举例：日志页把 `trace_id` 声明为默认隐藏，重置后它必须重新收起来；
  * 若按「全部显示」处理，点重置反而把页面特意隐藏的列打开了。
  */
 function resetColumnDraft(): void {
   draftOrder.value = ownColumns.value.map((col) => col.prop)
-  // 只保留仍存在、且不是锁定列的默认隐藏项（锁定列永远可见）
-  draftHidden.value = sanitizeDraftList([...props.defaultHidden]).filter(
+  // 只保留仍存在、且不是锁定列的默认隐藏项（组件 defaultHidden + 列 defaultShow: false）
+  draftHidden.value = sanitizeDraftList([...defaultHiddenColumns.value]).filter(
     (prop) => !columnMap.value.get(prop)?.lockVisible,
   )
   draftSummaryHidden.value = []
   draftSortDisabled.value = []
-  // 回到列声明 `privacy` 的默认隐私（锁定列已在 defaultPrivacyColumns 里排除）
+  // 回到列声明 `defaultPrivacy` 的默认隐私（锁定列已在 defaultPrivacyColumns 里排除）
   draftPrivacy.value = sanitizeDraftList([...defaultPrivacyColumns.value])
 }
 
