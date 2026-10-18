@@ -1060,11 +1060,7 @@ const sortDisabledColumns = ref<string[]>(readStoredList(SORTABLE_PREFIX) ?? [])
 /** 开启隐私遮罩的列（默认关闭；开启后单元格先显示小眼睛，悬停才显示内容） */
 const privacyColumns = ref<string[]>(readStoredList(PRIVACY_PREFIX) ?? [])
 
-/**
- * 斑马纹固定开启（不提供开关）：隔行底色见 element.css 的 `--art-table-stripe-bg`。
- *
- * 虚拟滚动没有 `stripe` 属性，按奇数行加类名模拟同样的效果。
- */
+/** 表格默认开斑马纹：虚拟滚动没有 `stripe` 属性，按奇数行加类名模拟同样的效果 */
 function virtualRowClass({ rowIndex }: { rowIndex: number }): string {
   return rowIndex % 2 === 1 ? 'art-table-stripe' : ''
 }
@@ -1773,13 +1769,13 @@ watch(
 
 /* 虚拟滚动没有 stripe 属性：按奇数行类名补底色，颜色与普通表格的斑马纹一致 */
 .art-table-wrap :deep(.el-table-v2__row.art-table-stripe) {
-  background-color: var(--art-table-stripe-bg);
+  background-color: var(--el-fill-color-lighter);
 }
 
 /* 斑马纹行的悬停要显式写回：上面那条选择器权重高于 el-table-v2 自带的 :hover */
 .art-table-wrap :deep(.el-table-v2__row.art-table-stripe:hover),
 .art-table-wrap :deep(.el-table-v2__row.art-table-stripe.is-hovered) {
-  background-color: var(--art-table-hover-bg);
+  background-color: var(--art-hover-bg);
 }
 
 /* ---- 搜索卡片（表格上方独立一张卡，折叠项用 v-show 隐藏，展开后换行铺开） ---- */
@@ -1882,6 +1878,11 @@ watch(
   max-height: 52vh;
   padding-right: 2px;
   overflow-y: auto;
+}
+
+/* 列清单默认隔行变色（固定开启，不提供开关）：一屏五列勾选框，靠底色便于横向对齐阅读 */
+.art-column-list .art-column-row:nth-child(even) {
+  background-color: var(--art-column-stripe-bg);
 }
 
 .art-column-row:not(.art-column-row--head):hover {
