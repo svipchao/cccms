@@ -195,63 +195,69 @@
         </div>
       </el-config-provider>
 
-      <div class="art-table-wrap">
-        <!-- 虚拟滚动模式：仅当开启 virtual 且非树形/非回收站时生效，用 el-table-v2 + el-auto-resizer -->
-        <el-auto-resizer v-if="useVirtual">
-          <template #default="{ height, width }">
-            <el-table-v2
-              v-loading="loading"
-              :columns="virtualColumns"
-              :data="data"
-              :width="width"
-              :height="height"
-              :row-key="rowKey"
-              :header-height="44"
-              :row-height="48"
-              :row-class="virtualRowClass"
-            >
-              <template #empty>
-                <el-empty :description="t('table.empty')" :image-size="80" />
-              </template>
-            </el-table-v2>
-          </template>
-        </el-auto-resizer>
+      <!--
+        表格主体同样套一层 provider：单元格内容（操作按钮等）由页面插槽渲染，
+        props 管不到它们的尺寸，只有 provider 能把密度档位传下去。
+      -->
+      <el-config-provider :size="effectiveButtonSize">
+        <div class="art-table-wrap" :class="{ 'is-compact': effectiveSize === 'small' }">
+          <!-- 虚拟滚动模式：仅当开启 virtual 且非树形/非回收站时生效，用 el-table-v2 + el-auto-resizer -->
+          <el-auto-resizer v-if="useVirtual">
+            <template #default="{ height, width }">
+              <el-table-v2
+                v-loading="loading"
+                :columns="virtualColumns"
+                :data="data"
+                :width="width"
+                :height="height"
+                :row-key="rowKey"
+                :header-height="44"
+                :row-height="48"
+                :row-class="virtualRowClass"
+              >
+                <template #empty>
+                  <el-empty :description="t('table.empty')" :image-size="80" />
+                </template>
+              </el-table-v2>
+            </template>
+          </el-auto-resizer>
 
-        <el-table
-          v-else
-          ref="tableRef"
-          :key="columnKey"
-          v-loading="loading"
-          :data="data"
-          :size="effectiveSize"
-          :row-key="rowKey"
-          :height="tableHeight"
-          :default-expand-all="tree"
-          :tree-props="{ children: 'children' }"
-          :default-sort="effectiveDefaultSort"
-          :show-summary="showSummary"
-          :summary-method="resolvedSummaryMethod"
-          :sum-text="summaryText || t('table.summary')"
-          stripe
-          border
-          highlight-current-row
-          @selection-change="onSelectionChange"
-          @sort-change="onSortChange"
-          @header-dragend="onHeaderDragend"
-        >
-          <!--
+          <el-table
+            v-else
+            ref="tableRef"
+            :key="columnKey"
+            v-loading="loading"
+            :data="data"
+            :size="effectiveSize"
+            :row-key="rowKey"
+            :height="tableHeight"
+            :default-expand-all="tree"
+            :tree-props="{ children: 'children' }"
+            :default-sort="effectiveDefaultSort"
+            :show-summary="showSummary"
+            :summary-method="resolvedSummaryMethod"
+            :sum-text="summaryText || t('table.summary')"
+            stripe
+            border
+            highlight-current-row
+            @selection-change="onSelectionChange"
+            @sort-change="onSortChange"
+            @header-dragend="onHeaderDragend"
+          >
+            <!--
             刻意不开 reserve-selection：勾选状态跨刷新保留会留下「勾着但已不在当前列表里」的
             脏状态（例如批量移动附件后），批量操作容易误伤看不见的行。
           -->
-          <el-table-column v-if="selection" type="selection" width="46" />
+            <el-table-column v-if="selection" type="selection" width="46" />
 
-          <el-table-column v-for="col in visibleColumns" :key="col.prop" v-bind="columnProps(col)">
-            <!--
-              列头筛选：统一用 #header 覆盖列头，渲染「标题 + 漏斗图标」，图标固定靠右。
+            <el-table-column v-for="col in visibleColumns" :key="col.prop" v-bind="columnProps(col)">
+              <!--
+              列头筛选：用 #header 覆盖列头，渲染「标题 + 漏斗图标」。
+              排序与筛选共存的列，el-table 还会在 .cell 末尾追加排序箭头，
+              布局用样式段的 order 规则排成「标题 → 排序 → 漏斗」一行。
               枚举列弹层里是复选下拉框，文本列是模糊查询输入框；真正的过滤都在后端做。
             -->
-            <template v-if="col.filter" #header>
-              <span class="art-table-head">
+              <template v-if="col.filter" #header>
                 <span class="art-table-head-label" :style="{ textAlign: headAlignOf(col) }">{{ col.label }}</span>
                 <!--
                   日期范围的日历面板是双月并排 + 时间列，弹层要放宽才放得下，
@@ -325,36 +331,36 @@
                     </div>
                   </template>
                 </el-popover>
-              </span>
-            </template>
+              </template>
 
-            <template v-if="col.slot" #default="scope">
-              <slot
-                :name="col.slot"
-                :row="scope.row"
-                :index="scope.$index"
-                :value="(scope.row as Record<string, unknown>)[col.prop]"
-              />
-            </template>
-          </el-table-column>
+              <template v-if="col.slot" #default="scope">
+                <slot
+                  :name="col.slot"
+                  :row="scope.row"
+                  :index="scope.$index"
+                  :value="(scope.row as Record<string, unknown>)[col.prop]"
+                />
+              </template>
+            </el-table-column>
 
-          <!-- 回收站模式：操作列由表格统一渲染，页面的「操作」列（slot=action）被换掉 -->
-          <el-table-column v-if="recycle" :label="t('table.action')" width="170" fixed="right">
-            <template #default="{ row }">
-              <el-button v-auth="'cccms:recycle:restore'" link type="primary" @click="emit('restore', row)">
-                {{ t('table.restore') }}
-              </el-button>
-              <el-button v-auth="'cccms:recycle:delete'" link type="danger" @click="emit('force-delete', row)">
-                {{ t('table.forceDelete') }}
-              </el-button>
-            </template>
-          </el-table-column>
+            <!-- 回收站模式：操作列由表格统一渲染，页面的「操作」列（slot=action）被换掉 -->
+            <el-table-column v-if="recycle" :label="t('table.action')" width="170" fixed="right">
+              <template #default="{ row }">
+                <el-button v-auth="'cccms:recycle:restore'" link type="primary" @click="emit('restore', row)">
+                  {{ t('table.restore') }}
+                </el-button>
+                <el-button v-auth="'cccms:recycle:delete'" link type="danger" @click="emit('force-delete', row)">
+                  {{ t('table.forceDelete') }}
+                </el-button>
+              </template>
+            </el-table-column>
 
-          <template #empty>
-            <el-empty :description="t('table.empty')" :image-size="80" />
-          </template>
-        </el-table>
-      </div>
+            <template #empty>
+              <el-empty :description="t('table.empty')" :image-size="80" />
+            </template>
+          </el-table>
+        </div>
+      </el-config-provider>
 
       <div v-if="pagination" class="art-table-pager">
         <div class="art-table-pager-left">
@@ -1537,6 +1543,10 @@ function columnProps(col: ArtTableColumn): Record<string, unknown> {
     out['class-name'] = 'art-private-cell'
   }
   // 列筛选（枚举 / 文本）统一由 #header 插槽自绘，不使用 el-table 原生 filters
+  if (col.filter) {
+    // 表头打标：排序箭头与筛选图标的单行排布只作用于这类表头（见样式段）
+    out['label-class-name'] = 'art-table-head--filter'
+  }
   return out
 }
 
@@ -1775,6 +1785,15 @@ watch(
 .art-table-wrap {
   flex: 1;
   min-height: 0;
+}
+
+/*
+ * 紧凑档：`el-config-provider` 的 size 只覆盖「有 size 属性」的组件（按钮 / 输入框 / 复选框），
+ * el-link、el-text 这类把字号写进自身组件变量（`--el-link-font-size` 等默认取 `--el-font-size-base`）
+ * 的组件不会跟着变。在容器上压一档基准字号，它们就一起缩小了。
+ */
+.art-table-wrap.is-compact {
+  --el-font-size-base: var(--el-font-size-extra-small);
 }
 
 /* 虚拟滚动没有 stripe 属性：按奇数行类名补底色，颜色与普通表格的斑马纹一致 */
@@ -2109,16 +2128,32 @@ watch(
 }
 
 /* ---- 列头筛选（枚举复选下拉 / 文本输入，统一弹层） ---- */
-.art-table-head {
+/*
+ * 排序 + 筛选共存的列头：el-table 的排序箭头（.caret-wrapper）是 .cell 的兄弟节点，
+ * 标题块若占满整行就会把箭头挤到下一行。这里把 .cell 改成 flex 单行排布，
+ * 再用 order 把顺序调成「标题 → 排序箭头 → 漏斗图标」。
+ */
+.art-table-wrap :deep(th.el-table__cell.art-table-head--filter .cell) {
   display: flex;
-  gap: 4px;
+  flex-wrap: nowrap;
+  gap: 2px;
   align-items: center;
-  width: 100%;
-  min-width: 0;
 }
 
-/* 撑满剩余宽度：标题按列对齐方式排布，漏斗图标被顶到列头最右侧 */
+.art-table-wrap :deep(th.el-table__cell.art-table-head--filter .caret-wrapper) {
+  order: 2;
+  flex-shrink: 0;
+  /* 默认 24px 太占位，这里收窄到 16px，箭头仍居中 */
+  width: 16px;
+}
+
+.art-table-wrap :deep(th.el-table__cell.art-table-head--filter .sort-caret) {
+  left: 3px;
+}
+
+/* 撑满剩余宽度：标题按列对齐方式排布，排序箭头与漏斗图标被顶到列头最右侧 */
 .art-table-head-label {
+  order: 1;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -2127,6 +2162,7 @@ watch(
 }
 
 .art-table-head-filter {
+  order: 3;
   flex-shrink: 0;
   font-size: 12px;
   color: var(--art-muted);
