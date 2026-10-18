@@ -1,0 +1,1 @@
+import{h as t}from"./index-BLjcDMKT.js";function r(e=!1){return t.get("/dept/tree",{trashed:e?1:0})}function d(e){return t.post("/dept/save",e)}function a(e){return t.post("/dept/update",e)}function n(e){return t.post("/dept/delete",{id:e})}export{a,d as b,n as c,r as d};

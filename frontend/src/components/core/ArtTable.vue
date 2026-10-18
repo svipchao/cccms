@@ -187,30 +187,10 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-            <!--
-            不要在 #reference 里再套 el-tooltip：
-            popover 与 tooltip 都基于 popper trigger，会互相抢 click 事件，导致面板点不开。
-          -->
-            <el-popover trigger="click" placement="bottom-end" :width="220">
-              <template #reference>
-                <el-button text circle :icon="Setting" />
-              </template>
-              <div class="art-table-columns">
-                <div class="art-table-columns-head">
-                  <span>{{ t('table.columnSetting') }}</span>
-                  <el-button link type="primary" size="small" @click="resetColumns">{{ t('table.reset') }}</el-button>
-                </div>
-                <el-checkbox
-                  v-for="col in ownColumns"
-                  :key="col.prop"
-                  :model-value="!hiddenColumns.includes(col.prop)"
-                  :disabled="col.lockVisible"
-                  @change="(checked: string | number | boolean) => toggleColumn(col.prop, Boolean(checked))"
-                >
-                  {{ col.label }}
-                </el-checkbox>
-              </div>
-            </el-popover>
+            <!-- 列设置改为弹窗：列多时弹窗比 popover 能放得下，且支持拖拽排序 -->
+            <el-tooltip :content="t('table.columnSetting')" placement="top">
+              <el-button text circle :icon="Setting" @click="openColumnDialog" />
+            </el-tooltip>
           </div>
         </div>
       </el-config-provider>
@@ -247,8 +227,8 @@
           :default-expand-all="tree"
           :tree-props="{ children: 'children' }"
           :default-sort="defaultSort"
-          :show-summary="summaryMethod !== undefined"
-          :summary-method="summaryMethod"
+          :show-summary="showSummary"
+          :summary-method="resolvedSummaryMethod"
           :sum-text="summaryText || t('table.summary')"
           stripe
           border
@@ -391,6 +371,96 @@
         />
       </div>
     </el-card>
+
+    <!--
+      列设置弹窗：所有改动先落在草稿里，点「确定」才写回并持久化，「取消」直接丢弃。
+      列表用原生 HTML5 拖拽排序（项目未引入 sortablejs，不值得为一个低频弹窗加依赖）。
+    -->
+    <el-dialog
+      v-model="columnDialogVisible"
+      :title="t('table.columnSetting')"
+      width="600px"
+      append-to-body
+      class="art-column-dialog"
+    >
+      <div class="art-column-panel">
+        <div class="art-column-row art-column-row--head">
+          <span class="art-column-drag" />
+          <span class="art-column-name">{{ t('table.columnName') }}</span>
+          <span class="art-column-cell">{{ t('table.columnVisible') }}</span>
+          <span class="art-column-cell">
+            {{ t('table.columnSummary') }}（{{ summaryDraftCount }}/{{ dialogColumns.length }}）
+          </span>
+          <button
+            type="button"
+            class="art-column-clear-all"
+            :disabled="summaryDraftCount === 0"
+            :title="t('table.clearAllSummary')"
+            @click="clearAllDraftSummary"
+          >
+            {{ t('table.columnClear') }}
+          </button>
+        </div>
+        <div class="art-column-list">
+          <div
+            v-for="col in dialogColumns"
+            :key="col.prop"
+            class="art-column-row"
+            :class="{
+              'is-dragging': draggingProp === col.prop,
+              'is-drop-target': dragOverProp === col.prop,
+              'is-locked': col.lockVisible,
+            }"
+            :draggable="!col.lockVisible"
+            @dragstart="onColumnDragStart(col, $event)"
+            @dragover="onColumnDragOver(col, $event)"
+            @dragleave="onColumnDragLeave(col, $event)"
+            @drop="onColumnDrop(col, $event)"
+            @dragend="onColumnDragEnd"
+          >
+            <i
+              class="art-column-drag"
+              :class="col.lockVisible ? 'ri-lock-2-line' : 'ri-draggable'"
+              :title="col.lockVisible ? t('table.columnLocked') : t('table.columnDragHint')"
+            />
+            <span class="art-column-name" :title="col.label">{{ col.label }}</span>
+            <span class="art-column-cell">
+              <el-checkbox
+                :model-value="!draftHidden.includes(col.prop)"
+                :disabled="col.lockVisible"
+                @change="(checked: string | number | boolean) => toggleDraftVisible(col.prop, Boolean(checked))"
+              />
+            </span>
+            <span class="art-column-cell">
+              <el-checkbox
+                :model-value="!draftSummaryHidden.includes(col.prop)"
+                :disabled="!summaryEnabled"
+                :title="summaryEnabled ? '' : t('table.summaryUnavailable')"
+                @change="(checked: string | number | boolean) => toggleDraftSummary(col.prop, Boolean(checked))"
+              />
+            </span>
+            <button
+              type="button"
+              class="art-column-clear"
+              :disabled="!summaryEnabled || draftSummaryHidden.includes(col.prop)"
+              :title="t('table.clearSummary')"
+              @click="clearDraftSummary(col.prop)"
+            >
+              <el-icon><Close /></el-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="art-column-footer">
+          <el-button link type="primary" @click="resetColumnDraft">{{ t('table.reset') }}</el-button>
+          <div class="art-column-footer-actions">
+            <el-button @click="columnDialogVisible = false">{{ t('common.cancel') }}</el-button>
+            <el-button type="primary" @click="applyColumnSetting">{{ t('common.confirm') }}</el-button>
+          </div>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -401,7 +471,17 @@ import { useRoute } from 'vue-router'
 import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { ElCheckbox, ElMessage } from 'element-plus'
-import { ArrowDown, ArrowUp, Delete, Filter, Refresh, RefreshLeft, Search, Setting } from '@element-plus/icons-vue'
+import {
+  ArrowDown,
+  ArrowUp,
+  Close,
+  Delete,
+  Filter,
+  Refresh,
+  RefreshLeft,
+  Search,
+  Setting,
+} from '@element-plus/icons-vue'
 import { TABLE_FILTER_KEY } from '@/composables/useTable'
 import { densityPreference, setDensityPreference, type TableSize } from '@/composables/useTableSize'
 import type { ArtTableColumn } from '@/types/table'
@@ -483,6 +563,16 @@ const props = withDefaults(
      * 不传就不渲染汇总行（后端拿不到全量汇总时正好用它关掉）。
      */
     summaryMethod?: (param: { columns: any[]; data: any[] }) => string[]
+    /**
+     * 底部汇总行的**按列取值**（更省事的写法，与 `summaryMethod` 二选一）。
+     *
+     * 键是列的 `prop`，值是后端算好的汇总值（前端只负责展示，不做统计 ——
+     * 分页在服务端，只统计当前页会得到「看着对」的错数）。
+     *
+     * 用户在「列设置」里取消勾选某列的「汇总展示」后，该列单元格留空；
+     * 一列都没勾时整个汇总行不渲染。第一个单元格仍由 `sum-text` 占据。
+     */
+    summaryData?: Record<string, string | number>
     /** 汇总行第一个单元格的文案 */
     summaryText?: string
     /**
@@ -506,6 +596,7 @@ const props = withDefaults(
     recycle: false,
     virtual: false,
     summaryMethod: undefined,
+    summaryData: undefined,
     summaryText: '',
     defaultHidden: () => [],
   },
@@ -882,56 +973,257 @@ function resetSearch(): void {
   syncSearchDraft()
 }
 
-/* ---- 列显隐（按页面持久化） ---- */
+/* ---- 列设置：显隐 / 排序 / 汇总展示（均按页面持久化） ---- */
 // 前缀带版本号：旧版本存过「默认隐藏某列」的记录，换前缀可让老缓存一次性失效
 const HIDDEN_PREFIX = 'cccms_table_hidden:v2:'
+const ORDER_PREFIX = 'cccms_table_order:v1:'
+const SUMMARY_PREFIX = 'cccms_table_summary:v1:'
 
 function storageId(): string {
   return props.storageKey || route.path
 }
 
-function loadHidden(): string[] {
+/**
+ * 读一份列设置记录；`null` 表示「用户从未设置过」。
+ *
+ * 必须区分「没存过」和「存的是空数组」：后者是用户的真实选择（例如全部显示 / 全部不汇总），
+ * 若按「空即未设置」处理，用户每次刷新都会被打回页面默认值。
+ */
+function readStoredList(prefix: string): string[] | null {
   try {
-    const raw = localStorage.getItem(HIDDEN_PREFIX + storageId())
-    if (raw) {
-      return JSON.parse(raw) as string[]
+    const raw = localStorage.getItem(prefix + storageId())
+    if (raw === null) {
+      return null
     }
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : null
   } catch {
-    // 忽略解析异常，回落到默认值
+    // 解析异常时回落到默认值
+    return null
   }
-  // 页面声明了「默认隐藏」时以它为准；用户动过列设置后，上面的本地记录优先
-  return [...props.defaultHidden]
 }
 
-function persistHidden(): void {
+function writeStoredList(prefix: string, value: string[]): void {
   try {
-    localStorage.setItem(HIDDEN_PREFIX + storageId(), JSON.stringify(hiddenColumns.value))
+    localStorage.setItem(prefix + storageId(), JSON.stringify(value))
   } catch {
     // localStorage 不可用时忽略
   }
 }
 
-const hiddenColumns = ref<string[]>(loadHidden())
+/** 隐藏列：页面声明了「默认隐藏」时以它为准；用户动过列设置后，本地记录优先 */
+const hiddenColumns = ref<string[]>(readStoredList(HIDDEN_PREFIX) ?? [...props.defaultHidden])
+/** 拖拽排序后的列顺序（只存 prop，页面后续新增的列自动追加到末尾） */
+const columnOrder = ref<string[]>(readStoredList(ORDER_PREFIX) ?? [])
+/** 汇总行里**不展示**的列（空数组 = 全部展示，列设置里勾掉哪列就记哪列） */
+const summaryHiddenColumns = ref<string[]>(readStoredList(SUMMARY_PREFIX) ?? [])
 
 watch(
   () => props.columns,
   () => {
-    hiddenColumns.value = loadHidden()
+    hiddenColumns.value = readStoredList(HIDDEN_PREFIX) ?? [...props.defaultHidden]
+    columnOrder.value = readStoredList(ORDER_PREFIX) ?? []
+    summaryHiddenColumns.value = readStoredList(SUMMARY_PREFIX) ?? []
   },
 )
 
-/** 直接按目标可见性写入，避免依赖「取反」推算导致的状态错位 */
-function toggleColumn(prop: string, visible: boolean): void {
-  hiddenColumns.value = visible ? hiddenColumns.value.filter((p) => p !== prop) : [...hiddenColumns.value, prop]
-  persistHidden()
+function persistHidden(): void {
+  writeStoredList(HIDDEN_PREFIX, hiddenColumns.value)
 }
 
-function resetColumns(): void {
-  hiddenColumns.value = []
+function persistOrder(): void {
+  writeStoredList(ORDER_PREFIX, columnOrder.value)
+}
+
+function persistSummary(): void {
+  writeStoredList(SUMMARY_PREFIX, summaryHiddenColumns.value)
+}
+
+/** prop → 列定义：弹窗与排序都按 prop 索引，列被页面删掉后不会留下僵尸行 */
+const columnMap = computed(() => new Map(ownColumns.value.map((col) => [col.prop, col])))
+
+/**
+ * 锁定列（操作列等）固定在末尾：`fixed: 'right'` 要求必须是最后几列，
+ * 否则用户把别的列拖到它后面，固定列的布局会错位。
+ */
+function orderLockedLast(list: string[]): string[] {
+  const normal: string[] = []
+  const locked: string[] = []
+  for (const prop of list) {
+    if (columnMap.value.get(prop)?.lockVisible) {
+      locked.push(prop)
+    } else {
+      normal.push(prop)
+    }
+  }
+  return [...normal, ...locked]
+}
+
+/**
+ * 按用户拖拽的顺序重排；未记录过的新列按声明顺序追加到末尾。
+ * `sort` 在现代引擎里是稳定排序，所以同一权重内仍保持页面声明顺序。
+ */
+const orderedColumns = computed(() => {
+  const weight = new Map(columnOrder.value.map((prop, index) => [prop, index]))
+  const missing = Number.MAX_SAFE_INTEGER
+  const sorted = [...ownColumns.value].sort((a, b) => (weight.get(a.prop) ?? missing) - (weight.get(b.prop) ?? missing))
+  const byProp = new Map(sorted.map((col) => [col.prop, col]))
+  return orderLockedLast(sorted.map((col) => col.prop))
+    .map((prop) => byProp.get(prop))
+    .filter((col): col is ArtTableColumn => col !== undefined)
+})
+
+/* ---- 列设置弹窗（草稿态：确定才生效，取消即丢弃） ---- */
+const columnDialogVisible = ref(false)
+/** 草稿顺序：弹窗里拖拽后的 prop 列表 */
+const draftOrder = ref<string[]>([])
+const draftHidden = ref<string[]>([])
+const draftSummaryHidden = ref<string[]>([])
+/** 草稿里点过「重置」：点确定时连列宽一起恢复默认 */
+const draftClearWidths = ref(false)
+
+/** 弹窗列表：按草稿顺序映射回列定义 */
+const dialogColumns = computed(() =>
+  draftOrder.value.map((prop) => columnMap.value.get(prop)).filter((col): col is ArtTableColumn => col !== undefined),
+)
+
+/** 汇总展示已勾选数量（表头显示「汇总展示（6/24）」） */
+const summaryDraftCount = computed(
+  () => dialogColumns.value.filter((col) => !draftSummaryHidden.value.includes(col.prop)).length,
+)
+
+function openColumnDialog(): void {
+  draftOrder.value = orderedColumns.value.map((col) => col.prop)
+  draftHidden.value = [...hiddenColumns.value]
+  draftSummaryHidden.value = [...summaryHiddenColumns.value]
+  draftClearWidths.value = false
+  columnDialogVisible.value = true
+}
+
+/** 草稿里只保留当前仍存在的列，避免页面改列后把历史脏数据写回 */
+function sanitizeDraftList(list: string[]): string[] {
+  return list.filter((prop) => columnMap.value.has(prop))
+}
+
+function toggleDraftVisible(prop: string, visible: boolean): void {
+  const next = new Set(draftHidden.value)
+  if (visible) {
+    next.delete(prop)
+  } else {
+    next.add(prop)
+  }
+  draftHidden.value = [...next]
+}
+
+function toggleDraftSummary(prop: string, selected: boolean): void {
+  const next = new Set(draftSummaryHidden.value)
+  if (selected) {
+    next.delete(prop)
+  } else {
+    next.add(prop)
+  }
+  draftSummaryHidden.value = [...next]
+}
+
+/** 行尾「清空」：取消该列的汇总展示 */
+function clearDraftSummary(prop: string): void {
+  toggleDraftSummary(prop, false)
+}
+
+/** 表头「清空」：一次清掉全部列的汇总展示 */
+function clearAllDraftSummary(): void {
+  draftSummaryHidden.value = dialogColumns.value.map((col) => col.prop)
+}
+
+/** 重置：回到页面声明顺序 + 全部显示 + 全部汇总，并标记确定时清掉列宽 */
+function resetColumnDraft(): void {
+  draftOrder.value = ownColumns.value.map((col) => col.prop)
+  draftHidden.value = []
+  draftSummaryHidden.value = []
+  draftClearWidths.value = true
+}
+
+function applyColumnSetting(): void {
+  columnOrder.value = orderLockedLast(sanitizeDraftList(draftOrder.value))
+  persistOrder()
+
+  // 锁定列（如操作列）永远可见：即使草稿里被关掉也不写回
+  hiddenColumns.value = sanitizeDraftList(draftHidden.value).filter((prop) => !columnMap.value.get(prop)?.lockVisible)
   persistHidden()
-  // 列宽也一并恢复默认，否则「重置」只重置了一半
-  columnWidths.value = {}
-  persistWidths()
+
+  summaryHiddenColumns.value = sanitizeDraftList(draftSummaryHidden.value)
+  persistSummary()
+
+  if (draftClearWidths.value) {
+    columnWidths.value = {}
+    persistWidths()
+  }
+  draftClearWidths.value = false
+  columnDialogVisible.value = false
+}
+
+/* ---- 弹窗内拖拽排序（原生 HTML5 DnD，不额外引依赖） ---- */
+const draggingProp = ref('')
+const dragOverProp = ref('')
+
+function onColumnDragStart(col: ArtTableColumn, event: DragEvent): void {
+  if (col.lockVisible) {
+    event.preventDefault()
+    return
+  }
+  draggingProp.value = col.prop
+  dragOverProp.value = ''
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    // Firefox 必须写一次数据，否则拖拽不会启动
+    event.dataTransfer.setData('text/plain', col.prop)
+  }
+}
+
+function onColumnDragOver(col: ArtTableColumn, event: DragEvent): void {
+  if (!draggingProp.value || draggingProp.value === col.prop) {
+    return
+  }
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  dragOverProp.value = col.prop
+}
+
+function onColumnDragLeave(col: ArtTableColumn, event: DragEvent): void {
+  // dragleave 会从行内子元素上冒泡：指针还在本行里时不要清掉插入线，否则会闪
+  const row = event.currentTarget as HTMLElement | null
+  const next = event.relatedTarget as Node | null
+  if (row && next && row.contains(next)) {
+    return
+  }
+  if (dragOverProp.value === col.prop) {
+    dragOverProp.value = ''
+  }
+}
+
+function onColumnDrop(target: ArtTableColumn, event: DragEvent): void {
+  event.preventDefault()
+  const from = draggingProp.value
+  onColumnDragEnd()
+  if (!from || from === target.prop) {
+    return
+  }
+  const list = [...draftOrder.value]
+  const fromIndex = list.indexOf(from)
+  const toIndex = list.indexOf(target.prop)
+  if (fromIndex < 0 || toIndex < 0) {
+    return
+  }
+  list.splice(fromIndex, 1)
+  list.splice(toIndex, 0, from)
+  draftOrder.value = orderLockedLast(list)
+}
+
+function onColumnDragEnd(): void {
+  draggingProp.value = ''
+  dragOverProp.value = ''
 }
 
 /* ---- 列宽记忆（拖拽表头后按页面持久化） ---- */
@@ -978,7 +1270,7 @@ function onHeaderDragend(newWidth: number, _oldWidth: number, column: { property
 }
 
 const visibleColumns = computed(() =>
-  ownColumns.value.filter((c) => c.lockVisible || !hiddenColumns.value.includes(c.prop)),
+  orderedColumns.value.filter((c) => c.lockVisible || !hiddenColumns.value.includes(c.prop)),
 )
 
 /**
@@ -987,8 +1279,43 @@ const visibleColumns = computed(() =>
  * el-table 的列是在子组件挂载时注册的，动态增删列在部分版本下不会重算列宽与布局，
  * 表现就是「勾了列设置但表格没变」。用 key 强制重挂载最稳妥，
  * 列设置属于低频操作，重挂载代价可以接受。
+ * 指纹里带**顺序**，所以拖拽排序后也会重挂载，列宽与固定列重新计算。
  */
 const columnKey = computed(() => visibleColumns.value.map((c) => c.prop).join('|'))
+
+/* ---- 底部汇总行（按列的「汇总展示」开关过滤） ---- */
+/** 页面提供了汇总来源（方法或按列取值）才谈得上展示汇总 */
+const summaryEnabled = computed(() => props.summaryMethod !== undefined || props.summaryData !== undefined)
+
+/** 一列都没勾「汇总展示」时整个汇总行收起，与「清空」的语义一致 */
+const showSummary = computed(
+  () => summaryEnabled.value && ownColumns.value.some((col) => !summaryHiddenColumns.value.includes(col.prop)),
+)
+
+/**
+ * 包装页面的汇总来源，把未勾选「汇总展示」的列置空。
+ *
+ * 第一个单元格固定留空 —— el-table 会用 `sum-text` 覆盖它。
+ * 汇总值仍由页面（后端）提供，组件只做「显示 / 不显示」的过滤。
+ */
+function resolvedSummaryMethod(param: { columns: any[]; data: any[] }): string[] {
+  const base = props.summaryMethod?.(param) ?? []
+  return param.columns.map((column, index) => {
+    if (index === 0) {
+      // 传了自定义 summaryMethod 时 el-table **不会**再用 sum-text，标签得由这里给
+      return base[0] || props.summaryText || t('table.summary')
+    }
+    const prop = String(column?.property ?? '')
+    if (!prop || summaryHiddenColumns.value.includes(prop)) {
+      return ''
+    }
+    const value = props.summaryData?.[prop]
+    if (value !== undefined) {
+      return String(value)
+    }
+    return base[index] ?? ''
+  })
+}
 
 function columnProps(col: ArtTableColumn): Record<string, unknown> {
   const out: Record<string, unknown> = {
@@ -1288,24 +1615,145 @@ function onSortChange(payload: { prop: string | null; order: string | null }): v
   color: var(--art-sub);
 }
 
-.art-table-columns {
+/* ---- 列设置弹窗（拖拽手柄 / 列名 / 展示列 / 汇总展示 / 清空） ---- */
+.art-column-panel {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-height: 280px;
-  overflow-y: auto;
+  min-height: 0;
 }
 
-.art-table-columns-head {
-  display: flex;
+/* 表头与数据行共用同一套网格列宽，保证四列严格对齐 */
+.art-column-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 72px 132px 48px;
+  gap: 8px;
   align-items: center;
-  justify-content: space-between;
-  padding-bottom: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.art-column-row--head {
   margin-bottom: 4px;
   font-size: 13px;
   font-weight: 600;
   color: var(--art-main);
   border-bottom: 1px solid var(--art-card-border);
+  border-radius: 0;
+}
+
+.art-column-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 52vh;
+  padding-right: 2px;
+  overflow-y: auto;
+}
+
+.art-column-row:not(.art-column-row--head):hover {
+  background: var(--el-fill-color-light);
+}
+
+/* 拖拽中的行半透明；落点行整行高亮（不画上下边线：向上/向下拖的插入位置本就不同） */
+.art-column-row.is-dragging {
+  opacity: 0.4;
+}
+
+.art-column-row.is-drop-target {
+  background: var(--el-color-primary-light-9);
+  box-shadow: inset 0 0 0 1px var(--el-color-primary-light-5);
+}
+
+.art-column-drag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--art-muted);
+  cursor: grab;
+}
+
+.art-column-row.is-locked .art-column-drag {
+  cursor: not-allowed;
+}
+
+.art-column-name {
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--art-main);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.art-column-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--art-sub);
+  text-align: center;
+}
+
+/* el-checkbox 默认自带右外边距，会把勾选框顶偏 */
+.art-column-cell :deep(.el-checkbox) {
+  margin-right: 0;
+}
+
+/* 表头单元格跟随表头的正文色，不要被数据行的次要色压暗 */
+.art-column-row--head .art-column-cell {
+  color: var(--art-main);
+}
+
+/* 行尾「清空」与表头「清空」：纯文本按钮，避免再多一种按钮样式 */
+.art-column-clear,
+.art-column-clear-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font: inherit;
+  color: var(--art-muted);
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.art-column-clear-all {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--el-color-primary);
+}
+
+.art-column-clear:hover:not(:disabled),
+.art-column-clear-all:hover:not(:disabled) {
+  color: var(--el-color-danger);
+}
+
+.art-column-clear:disabled,
+.art-column-clear-all:disabled {
+  color: var(--el-text-color-disabled);
+  cursor: not-allowed;
+}
+
+.art-column-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.art-column-footer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 弹窗挂在 body 上，内部结构拿不到 scoped 作用域，用 :global 兜住 */
+:global(.art-column-dialog) {
+  max-width: calc(100vw - 32px);
+}
+
+:global(.art-column-dialog .el-dialog__body) {
+  padding-top: 8px;
 }
 
 /* 密度下拉里当前生效的档位：加粗 + 主题色，一眼看出现在用的是哪档 */
