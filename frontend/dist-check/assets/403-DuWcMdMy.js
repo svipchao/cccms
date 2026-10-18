@@ -1,1 +1,0 @@
-import e from"./ErrorPage-CFR8S6vm.js";import{G as r,O as o,L as t}from"./vue-Cf2VgsCp.js";import"./index-BLjcDMKT.js";import"./element-plus-DVkrAIy3.js";import"./_plugin-vue_export-helper-DlAUqK2U.js";const _=r({__name:"403",setup(c){return(i,n)=>(t(),o(e,{code:403,"title-key":"error.forbiddenTitle","desc-key":"error.forbiddenDesc"}))}});export{_ as default};

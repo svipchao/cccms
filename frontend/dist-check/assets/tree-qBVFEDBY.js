@@ -1,1 +1,0 @@
-function u(e,n){return n===""||n.split(",").includes(String(e))}function c(e,n){var o;const i=[];for(const t of e){if(n(t)){i.push(t);continue}const r=(o=t.children)!=null&&o.length?c(t.children,n):[];r.length&&i.push({...t,children:r})}return i}export{c as f,u as m};
