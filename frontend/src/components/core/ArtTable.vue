@@ -1277,10 +1277,20 @@ function resetDraftWidths(): void {
   draftResetWidths.value = true
 }
 
-/** 重置列：回到页面声明顺序 + 全部显示 + 全部汇总 + 全部开启排序 + 关闭隐私，**不动列宽** */
+/**
+ * 重置列：回到**代码里声明的默认值**，而不是「全部显示」——
+ * 声明顺序 + 页面 `default-hidden` 声明的隐藏列 + 汇总全部展示
+ * + 页面声明了服务端排序的列全部开启 + 关闭隐私，**不动列宽**。
+ *
+ * 举例：日志页把 `trace_id` 声明为默认隐藏，重置后它必须重新收起来；
+ * 若按「全部显示」处理，点重置反而把页面特意隐藏的列打开了。
+ */
 function resetColumnDraft(): void {
   draftOrder.value = ownColumns.value.map((col) => col.prop)
-  draftHidden.value = []
+  // 只保留仍存在、且不是锁定列的默认隐藏项（锁定列永远可见）
+  draftHidden.value = sanitizeDraftList([...props.defaultHidden]).filter(
+    (prop) => !columnMap.value.get(prop)?.lockVisible,
+  )
   draftSummaryHidden.value = []
   draftSortDisabled.value = []
   draftPrivacy.value = []
