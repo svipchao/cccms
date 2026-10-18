@@ -83,11 +83,9 @@
         <span v-else>—</span>
       </template>
 
+      <!-- 操作列只保留详情 / 删除：操作ID 与 会话ID 列已可直接点开对应视图 -->
       <template #action="{ row }">
         <el-button link type="primary" @click="openDetail(row)">{{ t('log.detail') }}</el-button>
-        <el-button v-if="row.action_id && canAction" link type="primary" @click="openAction(row.action_id)">
-          {{ t('log.viewAction') }}
-        </el-button>
         <el-button v-auth="'cccms:log:delete'" link type="danger" @click="onDeleteOne(row.id)">
           {{ t('common.delete') }}
         </el-button>
@@ -421,7 +419,7 @@ const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((method) =>
 /** 表头文案走 i18n：用 computed 包住，切换语言时能实时重渲染 */
 const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
-  { prop: 'title', label: t('table.action'), minWidth: 190, slot: 'action_name', filter: { type: 'text' } },
+  { prop: 'title', label: t('log.actionName'), minWidth: 190, slot: 'action_name', filter: { type: 'text' } },
   { prop: 'username', label: t('log.username'), width: 110, filter: { type: 'text' } },
   {
     prop: 'status',
@@ -453,7 +451,7 @@ const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'status_code', label: t('log.statusCode'), width: 100, align: 'center', slot: 'status_code' },
   { prop: 'cost', label: t('log.costMs'), width: 100, align: 'right', sortable: 'custom' },
   { prop: 'create_time', label: t('log.time'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
-  { prop: 'action', label: t('table.action'), width: 240, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'action', label: t('table.action'), width: 140, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 /**

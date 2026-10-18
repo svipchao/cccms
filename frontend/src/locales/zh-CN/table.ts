@@ -14,6 +14,8 @@ export default {
   delete: '删除',
   refresh: '刷新',
   columnSetting: '列设置',
+  stripe: '斑马纹',
+  stripeHint: '隔行变色，方便横向阅读',
   columnName: '列名称',
   columnVisible: '展示列',
   columnSort: '排序',
