@@ -1304,11 +1304,11 @@ function resetColumnDraft(): void {
   )
   draftSummaryHidden.value = []
   draftSortDisabled.value = []
-  // 锁定列已在 defaultPrivacyColumns 里排除
-  draftPrivacy.value = [...defaultPrivacyColumns.value]
+  // 回到列声明 `privacy` 的默认隐私（锁定列已在 defaultPrivacyColumns 里排除）
+  draftPrivacy.value = sanitizeDraftList([...defaultPrivacyColumns.value])
 }
 
-/** 全部重置：列设置 + 列宽一起回默认 */
+/** 全部重置：列设置（含列声明的默认隐私）+ 列宽一起回默认 */
 function resetAllDraft(): void {
   resetColumnDraft()
   draftResetWidths.value = true
