@@ -43,8 +43,15 @@ final class SqlFileRunner
             try {
                 Db::execute($statement);
             } catch (Throwable $e) {
+                /*
+                 * 报错必须带上「哪个文件、什么时候改的、第几条语句」。
+                 * 线上踩过：代码改了但服务器上还是旧文件，报错只给一段 SQL，
+                 * 完全看不出执行的是哪份 schema，白排查半天（数据导入 ≠ 代码部署）。
+                 */
                 throw new ApiException('SQL 执行失败：' . $e->getMessage()
-                    . '（语句：' . mb_substr($statement, 0, 120) . '）', 500);
+                    . '（语句：' . mb_substr($statement, 0, 120) . '）'
+                    . '（文件：' . $file . '；修改时间：' . date('Y-m-d H:i:s', (int)@filemtime($file))
+                    . '；第 ' . ($count + 1) . ' 条语句）', 500);
             }
             $count++;
         }
