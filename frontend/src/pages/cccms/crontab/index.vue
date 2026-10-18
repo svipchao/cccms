@@ -369,7 +369,7 @@ const columns = computed<ArtTableColumn[]>(() => [
     // next_run_time 由后端用当前时间重算，按库里的值排序会和展示值对不上
     filter: { type: 'date', startKey: 'next_start', endKey: 'next_end' },
   },
-  { prop: 'action', label: t('table.action'), width: 260, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'action', label: t('table.action'), width: 190, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 // 回收站开关：必须在 useTable 之前（列表闭包在 setup 阶段就会执行一次）

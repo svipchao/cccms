@@ -25,9 +25,9 @@ export default {
 
   /* ---- 工具栏 / 行内操作 ---- */
   create: '新增任务',
-  toolbarTip: '调度进程仅跑在 Linux/macOS，Windows 可用「立即执行」验证',
+  toolbarTip: '调度进程仅跑在 Linux/macOS，Windows 可用「执行」验证',
   running: '运行中',
-  runNow: '立即执行',
+  runNow: '执行',
   logs: '日志',
   deleteConfirm: '确定删除该任务？',
 

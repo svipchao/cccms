@@ -49,7 +49,7 @@ class CrontabController extends BaseController
         return $this->ok(null, I18n::t('common.deleted'));
     }
 
-    #[Permission(slug: 'cccms:crontab:run', title: '立即执行')]
+    #[Permission(slug: 'cccms:crontab:run', title: '执行')]
     #[Restrict(methods: ['POST'])]
     public function run(Request $request): Response
     {
