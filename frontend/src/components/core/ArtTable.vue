@@ -1021,7 +1021,8 @@ const HIDDEN_PREFIX = 'cccms_table_hidden:v2:'
 const ORDER_PREFIX = 'cccms_table_order:v1:'
 const SUMMARY_PREFIX = 'cccms_table_summary:v1:'
 const SORTABLE_PREFIX = 'cccms_table_sortable:v1:'
-const PRIVACY_PREFIX = 'cccms_table_privacy:v1:'
+// v2：新增「列级默认隐私」，旧缓存里的空数组会把新默认值压掉，升版本让其一次性生效
+const PRIVACY_PREFIX = 'cccms_table_privacy:v2:'
 
 function storageId(): string {
   return props.storageKey || route.path
@@ -1063,8 +1064,12 @@ const columnOrder = ref<string[]>(readStoredList(ORDER_PREFIX) ?? [])
 const summaryHiddenColumns = ref<string[]>(readStoredList(SUMMARY_PREFIX) ?? [])
 /** 用户关掉列头排序的列（空数组 = 页面声明 `sortable: 'custom'` 的列全部开启） */
 const sortDisabledColumns = ref<string[]>(readStoredList(SORTABLE_PREFIX) ?? [])
-/** 开启隐私遮罩的列（默认关闭；开启后单元格先显示小眼睛，悬停才显示内容） */
-const privacyColumns = ref<string[]>(readStoredList(PRIVACY_PREFIX) ?? [])
+/** 页面在列定义里声明的默认隐私列（锁定列不参与，避免把操作按钮藏起来） */
+const defaultPrivacyColumns = computed(() =>
+  ownColumns.value.filter((col) => col.privacy && !col.lockVisible).map((col) => col.prop),
+)
+/** 开启隐私遮罩的列：页面声明的 `privacy` 为默认值，用户动过隐私开关后以本地记录为准 */
+const privacyColumns = ref<string[]>(readStoredList(PRIVACY_PREFIX) ?? [...defaultPrivacyColumns.value])
 
 /** 表格默认开斑马纹：虚拟滚动没有 `stripe` 属性，按奇数行加类名模拟同样的效果 */
 function virtualRowClass({ rowIndex }: { rowIndex: number }): string {
@@ -1078,7 +1083,7 @@ watch(
     columnOrder.value = readStoredList(ORDER_PREFIX) ?? []
     summaryHiddenColumns.value = readStoredList(SUMMARY_PREFIX) ?? []
     sortDisabledColumns.value = readStoredList(SORTABLE_PREFIX) ?? []
-    privacyColumns.value = readStoredList(PRIVACY_PREFIX) ?? []
+    privacyColumns.value = readStoredList(PRIVACY_PREFIX) ?? [...defaultPrivacyColumns.value]
   },
 )
 
@@ -1286,7 +1291,7 @@ function resetDraftWidths(): void {
 /**
  * 重置列：回到**代码里声明的默认值**，而不是「全部显示」——
  * 声明顺序 + 页面 `default-hidden` 声明的隐藏列 + 汇总全部展示
- * + 页面声明了服务端排序的列全部开启 + 关闭隐私，**不动列宽**。
+ * + 页面声明了服务端排序的列全部开启 + 页面声明 `privacy` 的列开启遮罩，**不动列宽**。
  *
  * 举例：日志页把 `trace_id` 声明为默认隐藏，重置后它必须重新收起来；
  * 若按「全部显示」处理，点重置反而把页面特意隐藏的列打开了。
@@ -1299,7 +1304,8 @@ function resetColumnDraft(): void {
   )
   draftSummaryHidden.value = []
   draftSortDisabled.value = []
-  draftPrivacy.value = []
+  // 锁定列已在 defaultPrivacyColumns 里排除
+  draftPrivacy.value = [...defaultPrivacyColumns.value]
 }
 
 /** 全部重置：列设置 + 列宽一起回默认 */

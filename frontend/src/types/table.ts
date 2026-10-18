@@ -62,6 +62,13 @@ export interface ArtTableColumn {
   formatter?: (row: Record<string, any>, column: unknown, cellValue: unknown, index: number) => string
   /** 锁定可见（如操作列、选择列） */
   lockVisible?: boolean
+  /**
+   * 默认开启隐私遮罩：单元格先显示小眼睛，鼠标悬停才显示内容。
+   *
+   * 只是**初始值** —— 用户在列设置里动过隐私开关后，本地记录优先。
+   * `lockVisible` 列（操作列等）不参与，避免把按钮藏起来。
+   */
+  privacy?: boolean
   showOverflowTooltip?: boolean
   /** 列头筛选配置（配置后该列表头出现筛选入口） */
   filter?: ArtTableColumnFilter
