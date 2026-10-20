@@ -24,7 +24,20 @@ final class ExceptionHandler implements ExceptionHandlerInterface
             return Result::fail($exception->getMessage(), $exception->getCode(), $exception->getData());
         }
 
+        // 数据库层异常（SQL、表结构、连接信息）一律不回显细节：
+        // 即便误开了 APP_DEBUG，也不能把 SQLSTATE / SQL 语句透给前端。
+        if ($this->isDatabaseException($exception)) {
+            return Result::fail('服务器内部错误', 500);
+        }
+
         $message = config('app.debug', false) ? $exception->getMessage() : '服务器内部错误';
         return Result::fail($message, 500);
+    }
+
+    /** 是否为数据库异常（think-orm 包装后的异常仍是 PDOException 子类，消息里带 SQLSTATE） */
+    private function isDatabaseException(Throwable $exception): bool
+    {
+        return $exception instanceof \PDOException
+            || str_contains($exception->getMessage(), 'SQLSTATE[');
     }
 }

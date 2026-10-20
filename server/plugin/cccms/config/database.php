@@ -18,6 +18,20 @@ return [
             'rw_separate' => false,
             'fields_strict' => true,
             'auto_timestamp' => 'datetime',
+
+            // ---- 长连接容错（workerman 常驻进程必配）----
+            // 进程内的 PDO 连接是长连接：空闲超过 MySQL 的 wait_timeout（或中间件
+            // ——RDS 代理 / SLB / 防火墙回收空闲 TCP）之后，下一条 SQL 会抛
+            // 「SQLSTATE[HY000]: General error: 2006 MySQL server has gone away」。
+            // 打开后 think-orm 会在「非事务」的单条 SQL 上自动 close + 重连并重试
+            // （最多 4 次），业务侧基本无感知；事务内的语句不重试，避免事务状态错乱。
+            'break_reconnect' => true,
+            // 追加断线特征串（内置已含 server has gone away / Lost connection 等，这里是双保险）
+            'break_match_str' => ['MySQL server has gone away', 'error 2006'],
+            // PDO 建连超时（秒）：MySQL 抖动 / 网络不通时快速失败，不把 worker 挂死
+            'params' => [
+                \PDO::ATTR_TIMEOUT => (int)(getenv('DB_CONNECT_TIMEOUT') ?: 5),
+            ],
         ],
     ],
 ];
