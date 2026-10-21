@@ -32,6 +32,12 @@ export default {
   message: '说明',
   params: '请求参数',
   response: '返回结果',
+  paramsContent: '请求内容',
+  responseContent: '返回结果',
+  trace: '追踪ID',
+  clickToFilter: '点击按此筛选',
+  keywordPlaceholder: '关键字模糊匹配（默认最近 7 天）',
+  detailFailed: '详情加载失败',
 
   /* ---- 链路视图（一次操作） ---- */
   viewAction: '查看本次操作',

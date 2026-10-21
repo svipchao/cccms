@@ -9,6 +9,7 @@ use think\db\PDOConnection;
 use Throwable;
 use Webman\Bootstrap;
 use Workerman\Timer;
+use Workerman\Worker;
 
 /**
  * MySQL 连接保活（心跳）。
@@ -33,6 +34,13 @@ final class DatabaseHeartbeat implements Bootstrap
 
     public static function start($worker): void
     {
+        // CLI（`php webman xxx` 命令、测试）也会跑一遍 bootstrap，但此时没有 workerman
+        // 事件循环，Timer::add() 会直接抛「Timer can only be used in workerman running
+        // environment」。命令是一次性进程，本来也不需要保活，直接跳过。
+        if (!$worker instanceof Worker) {
+            return;
+        }
+
         $interval = (int)(getenv('DB_HEARTBEAT_INTERVAL') ?: self::DEFAULT_INTERVAL);
         if ($interval <= 0) {
             return;

@@ -16,8 +16,7 @@
         <slot name="search-extra" />
         <el-form v-if="searchColumns.length" class="art-table-search-form" :inline="true" @submit.prevent>
           <el-form-item
-            v-for="(col, index) in searchColumns"
-            v-show="searchExpanded || index < SEARCH_COLLAPSE_LIMIT"
+            v-for="col in visibleSearchColumns"
             :key="col.prop"
             :label="col.label"
             class="art-table-search-item"
@@ -44,6 +43,16 @@
               v-else-if="col.filter?.type === 'date'"
               v-model="searchDate[col.prop]"
               v-bind="datePickerProps"
+            />
+            <!-- 长文本（JSON 片段）：多行输入，Ctrl+Enter 提交，避免换行即搜索 -->
+            <el-input
+              v-else-if="col.filter?.type === 'textarea'"
+              v-model="searchText[col.prop]"
+              type="textarea"
+              :rows="col.filter?.rows ?? 3"
+              class="art-table-search-textarea"
+              :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
+              @keydown.ctrl.enter="submitSearch"
             />
             <!-- 文本：模糊查询 -->
             <el-input
@@ -252,13 +261,20 @@
 
             <el-table-column v-for="col in visibleColumns" :key="col.prop" v-bind="columnProps(col)">
               <!--
+              列头自定义：页面声明了 headerSlot 时，整个表头交给页面插槽自绘
+              （典型用法是把筛选条件放进列头，如盯盘页的「单元名称 + 单元状态」）。
+              优先级高于下面的 filter —— 两者都声明时以插槽为准。
+            -->
+              <!--
               列头筛选：用 #header 覆盖列头，渲染「标题 + 漏斗图标」。
               排序与筛选共存的列，el-table 还会在 .cell 末尾追加排序箭头，
               布局用样式段的 order 规则排成「标题 → 排序 → 漏斗」一行。
               枚举列弹层里是复选下拉框，文本列是模糊查询输入框；真正的过滤都在后端做。
             -->
-              <template v-if="col.filter" #header>
-                <span class="art-table-head-label" :style="{ textAlign: headAlignOf(col) }">{{ col.label }}</span>
+              <template v-if="col.headerSlot || col.filter" #header>
+                <slot v-if="col.headerSlot" :name="col.headerSlot" :column="col" :label="col.label" />
+                <template v-else>
+                  <span class="art-table-head-label" :style="{ textAlign: headAlignOf(col) }">{{ col.label }}</span>
                 <!--
                   日期范围的日历面板是双月并排 + 时间列，弹层要放宽才放得下，
                   其余类型（枚举 / 文本）保持窄面板。
@@ -312,6 +328,16 @@
                         -->
                         <el-date-picker v-model="dateDraft[col.prop]" v-bind="datePickerProps" :teleported="false" />
                       </div>
+                      <!-- 长文本（JSON 片段）：多行输入，Ctrl+Enter 应用筛选 -->
+                      <el-input
+                        v-else-if="col.filter?.type === 'textarea'"
+                        v-model="textDraft[col.prop]"
+                        type="textarea"
+                        size="small"
+                        :rows="col.filter?.rows ?? 3"
+                        :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
+                        @keydown.ctrl.enter="applyFilter(col, hide)"
+                      />
                       <!-- 文本：模糊查询输入框 -->
                       <el-input
                         v-else
@@ -331,6 +357,7 @@
                     </div>
                   </template>
                 </el-popover>
+                </template>
               </template>
 
               <template v-if="col.slot" #default="scope">
@@ -948,6 +975,23 @@ const searchExpanded = ref(false)
 const searchColumns = computed(() => ownColumns.value.filter((col) => col.filter))
 
 /**
+ * 折叠状态下实际渲染的搜索项：**已生效的条件优先**，用空条件补足到 N 项。
+ *
+ * 这样既不会把有值的条件藏起来（用户会以为筛选没生效），也不会因为条件生效
+ * 而让搜索区"多冒出一行"—— 折叠时永远是固定的 N 项，生效项顶替空项的位置。
+ * 生效条件超过 N 项时按原顺序截断，其余仍可通过「展开」查看。
+ */
+const visibleSearchColumns = computed(() => {
+  if (searchExpanded.value) {
+    return searchColumns.value
+  }
+  const active = searchColumns.value.filter((col) => isFilterActive(col))
+  const rest = searchColumns.value.filter((col) => !isFilterActive(col))
+
+  return [...active, ...rest].slice(0, SEARCH_COLLAPSE_LIMIT)
+})
+
+/**
  * 顶部搜索草稿：与列头筛选的草稿分开存，输入过程中不触发请求，
  * 点「查询」才把全部字段一次性写回 query（只重新查询一次）。
  */
@@ -1561,6 +1605,10 @@ function columnProps(col: ArtTableColumn): Record<string, unknown> {
     // 表头打标：排序箭头与筛选图标的单行排布只作用于这类表头（见样式段）
     out['label-class-name'] = 'art-table-head--filter'
   }
+  // 页面自绘列头：默认的 .cell 会裁剪溢出内容（下拉框 / 多行排版会被切掉），单独打标放开
+  if (col.headerSlot) {
+    out['label-class-name'] = 'art-table-head--slot'
+  }
   return out
 }
 
@@ -1860,6 +1908,11 @@ watch(
 /* 日期范围要放下「起 ~ 止」两个日期，比普通输入框宽一点 */
 .art-table-search-form :deep(.el-range-editor) {
   width: 400px;
+}
+
+/* 多行关键字（请求参数 / 返回体）要放 JSON 片段，比普通输入框宽 */
+.art-table-search-form :deep(.art-table-search-textarea) {
+  width: 280px;
 }
 
 .art-table-search-actions {
@@ -2173,6 +2226,12 @@ watch(
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 页面自绘列头：内容（如挂在列头的筛选器）由页面排版，放开 .cell 的裁剪与单行省略 */
+.art-table-wrap :deep(th.el-table__cell.art-table-head--slot .cell) {
+  overflow: visible;
+  white-space: normal;
 }
 
 .art-table-head-filter {

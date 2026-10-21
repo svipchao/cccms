@@ -14,7 +14,7 @@
       :data="list"
       :loading="loading"
       :total="total"
-      :default-hidden="['trace_id']"
+      storage-key="cccms:log:v2"
       selection
       v-model:page="page"
       v-model:limit="limit"
@@ -41,49 +41,94 @@
         </el-button>
       </template>
 
-      <!-- 结果：成功 / 失败 -->
-      <template #status="{ row }">
-        <el-tag :type="row.status === 1 ? 'success' : 'danger'" effect="light" size="small">
-          {{ row.status === 1 ? t('log.success') : t('log.failed') }}
-        </el-tag>
-      </template>
-
       <!-- 语义化操作：注解标题 + 权限节点 + 结果说明（登录失败原因等） -->
       <template #action_name="{ row }">
         <div class="log-title">{{ row.title || '—' }}</div>
         <div v-if="row.node" class="log-node">{{ row.node }}</div>
-        <div v-if="row.message" class="log-msg">{{ row.message }}</div>
+        <div v-if="row.message" class="log-msg" :class="row.status === 1 ? 'is-ok' : 'is-danger'">
+          {{ row.message }}
+        </div>
       </template>
 
-      <template #method="{ row }">
-        <el-tag effect="plain" size="small">{{ row.method }}</el-tag>
+      <!-- 操作人：用户名 + IP（IP 的模糊搜索在顶部搜索区） -->
+      <template #operator="{ row }">
+        <div>{{ row.username || '—' }}</div>
+        <div v-if="row.ip" class="log-sub">{{ row.ip }}</div>
       </template>
 
-      <template #status_code="{ row }">
-        <el-tag :type="statusTag(row.status_code)" effect="light" size="small">
-          {{ row.status_code }}
-        </el-tag>
+      <!-- 请求：方法一行、路径一行；方法标签可点，按该方法筛选（再点取消） -->
+      <template #request="{ row }">
+        <div>
+          <el-tag
+            effect="plain"
+            size="small"
+            round
+            class="log-click-tag log-method-tag"
+            :class="{ 'is-active': query.method === row.method }"
+            :title="t('log.clickToFilter')"
+            @click.stop="filterByMethod(row.method)"
+          >
+            {{ row.method }}
+          </el-tag>
+        </div>
+        <div class="log-path" :title="row.path">{{ row.path }}</div>
       </template>
 
-      <!-- 操作ID：点一下看本次操作的全部请求；无权限时只展示，不给会 403 的入口 -->
-      <template #action_id="{ row }">
-        <el-button v-if="row.action_id && canAction" link type="primary" @click="openAction(row.action_id)">
-          {{ row.action_id }}
-        </el-button>
-        <span v-else-if="row.action_id" class="log-trace">{{ row.action_id }}</span>
-        <span v-else>—</span>
+      <!-- 结果：成功/失败一行、HTTP 状态码一行；结果标签可点，按该结果筛选（再点取消） -->
+      <template #result="{ row }">
+        <div>
+          <el-tag
+            :type="row.status === 1 ? 'success' : 'danger'"
+            effect="plain"
+            size="small"
+            round
+            class="log-click-tag log-status-tag"
+            :class="{
+              'is-active': String(row.status) === query.status,
+              'is-success': row.status === 1,
+              'is-danger': row.status !== 1,
+            }"
+            :title="t('log.clickToFilter')"
+            @click.stop="filterByStatus(row.status)"
+          >
+            {{ row.status === 1 ? t('log.success') : t('log.failed') }}
+          </el-tag>
+        </div>
+        <div class="log-code" :class="statusTone(row.status_code)">{{ row.status_code }}</div>
       </template>
 
-      <!-- 会话ID：点一下看本次页面会话的轨迹（审计视角） -->
-      <template #session_id="{ row }">
-        <el-button v-if="row.session_id && canSession" link type="primary" @click="openSession(row.session_id)">
-          {{ row.session_id }}
-        </el-button>
-        <span v-else-if="row.session_id" class="log-trace">{{ row.session_id }}</span>
-        <span v-else>—</span>
+      <!-- 追踪：操作ID（本次操作链路）+ 会话ID（页面会话轨迹），行首标注字段，无权限时只展示 -->
+      <template #trace="{ row }">
+        <div class="log-trace-line">
+          <span class="log-trace-tag">{{ t('log.actionId') }}</span>
+          <el-button
+            v-if="row.action_id && canAction"
+            link
+            type="primary"
+            class="log-trace-id"
+            @click="openAction(row.action_id)"
+          >
+            {{ row.action_id }}
+          </el-button>
+          <span v-else-if="row.action_id" class="log-trace log-trace-id">{{ row.action_id }}</span>
+          <span v-else>—</span>
+        </div>
+        <div v-if="row.session_id" class="log-trace-line">
+          <span class="log-trace-tag">{{ t('log.sessionId') }}</span>
+          <el-button
+            v-if="canSession"
+            link
+            type="primary"
+            class="log-trace-id"
+            @click="openSession(row.session_id)"
+          >
+            {{ row.session_id }}
+          </el-button>
+          <span v-else class="log-trace log-trace-id">{{ row.session_id }}</span>
+        </div>
       </template>
 
-      <!-- 操作列只保留详情 / 删除：操作ID 与 会话ID 列已可直接点开对应视图 -->
+      <!-- 操作列只保留详情 / 删除：操作ID 与 会话ID 已并进「追踪」列 -->
       <template #action="{ row }">
         <el-button link type="primary" @click="openDetail(row)">{{ t('log.detail') }}</el-button>
         <el-button v-auth="'cccms:log:delete'" link type="danger" @click="onDeleteOne(row.id)">
@@ -154,6 +199,7 @@
     </div>
 
     <el-drawer v-model="detailVisible" :title="t('log.detailTitle')" size="680px">
+      <div v-loading="detailLoading" class="detail-body">
       <template v-if="current">
         <el-descriptions :column="2" border size="small">
           <el-descriptions-item :label="t('log.result')">
@@ -220,6 +266,7 @@
           <pre class="log-pre">{{ pretty(current.result) }}</pre>
         </div>
       </template>
+      </div>
     </el-drawer>
 
     <!-- 链路视图：同一次用户操作的全部记录按时间升序 -->
@@ -374,6 +421,7 @@ import { useUserStore } from '@/stores/user'
 import {
   logAction,
   logDelete,
+  logDetail,
   logExport,
   logList,
   logLoginAnalysis,
@@ -405,6 +453,10 @@ interface Query {
   /** 请求方法，多选值以逗号串传递 */
   method: string
   ip: string
+  /** 请求参数关键字（模糊匹配，text 列全表扫，后端未给时间范围时默认只看最近 7 天） */
+  params_like: string
+  /** 返回结果关键字（同上） */
+  result_like: string
   /** 操作时间范围（列头日期筛选写入） */
   start: string
   end: string
@@ -418,15 +470,39 @@ const METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map((method) =>
 
 /** 表头文案走 i18n：用 computed 包住，切换语言时能实时重渲染 */
 const columns = computed<ArtTableColumn[]>(() => [
-  { prop: 'id', label: 'ID', width: 76 },
-  { prop: 'title', label: t('log.actionName'), minWidth: 190, slot: 'action_name', filter: { type: 'text' } },
-  { prop: 'username', label: t('log.username'), width: 110, filter: { type: 'text' } },
+  /*
+   * 请求内容 / 返回结果：列默认隐藏（表格里不显示），只为顶部搜索区提供入口。
+   * 放在数组最前，保证搜索区折叠时这两项也直接可见，不必点「展开」才找到。
+   */
+  {
+    prop: 'params',
+    label: t('log.paramsContent'),
+    minWidth: 200,
+    defaultShow: false,
+    formatter: (row) => clip(row.params),
+    filter: { type: 'text', queryKey: 'params_like', placeholder: t('log.keywordPlaceholder') },
+  },
+  {
+    prop: 'result',
+    label: t('log.responseContent'),
+    minWidth: 200,
+    defaultShow: false,
+    formatter: (row) => clip(row.result),
+    filter: { type: 'text', queryKey: 'result_like', placeholder: t('log.keywordPlaceholder') },
+  },
+
+  // 可见列：合并为 8 列（时间 / 操作 / 操作人 / 请求 / 结果 / 追踪 / 耗时 / 操作）
+  // 耗时单独留一列：它是排障核心指标，需要列头排序入口（并入时间列就没有排序了）
+  { prop: 'create_time', label: t('log.time'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
+  { prop: 'title', label: t('log.actionName'), minWidth: 200, slot: 'action_name', filter: { type: 'text' } },
+  { prop: 'username', label: t('log.username'), width: 130, slot: 'operator', filter: { type: 'text' } },
+  { prop: 'path', label: t('log.path'), minWidth: 240, slot: 'request', filter: { type: 'text' } },
   {
     prop: 'status',
     label: t('log.result'),
-    width: 90,
+    width: 120,
     align: 'center',
-    slot: 'status',
+    slot: 'result',
     filter: {
       type: 'enum',
       options: [
@@ -435,24 +511,32 @@ const columns = computed<ArtTableColumn[]>(() => [
       ],
     },
   },
+  { prop: 'action_id', label: t('log.trace'), width: 260, slot: 'trace', filter: { type: 'text' } },
+  { prop: 'cost', label: t('log.costMs'), width: 110, align: 'right', sortable: 'custom' },
+  { prop: 'action', label: t('table.action'), width: 140, fixed: 'right', slot: 'action', lockVisible: true },
+
+  /*
+   * 以下列默认隐藏：表格里已合并展示，这里只为顶部搜索区提供筛选入口。
+   * ArtTable 的搜索项按「声明了 filter 的列」生成，与列是否可见无关。
+   */
+  { prop: 'id', label: 'ID', width: 76, defaultShow: false },
   {
     prop: 'method',
     label: t('log.method'),
     width: 90,
-    align: 'center',
-    slot: 'method',
+    defaultShow: false,
     filter: { type: 'enum', options: METHOD_OPTIONS },
   },
-  { prop: 'path', label: t('log.path'), minWidth: 200, filter: { type: 'text' } },
-  { prop: 'action_id', label: t('log.actionId'), width: 220, slot: 'action_id', filter: { type: 'text' } },
-  { prop: 'trace_id', label: t('log.requestId'), width: 220, filter: { type: 'text' } },
-  { prop: 'session_id', label: t('log.sessionId'), width: 220, slot: 'session_id', filter: { type: 'text' } },
-  { prop: 'ip', label: 'IP', width: 140, filter: { type: 'text' } },
-  { prop: 'status_code', label: t('log.statusCode'), width: 100, align: 'center', slot: 'status_code' },
-  { prop: 'cost', label: t('log.costMs'), width: 100, align: 'right', sortable: 'custom' },
-  { prop: 'create_time', label: t('log.time'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
-  { prop: 'action', label: t('table.action'), width: 140, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'ip', label: 'IP', width: 140, defaultShow: false, filter: { type: 'text' } },
+  { prop: 'session_id', label: t('log.sessionId'), width: 220, defaultShow: false, filter: { type: 'text' } },
+  { prop: 'trace_id', label: t('log.requestId'), width: 220, defaultShow: false, filter: { type: 'text' } },
 ])
+
+/** 隐藏列（参数 / 结果）在列设置里被打开时只显示摘要，避免整段 JSON 撑开表格 */
+function clip(raw?: string): string {
+  const text = String(raw ?? '')
+  return text === '' ? '—' : text.length > 80 ? `${text.slice(0, 80)}…` : text
+}
 
 /**
  * 支持从报错弹窗直接跳进来：
@@ -490,6 +574,8 @@ const {
     status: '',
     method: '',
     ip: '',
+    params_like: '',
+    result_like: '',
     start: '',
     end: '',
   },
@@ -679,6 +765,25 @@ async function loadAction(id: string, keepOnError = false): Promise<void> {
       actionLoading.value = false
     }
   }
+}
+
+/**
+ * 点请求方法标签：按该方法筛选，再点同一个则取消。
+ * 写的是顶部搜索区同一份 query，提交后筛选项会同步高亮。
+ */
+function filterByMethod(method: string): void {
+  if (!method) {
+    return
+  }
+  query.method = query.method === method ? '' : method
+  search()
+}
+
+/** 点结果标签：按成功/失败筛选，再点同一个则取消 */
+function filterByStatus(status: number): void {
+  const value = String(status)
+  query.status = query.status === value ? '' : value
+  search()
 }
 
 async function openAction(id: string): Promise<void> {
@@ -939,11 +1044,28 @@ async function onExport(): Promise<void> {
 
 /* ---- 详情 ---- */
 const detailVisible = ref(false)
+const detailLoading = ref(false)
 const current = ref<LogRow | null>(null)
 
-function openDetail(row: LogRow): void {
+/**
+ * 打开详情：列表行已裁掉 params / result / ua（控制列表响应体），
+ * 先用行数据把抽屉撑起来，再按 id 补拉全文；数据范围由后端兜底。
+ */
+async function openDetail(row: LogRow): Promise<void> {
   current.value = row
   detailVisible.value = true
+  detailLoading.value = true
+  try {
+    const full = await logDetail(row.id)
+    // 连点不同行时，迟到的响应不能覆盖当前行
+    if (current.value?.id === row.id) {
+      current.value = full
+    }
+  } catch {
+    ElMessage.error(t('log.detailFailed'))
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 /** 参数/结果都按 JSON 存，能解析就格式化，否则原样显示（超长会被截断，JSON 不完整） */
@@ -966,6 +1088,12 @@ function statusTag(code?: number): 'success' | 'warning' | 'danger' {
     return 'success'
   }
   return code < 400 ? 'warning' : 'danger'
+}
+
+/** 状态码文字色（与标签同色系）：合并列里再套一个标签会显得拥挤 */
+function statusTone(code?: number): string {
+  const tone = statusTag(code)
+  return tone === 'success' ? 'is-ok' : tone === 'warning' ? 'is-warn' : 'is-danger'
 }
 
 /* ---- 删除 ---- */
@@ -1092,6 +1220,76 @@ async function onDeleteOne(id: number): Promise<void> {
   color: var(--art-main);
 }
 
+/* 合并列里的次要行（IP / 耗时 / 会话ID） */
+.log-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--art-muted);
+}
+
+/* 可点击的标签（请求方法 / 结果状态）：交互与样式对齐 /oceanengine/account 的账户标签 */
+.log-click-tag {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 请求方法标签：选中态用主题色高亮，一眼看出列表被谁过滤，再点一次取消 */
+.log-method-tag.is-active {
+  color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+/*
+ * 结果标签：选中态保持成功/失败的红绿语义，只加深（加粗 + 同色浅底），
+ * 不套主题蓝 —— 否则「成功」和「失败」选中后长得一模一样。
+ */
+.log-status-tag.is-active {
+  font-weight: 600;
+  border-width: 1.5px;
+}
+
+.log-status-tag.is-success.is-active {
+  background: var(--el-color-success-light-9);
+}
+
+.log-status-tag.is-danger.is-active {
+  background: var(--el-color-danger-light-9);
+}
+
+/* 请求列：方法标签独占一行，路径另起一行、超宽省略 */
+.log-path {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 结果列：状态标签一行、状态码一行 */
+.log-code {
+  display: block;
+  margin-top: 2px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+}
+
+.log-code.is-ok {
+  color: var(--art-success);
+}
+
+.log-code.is-warn {
+  color: var(--el-color-warning);
+}
+
+.log-code.is-danger {
+  color: var(--art-danger);
+}
+
+.detail-body {
+  min-height: 200px;
+}
+
 .log-node {
   margin-top: 1px;
   font-family: Consolas, Monaco, monospace;
@@ -1102,6 +1300,14 @@ async function onDeleteOne(id: number): Promise<void> {
 .log-msg {
   margin-top: 1px;
   font-size: 12px;
+}
+
+/* 说明跟随记录结果：成功绿、失败红（「登录成功」不应标红） */
+.log-msg.is-ok {
+  color: var(--art-success);
+}
+
+.log-msg.is-danger {
   color: var(--art-danger);
 }
 
@@ -1109,6 +1315,30 @@ async function onDeleteOne(id: number): Promise<void> {
   font-family: Consolas, Monaco, monospace;
   font-size: 12px;
   user-select: all;
+}
+
+/* 追踪列：行首字段标注（操作ID / 会话ID）+ 可换行的 ID */
+.log-trace-line {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.log-trace-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--art-muted);
+}
+
+.log-trace-id {
+  min-width: 0;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  word-break: break-all;
 }
 
 .log-trace-btn {

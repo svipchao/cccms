@@ -15,16 +15,19 @@ export interface ArtTableFilterOption {
  *
  * - `enum`：列头弹层里的复选下拉框（可勾选多个选项，值按逗号拼接后发给接口）；
  * - `text`：列头弹层里的输入框，做模糊查询；
+ * - `textarea`：多行输入框，用于请求参数 / 返回体这类 JSON 片段的关键字模糊查询；
  * - `date`：列头弹层里的日期范围选择器，分别写入起止两个字段（时间列专用）。
  */
 export interface ArtTableColumnFilter {
-  type: 'enum' | 'text' | 'date'
+  type: 'enum' | 'text' | 'textarea' | 'date'
   /** 枚举可选项（`type='enum'` 时必填） */
   options?: ArtTableFilterOption[]
   /** 写入 query 的字段名，默认取列的 `prop` */
   queryKey?: string
-  /** 文本筛选输入框占位文案（`type='text'` 时可选） */
+  /** 文本筛选输入框占位文案（`type='text'` / `'textarea'` 时可选） */
   placeholder?: string
+  /** 多行输入框行数（`type='textarea'` 时可选，默认 3） */
+  rows?: number
   /** 日期范围起始字段名（`type='date'` 时可选，默认 `start`） */
   startKey?: string
   /** 日期范围结束字段名（`type='date'` 时可选，默认 `end`） */
@@ -79,4 +82,12 @@ export interface ArtTableColumn {
   showOverflowTooltip?: boolean
   /** 列头筛选配置（配置后该列表头出现筛选入口） */
   filter?: ArtTableColumnFilter
+  /**
+   * 自绘列头的具名插槽：`<template #xxx="{ column, label }">`。
+   *
+   * 用于「把筛选条件放进列头」这类表头不是纯文字的列（如单元名称列头挂状态筛选）。
+   * 与 `filter` 互斥：同时声明时以插槽为准（筛选 UI 由页面自己渲染）。
+   * 插槽内容在页面作用域渲染，样式写在页面里即可。
+   */
+  headerSlot?: string
 }

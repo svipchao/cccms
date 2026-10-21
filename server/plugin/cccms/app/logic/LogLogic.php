@@ -55,6 +55,28 @@ final class LogLogic
         'create_time' => 'create_time',
     ];
 
+    /**
+     * 列表查询不返回的重字段。
+     *
+     * `params` / `result` 各最长 8000 字符（见中间件 TEXT_LIMIT），一页 15 行就是几百 KB，
+     * 而列表页并不展示它们 —— 详情抽屉打开时再按 id 取全文（`detail()`）。
+     */
+    private const LIST_HIDDEN_FIELDS = 'params,result,ua';
+
+    /**
+     * 关键字搜索的默认回看天数。
+     *
+     * `params` / `result` 是 text 列，`LIKE '%kw%'` 无法走索引（MySQL 5.6 也没有可用的
+     * 中文全文索引），不收敛时间窗就是全表扫描。用户显式给了时间范围时以用户的为准。
+     */
+    private const KEYWORD_DAYS = 7;
+
+    /** 关键字最大长度：再长只会让扫描更慢，且多半是误粘贴 */
+    private const KEYWORD_MAX = 100;
+
+    /** 多行关键字最多生效行数：每行一个 LIKE，行数太多会把查询拖垮 */
+    private const KEYWORD_MAX_LINES = 20;
+
     // ------------------------------------------------------------------
     // 写入
     // ------------------------------------------------------------------
@@ -111,9 +133,32 @@ final class LogLogic
         $limit = max(1, (int)($params['limit'] ?? 15));
         $total = $query->count();
         SortInput::apply($query, $params, self::SORTABLE);
-        $list = $query->page($page, $limit)->select()->toArray();
+        // params / result / ua 不随列表下发（见 LIST_HIDDEN_FIELDS），详情走 detail()
+        $list = $query->page($page, $limit)->withoutField(self::LIST_HIDDEN_FIELDS)->select()->toArray();
 
         return ['total' => $total, 'list' => $list];
+    }
+
+    /**
+     * 单条日志全文（详情抽屉用）。
+     *
+     * 列表为了体积已经裁掉 `params` / `result` / `ua`，打开详情时再按 id 取一次；
+     * 仍走 `newScopedQuery()`，越权与不存在的行都返回同一个 404，不泄露行是否存在。
+     *
+     * @return array<string,mixed>
+     */
+    public static function detail(int $id): array
+    {
+        if ($id <= 0) {
+            throw new ApiException('日志 ID 无效', 422);
+        }
+
+        $row = OperationLog::newScopedQuery()->where('id', $id)->find();
+        if ($row === null) {
+            throw new ApiException('日志不存在或无权查看', 404);
+        }
+
+        return $row->toArray();
     }
 
     /**
@@ -184,7 +229,7 @@ final class LogLogic
     private static function columns(): array
     {
         return [
-            'ID', '账号', '操作', '结果', '说明', '方法', '路径', '节点',
+            'ID', '账号', '操作', '结果', '方法', '路径', '节点',
             '操作ID', '请求ID', '会话ID', 'IP', '状态码', '耗时(ms)', '时间',
         ];
     }
@@ -192,12 +237,15 @@ final class LogLogic
     /** 一行日志 → CSV 单元格（同步 / 异步共用） */
     private static function formatRow(array $row): array
     {
+        // 「操作」与「说明」合并：说明多为失败原因，跟操作名放同一格更便于按行阅读
+        $title   = (string)($row['title'] ?? '');
+        $message = (string)($row['message'] ?? '');
+
         return [
             (string)($row['id'] ?? ''),
             (string)($row['username'] ?? ''),
-            (string)($row['title'] ?? ''),
+            $message === '' ? $title : $title . '：' . $message,
             (int)($row['status'] ?? 1) === 1 ? '成功' : '失败',
-            (string)($row['message'] ?? ''),
             (string)($row['method'] ?? ''),
             (string)($row['path'] ?? ''),
             (string)($row['node'] ?? ''),
@@ -382,6 +430,24 @@ final class LogLogic
         }
         // 操作时间范围（列头时间筛选，值已归一化为 Y-m-d H:i:s）
         [$start, $end] = FilterInput::range($params['start'] ?? null, $params['end'] ?? null);
+
+        // 请求参数 / 返回结果：模糊匹配（text 列只能全表扫，因此单独收敛时间窗）
+        $paramsKeywords = self::keywords($params['params_like'] ?? '');
+        $resultKeywords = self::keywords($params['result_like'] ?? '');
+        if ($paramsKeywords !== [] || $resultKeywords !== []) {
+            // 用户给了时间范围就按用户的；没给则默认只看最近 KEYWORD_DAYS 天，
+            // 否则 LIKE '%kw%' 会扫全表（日志表通常几十万行起步）
+            if ($start === '' && $end === '') {
+                $start = date('Y-m-d H:i:s', strtotime('-' . self::KEYWORD_DAYS . ' days'));
+            }
+            foreach ($paramsKeywords as $keyword) {
+                $query->where('params', 'like', '%' . $keyword . '%');
+            }
+            foreach ($resultKeywords as $keyword) {
+                $query->where('result', 'like', '%' . $keyword . '%');
+            }
+        }
+
         if ($start !== '') {
             $query->where('create_time', '>=', $start);
         }
@@ -390,6 +456,35 @@ final class LogLogic
         }
 
         return $query;
+    }
+
+    /**
+     * 多行关键字 → 每行一个 LIKE 条件（多行之间是 AND）。
+     *
+     * 输入框是多行的（方便粘贴 JSON 片段）：逐行匹配比把整段塞进一个 `%...%`
+     * 更实用 —— 换行和缩进不会导致一个字都匹配不上。每行单独转义、限长，最多 20 行。
+     *
+     * think-orm 的 like 走参数绑定，不存在注入；但不转义的话用户搜 `100%`
+     * 会被当成通配符，把整表都命中。
+     *
+     * @return string[]
+     */
+    private static function keywords(mixed $raw): array
+    {
+        $lines = preg_split('/\R/u', (string)$raw) ?: [];
+        $list  = [];
+
+        foreach ($lines as $line) {
+            $line = mb_substr(trim($line), 0, self::KEYWORD_MAX);
+            if ($line !== '') {
+                $list[] = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $line);
+            }
+            if (count($list) >= self::KEYWORD_MAX_LINES) {
+                break;
+            }
+        }
+
+        return $list;
     }
 
     // ------------------------------------------------------------------

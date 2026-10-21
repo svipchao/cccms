@@ -159,6 +159,8 @@ Route::post('/recycle/delete', [RecycleController::class, 'delete']);
 
 // ---- 日志 ----
 Route::get('/log', [LogController::class, 'index']);
+// 列表已裁掉 params / result / ua，详情按 id 取全文（登录即可，数据范围兜底）
+Route::get('/log/detail', [LogController::class, 'detail']);
 Route::get('/log/export', [LogController::class, 'export']);
 // 导出任务中心（P2-7）：本人的异步导出任务列表 + 归档文件下载
 Route::get('/export/task/list', [ExportController::class, 'list']);

@@ -6,6 +6,7 @@ namespace plugin\cccms\app\controller;
 
 use plugin\cccms\app\logic\LogLogic;
 use plugin\cccms\basic\BaseController;
+use plugin\cccms\support\attribute\NoAuth;
 use plugin\cccms\support\attribute\Permission;
 use plugin\cccms\support\attribute\Restrict;
 use plugin\cccms\support\I18n;
@@ -18,6 +19,19 @@ class LogController extends BaseController
     public function index(Request $request): Response
     {
         return $this->ok(LogLogic::paginate($request->get()));
+    }
+
+    /**
+     * 单条日志全文（详情抽屉）。
+     *
+     * 列表为了体积已裁掉 `params` / `result` / `ua`，打开详情时按 id 再取一次。
+     * 用 `#[NoAuth]` 而不新增按钮节点：能进日志页（`cccms:log:index`）就该能看详情；
+     * 数据范围仍由模型作用域兜住，越权或不存在的 id 一律 404，不泄露行是否存在。
+     */
+    #[NoAuth(title: '查看日志详情')]
+    public function detail(Request $request): Response
+    {
+        return $this->ok(LogLogic::detail((int)$request->get('id', 0)));
     }
 
     /** 导出 CSV（按当前筛选与数据范围；一律异步，结果到「导出任务」面板下载） */

@@ -32,6 +32,12 @@ export default {
   message: 'Message',
   params: 'Request params',
   response: 'Response',
+  paramsContent: 'Request content',
+  responseContent: 'Response body',
+  trace: 'Trace IDs',
+  clickToFilter: 'Click to filter by this value',
+  keywordPlaceholder: 'Keyword fuzzy match (last 7 days by default)',
+  detailFailed: 'Failed to load details',
 
   /* ---- trace view (one user action) ---- */
   viewAction: 'View this action',
