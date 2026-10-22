@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import Depends
+from fastapi import Depends, Query
 
 from cccms.core.auth_deps import get_current_user
 from cccms.core.context import UserContext
@@ -25,8 +25,11 @@ async def index(user: UserContext = Depends(get_current_user)) -> dict[str, obje
 
 @router.get("/check", response_model=ApiResponse[UpgradeCheckOut])
 @permission("cccms:upgrade:check", "检查更新", methods=["GET"])
-async def check(user: UserContext = Depends(get_current_user)) -> dict[str, object]:
-    return ok(await upgrade_service.check())
+async def check(
+    remote: str | None = Query(default=None, max_length=64),
+    user: UserContext = Depends(get_current_user),
+) -> dict[str, object]:
+    return ok(await upgrade_service.check(remote))
 
 
 @router.get("/tags", response_model=ApiResponse[list[UpgradeTagOut]])
@@ -37,11 +40,17 @@ async def tags(user: UserContext = Depends(get_current_user)) -> dict[str, objec
 
 @router.post("/init", response_model=ApiResponse[UpgradeResultOut])
 @permission("cccms:upgrade:init", "初始化升级仓库", methods=["POST"])
-async def init(user: UserContext = Depends(get_current_user)) -> dict[str, object]:
-    return ok(await upgrade_service.init())
+async def init(
+    remote: str | None = Query(default=None, max_length=64),
+    user: UserContext = Depends(get_current_user),
+) -> dict[str, object]:
+    return ok(await upgrade_service.init(remote))
 
 
 @router.post("/run", response_model=ApiResponse[UpgradeResultOut])
 @permission("cccms:upgrade:run", "执行在线升级", methods=["POST"])
-async def run(user: UserContext = Depends(get_current_user)) -> dict[str, object]:
-    return ok(await upgrade_service.run())
+async def run(
+    remote: str | None = Query(default=None, max_length=64),
+    user: UserContext = Depends(get_current_user),
+) -> dict[str, object]:
+    return ok(await upgrade_service.run(remote))

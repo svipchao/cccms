@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime
+from typing import cast
 
 from fastapi import Depends
 
@@ -99,6 +100,7 @@ def _normalized(row: dict[str, object], current_jti: str) -> dict[str, object]:
     login_ts = _as_int(row.get("login_at"))
     last_ts = _as_int(row.get("last_at"))
     exp_ts = _as_int(row.get("exp"))
+    jtis = [str(item) for item in cast("list[object]", row.get("jtis") or [])]
     return {
         "jti": row.get("jti"),
         "user_id": _as_int(row.get("user_id")),
@@ -112,8 +114,40 @@ def _normalized(row: dict[str, object], current_jti: str) -> dict[str, object]:
         "login_at": _ts_fmt(login_ts),
         "last_at": _ts_fmt(last_ts),
         "expire_at": _ts_fmt(exp_ts),
-        "current": row.get("jti") == current_jti,
+        # 同一用户的多端会话合并成一行：sessions 是会话数，jtis 供「全部下线」使用
+        "sessions": _as_int(row.get("sessions")) or 1,
+        "jtis": jtis,
+        "current": current_jti in jtis or row.get("jti") == current_jti,
     }
+
+
+def _merge_by_user(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    """按用户合并会话：在线用户列表按「人」展示，一个用户只占一行。
+
+    主记录取最近活跃的那条会话（设备 / 系统 / 浏览器跟随它），登录时间取最早一次、
+    过期时间取最晚一个，会话明细保留在 sessions / jtis 里。
+    """
+    merged: dict[int, dict[str, object]] = {}
+    for row in rows:
+        user_id = _as_int(row.get("user_id"))
+        item = merged.get(user_id)
+        if item is None:
+            merged[user_id] = {
+                **row,
+                "sessions": 1,
+                "jtis": [row.get("jti")],
+                "login_at": _as_int(row.get("login_at")),
+            }
+            continue
+        cast("list[object]", item["jtis"]).append(row.get("jti"))
+        item["sessions"] = _as_int(item["sessions"]) + 1
+        item["login_at"] = min(_as_int(item["login_at"]), _as_int(row.get("login_at")))
+        item["exp"] = max(_as_int(item.get("exp")), _as_int(row.get("exp")))
+        if _as_int(row.get("last_at")) > _as_int(item.get("last_at")):
+            keep = {key: item[key] for key in ("sessions", "jtis", "login_at", "exp")}
+            item.update(row)
+            item.update(keep)
+    return list(merged.values())
 
 
 def _in_range(value: int, start: str | None, end: str | None) -> bool:
@@ -167,6 +201,9 @@ async def index(
         rows = [row for row in rows if _in_range(int(row.get("last_at", 0) or 0), active_start, active_end)]
     if expire_start or expire_end:
         rows = [row for row in rows if _in_range(int(row.get("exp", 0) or 0), expire_start, expire_end)]
+
+    # 先筛会话再按用户合并：一个用户多端登录仍只占一行，total 也就是在线人数
+    rows = _merge_by_user(rows)
 
     sortable = {"login_at": "login_at", "last_at": "last_at"}
     key = sortable.get(sort or "", "last_at")

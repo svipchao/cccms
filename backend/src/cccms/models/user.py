@@ -37,6 +37,26 @@ class User(BaseModel, TenantMixin, TimestampMixin, SoftDeleteMixin, ActiveFlagMi
     remark: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
+class PasswordHistory(BaseModel, TenantMixin, TimestampMixin):
+    """改密前的口令哈希留档，用于拒绝「改回旧口令」（S-02）。
+
+    只留哈希、不留明文；条数由 ``services/password_history.remember()`` 按
+    ``CCCMS_PASSWORD_HISTORY`` 裁剪，不随改密次数无限增长。
+    用户被物理删除时随 ``sys_user`` 级联删除；租户外键与其它业务表一致用 ``RESTRICT``。
+    """
+
+    __tablename__ = "sys_password_history"
+    __table_args__ = (
+        # 取「最近 N 份」是 (user_id, id desc) 的等值 + 逆序扫描，这条索引直接覆盖。
+        Index("ix_password_history_user", "user_id", "id"),
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("sys_user.id", ondelete="CASCADE"), nullable=False
+    )
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
 class Role(BaseModel, TenantMixin, TimestampMixin, SoftDeleteMixin, ActiveFlagMixin):
     __tablename__ = "sys_role"
     __table_args__ = (

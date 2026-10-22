@@ -9,6 +9,7 @@ export default {
   keywordPlaceholder: '账号 / 昵称 / IP / 设备 / 系统 / 浏览器',
   alert: '会话来自 Redis 索引；「强制下线」会同时作废已发出的令牌，对方下一次请求即失效。',
   user: '用户',
+  sessionCount: '{count} 个会话',
   device: '设备',
   os: '系统',
   browser: '浏览器',

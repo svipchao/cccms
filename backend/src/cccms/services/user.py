@@ -27,6 +27,7 @@ from cccms.schemas.user import (
     UserQuery,
     UserUpdate,
 )
+from cccms.services.password_history import ensure_not_reused, remember
 
 SUPER_ADMIN_CODE = "super_admin"
 
@@ -532,9 +533,14 @@ async def reset_password(
     row = await get_visible_user(session, actor, user_id)
     await _guard_super_admin_target(session, actor, row.id)
     validate_password(payload.password, username=row.username, nickname=row.nickname, email=row.email or "")
+    await ensure_not_reused(
+        session, tenant_id=row.tenant_id, user_id=row.id, password=payload.password
+    )
+    previous_hash = row.password_hash
     row.password_hash = await hash_password_async(payload.password)
     row.password_changed_at = now()
     row.update_time = now()
+    await remember(session, tenant_id=row.tenant_id, user_id=row.id, password_hash=previous_hash)
     await session.commit()
     from cccms.core import session as token_session
 

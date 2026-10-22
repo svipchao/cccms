@@ -125,3 +125,23 @@ class LogExportOut(StrictModel):
     task_id: int
     total: int
     async_: bool = Field(default=True, alias="async")
+
+
+class AuditVerifyOut(StrictModel):
+    """审计链校验结果。
+
+    ``broken_ids`` / ``modified_ids`` 只是样本（前 20 条），全量数量在
+    ``broken_count`` / ``modified_count``：链断了通常一次就是一大片，
+    把 id 全塞进响应没有意义，还会让响应体失控。
+    """
+
+    ok: bool
+    total: int
+    unchained: int
+    broken_count: int
+    modified_count: int
+    broken_ids: builtins.list[int] = Field(default_factory=list)
+    modified_ids: builtins.list[int] = Field(default_factory=list)
+    tail_stale: bool
+    seal_ok: bool
+    duration_ms: int

@@ -1,0 +1,1 @@
+import e from"./ErrorPage-D5ZFrH32.js";import{z as o,P as r,A as t}from"./vue-BhpH3lGW.js";import"./el-button-CMiSFV_y.js";import"./index-D0LBA-Lv.js";import"./_plugin-vue_export-helper-D77ew2d-.js";const d=o({__name:"404",setup(n){return(c,p)=>(t(),r(e,{code:404,"title-key":"error.notFoundTitle","desc-key":"error.notFoundDesc"}))}});export{d as default};

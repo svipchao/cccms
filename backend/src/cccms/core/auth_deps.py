@@ -90,17 +90,9 @@ async def load_user(
     ctx.user = user
     ctx.scope_plan = await build_plan(session, user)
 
+    # 只刷新已存在的会话记录，绝不在这里补建：
+    # 旧令牌的迟到请求若能把已删除的会话写回来，同一用户就会凭空多出一条在线记录。
     await token_session.touch_online(payload.jti)
-    await token_session.register_online(
-        user_id=user.id,
-        tenant_id=tenant.id,
-        username=user.username,
-        nickname=user.nickname,
-        jti=payload.jti,
-        ip=ctx.ip,
-        ua=ctx.ua,
-        exp=payload.exp,
-    )
     await enforce_api_rate_limit(user.id, request.url.path, heavy=is_heavy_path(request.url.path))
 
     if should_renew(payload):
@@ -113,11 +105,12 @@ async def load_user(
             ttl=settings.token_ttl,
             iat=int(time.time()),
         )
-        ctx.extra["new_token"] = new_token
-        ctx.extra["new_token_exp"] = int(new_payload["exp"])
-        # SPA 从响应头静默续期（见 frontend/src/api/request.ts）
-        ctx.response_headers["X-Refresh-Token"] = new_token
-        await token_session.rotate_online(payload.jti, jti, int(new_payload["exp"]))
+        # 并发续期只有一个请求能拿到会话，其余继续用旧令牌（下次请求再续）
+        if await token_session.rotate_online(payload.jti, jti, int(new_payload["exp"])):
+            ctx.extra["new_token"] = new_token
+            ctx.extra["new_token_exp"] = int(new_payload["exp"])
+            # SPA 从响应头静默续期（见 frontend/src/api/request.ts）
+            ctx.response_headers["X-Refresh-Token"] = new_token
 
 
 async def get_current_user() -> UserContext:

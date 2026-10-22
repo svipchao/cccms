@@ -1,6 +1,13 @@
 /* =====================================================================
- * Element Plus 主题覆盖（必须在 element-plus 样式之后引入）
+ * Element Plus 主题覆盖
  * 全部通过 EP 的 CSS 变量与少量类选择器完成，暗色随 html.dark 自动生效。
+ *
+ * ⚠️ 生效前提是**加载顺序**：EP 的 `theme-chalk/base.css` 里用 `:root` 定义了
+ * 一整套默认变量（--el-border-color:#dcdfe6、--el-text-color-* 等），与本文件的
+ * `:root` 同权重，谁在后面谁生效。组件按需样式会在页面 chunk 里把 base.css
+ * 再引一次，晚于本文件 —— 所以 `src/main.ts` 把 base.css 显式排在最前，
+ * 这里改的变量才不会被反超。新增变量映射时不要另起 `:root` 之外的写法，
+ * 也不要靠 `!important` 绕，先确认顺序。
  * ===================================================================== */
 
 :root {
@@ -29,15 +36,19 @@
   --el-border-radius-small: var(--art-radius-sm);
 
   /* ---- 文本 / 边框 / 填充 ----
-   * 边界拆两档：`--el-border-color` 是**控件**边界（≥3:1，WCAG 1.4.11），
+   * 边界拆两档：`--el-border-color` 是**控件静止**边界（约 2:1），
    * `-light` / `-lighter` 是**装饰**分隔线（卡片、行、分区）。
-   * 原来三者全指向卡片边框色（#e9edf5），导致全站输入框轮廓只有 1.17:1。
+   * 原来三者全指向卡片边框色（#e9edf5），导致全站输入框轮廓只有 1.17:1；
+   * 后来一度提到 3:1（#8891a3），又显得太重，现在停在 2:1：
+   * 静止态靠它、悬停升到 `--art-line-control-strong`（3.17:1）、
+   * 聚焦由 EP 自己把边框转主色（4.48:1）—— 控件 3:1 的要求落在聚焦态上。
    */
   --el-text-color-primary: var(--art-main);
   --el-text-color-regular: var(--art-sub);
   --el-text-color-secondary: var(--art-muted);
   --el-text-color-placeholder: var(--art-muted);
   --el-border-color: var(--art-line-control);
+  --el-border-color-hover: var(--art-line-control-strong);
   --el-border-color-light: var(--art-line-subtle);
   --el-border-color-lighter: var(--art-line-subtle);
   --el-border-color-extra-light: var(--art-line-subtle);
@@ -134,7 +145,13 @@
 }
 
 /* ---- 组件级微调 ---- */
-.el-card {
+/*
+ * 卡片圆角必须提权到 `html .el-card`：
+ * EP 自己写了 `.el-card{--el-card-border-radius:4px}`（权重 0,1,0），而按需引入的
+ * 组件 CSS 晚于本文件加载，同权重的 `.el-card` 会被它反超 → 卡片看起来是直角。
+ */
+html .el-card {
+  --el-card-border-radius: var(--art-radius);
   border-color: var(--art-card-border);
   border-radius: var(--art-radius);
   box-shadow: var(--art-shadow-1) !important;

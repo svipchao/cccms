@@ -221,7 +221,7 @@ function onLocaleCommand(command: string | number | object): void {
   }
   setLocale(locale)
   void reloadMenus()
-  syncDocumentTitle(String(route.meta.title ?? ''))
+  syncDocumentTitle(String(route.meta.title ?? ''), route.path)
 }
 
 /* ---- 系统刷新（整体 / 菜单 / 权限 / 缓存；等价 menu-sync + perm-scan + 清缓存） ---- */

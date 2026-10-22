@@ -4,6 +4,7 @@ import asyncio
 import csv
 import io
 import logging
+import time
 from collections.abc import Coroutine
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -14,8 +15,9 @@ from sqlalchemy import ColumnElement, Select, case, delete, distinct, func, sele
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cccms.config import get_settings
-from cccms.core.context import UserContext
-from cccms.core.errors import Conflict, NotFound, ValidationFailed
+from cccms.core.audit import verify_chain as verify_audit_chain
+from cccms.core.context import UserContext, current_context
+from cccms.core.errors import Conflict, Forbidden, NotFound, ValidationFailed
 from cccms.core.pagination import count_query
 from cccms.core.scope import (
     ScopeConfig,
@@ -47,7 +49,8 @@ from cccms.services.export import STATUS_DONE, STATUS_FAILED, STATUS_PENDING, ST
 
 logger = logging.getLogger("cccms.export")
 
-LOGIN_PATH = "/auth/login"
+#: 日志里存的是 ASGI 原始路径（带 /api 或 /api/v1 挂载前缀），只按后缀匹配。
+LOGIN_PATH_SUFFIX = "/auth/login"
 MAX_ACTION_ROWS = 500
 MAX_TRACE_ROWS = 200
 EXPORT_KEEP_MINUTES = 60
@@ -267,7 +270,7 @@ async def login_analysis(
     start_at, end_at, hourly = _window(days, start, end)
     base = apply_scope(
         select(OperationLog).where(
-            OperationLog.path == LOGIN_PATH,
+            OperationLog.path.like(f"%{LOGIN_PATH_SUFFIX}"),
             OperationLog.create_time >= start_at,
             OperationLog.create_time < end_at,
         ),
@@ -618,3 +621,48 @@ async def export_logs(session: AsyncSession, actor: UserContext, params: LogQuer
     # 字段级规则在这里快照：后台协程没有上下文，必须复用请求内算好的结果。
     _schedule(_run_log_export(task.id, stream_statement, field_actions(OperationLog)))
     return LogExportOut(task_id=task.id, total=total, async_=True)
+
+
+# ---- 审计链校验（A-02） ----
+
+AUDIT_SAMPLE_SIZE = 20
+
+
+def summarize_audit(raw: dict[str, Any], *, duration_ms: int) -> dict[str, Any]:
+    """把 ``verify_chain`` 的原始结果压成响应体。
+
+    命中 id 只留前 ``AUDIT_SAMPLE_SIZE`` 条，数量单独给：链断了通常一次一大片，
+    全量 id 既没用又会把响应体撑爆。
+    """
+    broken = [int(item) for item in raw.get("broken") or []]
+    modified = [int(item) for item in raw.get("modified") or []]
+    return {
+        "ok": bool(raw.get("ok")),
+        "total": int(raw.get("total") or 0),
+        "unchained": int(raw.get("unchained") or 0),
+        "broken_count": len(broken),
+        "modified_count": len(modified),
+        "broken_ids": broken[:AUDIT_SAMPLE_SIZE],
+        "modified_ids": modified[:AUDIT_SAMPLE_SIZE],
+        "tail_stale": bool(raw.get("tail_stale")),
+        "seal_ok": bool(raw.get("seal_ok")),
+        "duration_ms": duration_ms,
+    }
+
+
+async def verify_audit(actor: UserContext) -> dict[str, Any]:
+    """校验审计哈希链。
+
+    链是**全局**的（``prev_hash`` 跨租户连续），只按本租户切一片会让校验必然报 broken，
+    所以这里只允许平台租户超级管理员触发——这是数据边界，不是权限节点的重复。
+    ``verify_chain`` 自己开 session 并按 keyset 分页，不占用请求会话、不把整表读进内存。
+    """
+    ctx = current_context()
+    platform_admin = bool(
+        actor.is_super_admin and ctx is not None and ctx.tenant is not None and ctx.tenant.is_platform
+    )
+    if not platform_admin:
+        raise Forbidden("审计链覆盖全部租户，仅平台租户超级管理员可校验")
+    started = time.perf_counter()
+    raw = await verify_audit_chain()
+    return summarize_audit(raw, duration_ms=int((time.perf_counter() - started) * 1000))

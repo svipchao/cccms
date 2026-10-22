@@ -72,16 +72,22 @@ a {
 /* =====================================================================
  * 键盘焦点环（WCAG 2.4.7）
  *
- * Element Plus 的组件自带 focus-visible 描边，这里只补「原生 / 自定义控件」，
- * 避免出现双环。组件里也不要再写裸 `outline: none` —— 那会让键盘用户
- * 完全看不到焦点落在哪里；需要去掉鼠标点击的描边时用下面的
- * `:focus:not(:focus-visible)` 规则，它只影响指针操作。
+ * Element Plus 的组件自带焦点态，这里只补「原生 / 自定义控件」，避免出现双环。
+ * 组件里也不要再写裸 `outline: none` —— 那会让键盘用户完全看不到焦点落在哪里。
+ *
+ * ⚠️ 两个必须点名排除的例外：`.el-input__inner` / `.el-textarea__inner`。
+ * EP 2.14 起内层控件的 `tabindex` **默认就是 0**（props 里 `default: 0`），
+ * 因此会命中下面的 `[tabindex]`；而文本输入按规范在任何情况下（含鼠标点击）
+ * 都命中 `:focus-visible`，于是 EP 自己的 1px 主色边框外面又套了一圈 2px 主色
+ * outline —— 表现为「点一下才出现蓝框、光标离开就消失」。这两个控件已由
+ * EP 的边框转主色提供聚焦提示（主色白底 4.48:1，满足非文本 3:1），不再叠加。
+ * 以后若发现别的 EP 控件也出现双环，同样把它的内层类名加到 `:not()` 里。
  * ===================================================================== */
 a:focus-visible,
 button:not(.el-button):focus-visible,
 summary:focus-visible,
 [role='button']:focus-visible,
-[tabindex]:not([tabindex='-1']):focus-visible {
+[tabindex]:not([tabindex='-1']):not(.el-input__inner):not(.el-textarea__inner):focus-visible {
   outline: 2px solid var(--el-color-primary);
   outline-offset: 2px;
 }

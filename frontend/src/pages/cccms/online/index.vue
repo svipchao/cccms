@@ -17,7 +17,12 @@
       </template>
 
       <template #username="{ row }">
-        <div class="online-user">{{ row.username || '—' }}</div>
+        <div class="online-user">
+          {{ row.username || '—' }}
+          <el-tag v-if="row.sessions > 1" type="warning" effect="plain" size="small" class="online-sessions">
+            {{ t('online.sessionCount', { count: row.sessions }) }}
+          </el-tag>
+        </div>
         <div class="online-nick">{{ row.nickname || '—' }}</div>
       </template>
 
@@ -147,5 +152,10 @@ async function onKickUser(row: OnlineSession): Promise<void> {
   margin-top: 1px;
   font-size: 12px;
   color: var(--art-muted);
+}
+
+/* 多端会话数：跟在账号后面，提示这一行合并了几条会话 */
+.online-sessions {
+  margin-left: 6px;
 }
 </style>

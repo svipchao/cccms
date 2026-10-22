@@ -2,7 +2,7 @@ import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-rou
 import { getToken } from '@/utils/auth'
 import { ROUTE_PROGRESS, progressDone, progressStart } from '@/utils/progress'
 import { newAction, resetTrace } from '@/utils/trace'
-import { translateTitle } from '@/locales/title'
+import { translateMenuTitle } from '@/locales/menuTitle'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { useMenuStore } from '@/stores/menu'
@@ -192,7 +192,7 @@ router.beforeEach(async (to) => {
 
 router.afterEach((to) => {
   progressDone(ROUTE_PROGRESS)
-  syncDocumentTitle(String(to.meta.title ?? ''))
+  syncDocumentTitle(String(to.meta.title ?? ''), to.path)
   // 进入新页面 = 新的一次操作：页面加载的并发请求归到同一条链路里，
   // 不会和上一个页面的操作混在一起（session 不动，它只随刷新变化）
   newAction()
@@ -201,14 +201,14 @@ router.afterEach((to) => {
 /**
  * 刷新浏览器标签标题。
  *
- * `meta.title` 有两种取值：前端静态路由的 i18n key（`route.dashboard`）与后端下发的
- * 已翻译菜单标题，交给 `translateTitle()` 统一处理。切换语言后需要再调一次 ——
+ * `meta.title` 有两种取值：前端静态路由的 i18n key（`route.dashboard`）与后端菜单的
+ * 中文原文，交给 `translateMenuTitle()` 按 path 查表。切换语言后需要再调一次 ——
  * afterEach 只在导航时触发，不会因语言变化重跑。
  */
-export function syncDocumentTitle(title: string): void {
+export function syncDocumentTitle(title: string, path?: string): void {
   // 站点名取自后台配置 system.name
   const appName = useAppStore().systemName || APP_TITLE
-  const label = translateTitle(title)
+  const label = translateMenuTitle(path, title)
   document.title = label ? `${label} - ${appName}` : appName
 }
 

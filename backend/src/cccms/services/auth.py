@@ -39,6 +39,7 @@ from cccms.schemas.auth import (
     UserProfile,
 )
 from cccms.services import captcha
+from cccms.services.password_history import ensure_not_reused, remember
 
 SINGLE_MESSAGE = "用户名或密码错误"
 
@@ -177,6 +178,8 @@ async def login(session: AsyncSession, payload: LoginRequest) -> LoginOut:
 
     context = replace(context, jti=jti, token_exp=int(claims["exp"]), token_iat=int(claims["iat"]))
     ctx.extra["set_token"] = token
+    # 登录请求是匿名的，ctx.user 仍为空：把账号回填给审计日志，登录分析才能统计到人
+    ctx.extra["log_user_id"] = user.id
     await token_session.register_online(
         user_id=user.id,
         tenant_id=tenant.id,
@@ -326,8 +329,13 @@ async def change_password(session: AsyncSession, user: UserContext, payload: Pas
     validate_password(
         payload.new_password, username=row.username, nickname=row.nickname, email=row.email or ""
     )
+    await ensure_not_reused(
+        session, tenant_id=row.tenant_id, user_id=row.id, password=payload.new_password
+    )
+    previous_hash = row.password_hash
     row.password_hash = await hash_password_async(payload.new_password)
     row.password_changed_at = now()
+    await remember(session, tenant_id=row.tenant_id, user_id=row.id, password_hash=previous_hash)
     await session.commit()
     await token_session.revoke_user_tokens(user.id, get_settings().token_ttl)
     await token_session.remove_user_online(user.id)

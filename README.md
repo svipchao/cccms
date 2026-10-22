@@ -128,32 +128,7 @@ uv run python -m cccms.scheduler
 
 ## 目录结构
 
-```text
-cccms/
-├─ backend/
-│  ├─ src/cccms/
-│  │  ├─ api/           # 路由层：统一 make_router + permission 装饰器
-│  │  ├─ services/      # 业务规则、事务边界、数据权限
-│  │  ├─ schemas/       # Pydantic 入参/出参白名单
-│  │  ├─ models/        # SQLAlchemy 模型（租户、软删、时间戳 mixin）
-│  │  ├─ core/          # 认证、RBAC、数据范围、审计、缓存、中间件
-│  │  ├─ db/            # engine / session / Base
-│  │  ├─ main.py        # FastAPI 入口
-│  │  ├─ scheduler.py   # 定时任务进程
-│  │  ├─ dev.py         # 本地同时启动 API + 调度器
-│  │  └─ cli.py         # init-db / seed / check / audit-verify
-│  ├─ .env.example
-│  └─ pyproject.toml
-├─ frontend/
-│  ├─ src/api/          # 与后端接口一一对应的客户端
-│  ├─ src/pages/cccms/  # 业务页面
-│  ├─ src/components/   # 通用组件
-│  ├─ src/router/       # 动态路由
-│  ├─ src/stores/       # Pinia
-│  └─ vite.config.ts
-├─ docs/                # 设计与功能文档
-└─ shared/              # 运行期目录：uploads/ 附件、exports/ 导出文件
-```
+见 [docs/03-目录结构](docs/03-目录结构.md)（后端分层、前端分层、运行期目录各自讲一遍，此处不再重复）。
 
 ---
 

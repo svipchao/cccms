@@ -97,4 +97,23 @@ export default {
 
   /* ---- export (global export task center) ---- */
   exportQueued: 'Queued for export ({total} rows). Check progress in the top-right "Export tasks"',
+
+  /* ---- audit chain verification (platform super admin only) ---- */
+  auditVerify: 'Verify audit chain',
+  auditTitle: 'Audit chain verification',
+  auditHealthy: 'Chain is intact: no deletion or tampering detected',
+  auditBroken: '{count} broken link(s) found (prev_hash mismatch)',
+  auditScanned: 'Rows scanned',
+  auditUnchained: 'Not chained',
+  auditBrokenCount: 'Broken',
+  auditModifiedCount: 'Tampered',
+  auditSeal: 'Seal signature',
+  auditSealOk: 'Valid',
+  auditSealBad: 'Invalid',
+  auditDuration: 'Duration',
+  auditTailStale: 'Chain tail differs from the latest seal: there may be unsealed logs, or the seal job is not running',
+  auditIds: 'Affected IDs (first 20 only; counts above are complete)',
+  auditBrokenTag: 'Broken',
+  auditModifiedTag: 'Tampered',
+  auditFailed: 'Verification failed: platform tenant super admin required',
 }

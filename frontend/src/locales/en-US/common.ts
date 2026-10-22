@@ -15,6 +15,7 @@ export default {
   export: 'Export',
   refresh: 'Refresh',
   back: 'Back',
+  close: 'Close',
   tip: 'Tip',
   success: 'Operation succeeded',
   requestFailed: 'Request failed',

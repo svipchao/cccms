@@ -156,6 +156,9 @@ export function applyRadius(radius: number): void {
   const el = document.documentElement
   const control = Math.min(radius, 8)
   el.style.setProperty('--art-radius', `${radius}px`)
+  // 小/大档位也要跟着走，否则调整圆角时小控件与弹窗（--art-radius-lg）原地不动
+  el.style.setProperty('--art-radius-sm', `${Math.max(radius - 4, 0)}px`)
+  el.style.setProperty('--art-radius-lg', `${radius + 4}px`)
   el.style.setProperty('--el-border-radius-base', `${control}px`)
   el.style.setProperty('--el-border-radius-small', `${Math.max(control - 2, 0)}px`)
 }

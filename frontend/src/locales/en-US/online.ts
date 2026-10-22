@@ -10,6 +10,7 @@ export default {
   alert:
     'Sessions come from the Redis index. "Force offline" also revokes issued tokens, so the peer\'s next request fails immediately.',
   user: 'User',
+  sessionCount: '{count} session(s)',
   device: 'Device',
   os: 'OS',
   browser: 'Browser',

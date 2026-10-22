@@ -330,7 +330,7 @@ const columns = computed<ArtTableColumn[]>(() => [
     filter: { type: 'date', startKey: 'expire_start', endKey: 'expire_end' },
     sortable: 'custom',
   },
-  { prop: 'read_count', label: t('notice.readCountLabel'), width: 100, align: 'right', sortable: 'custom' },
+  { prop: 'read_count', label: t('notice.readCountLabel'), width: 120, align: 'right', sortable: 'custom' },
   { prop: 'create_time', label: t('notice.createdAtLabel'), width: 170, filter: { type: 'date' } },
   { prop: 'action', label: t('table.action'), width: 170, fixed: 'right', slot: 'action', lockVisible: true },
 ])

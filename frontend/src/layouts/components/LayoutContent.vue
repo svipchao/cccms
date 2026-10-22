@@ -45,7 +45,7 @@
  */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { translateTitle } from '@/locales/title'
+import { translateMenuTitle } from '@/locales/menuTitle'
 import { useWorktabStore } from '@/stores/worktab'
 
 const worktab = useWorktabStore()
@@ -56,7 +56,7 @@ const srTitle = computed(() => {
   if (route.name === 'dashboard') {
     return ''
   }
-  return translateTitle(String(route.meta?.title ?? ''))
+  return translateMenuTitle(route.path, String(route.meta?.title ?? ''))
 })
 </script>
 

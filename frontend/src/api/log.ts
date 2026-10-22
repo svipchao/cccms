@@ -134,3 +134,32 @@ export interface LoginAnalysis {
 export function logLoginAnalysis(params: { days?: number; start?: string; end?: string } = {}) {
   return http.get<LoginAnalysis>('/log/login/analysis', params)
 }
+
+/** 审计链校验结果（全局扫描，仅平台超管可调用） */
+export interface AuditVerify {
+  ok: boolean
+  /** 扫描到的日志行数 */
+  total: number
+  /** 尚未进入哈希链的行数（正常应等于未封存的数量） */
+  unchained: number
+  broken_count: number
+  modified_count: number
+  /** 仅前 20 条样本，全量数量看 broken_count */
+  broken_ids: number[]
+  modified_ids: number[]
+  /** 链尾与最近一次封存不一致 */
+  tail_stale: boolean
+  /** 封存签名自校验 */
+  seal_ok: boolean
+  duration_ms: number
+}
+
+/**
+ * 校验审计哈希链。
+ *
+ * 全表扫描：日志量大时耗时可达数十秒，前端要给 loading。
+ * 链跨租户连续，因此只有平台租户超管能调，其他身份会 403。
+ */
+export function logAuditVerify() {
+  return http.post<AuditVerify>('/log/audit/verify')
+}

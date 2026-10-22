@@ -180,7 +180,7 @@ import ArtSettingsDrawer from '@/components/core/ArtSettingsDrawer.vue'
 import ArtIcon from '@/components/core/ArtIcon.vue'
 import MessageCenterDrawer from '@/components/MessageCenterDrawer.vue'
 import type { MenuNode } from '@/api/types'
-import { translateTitle } from '@/locales/title'
+import { translateMenuTitle } from '@/locales/menuTitle'
 import { useMenuStore } from '@/stores/menu'
 import { useNoticeStore } from '@/stores/notice'
 import { useExportTaskStore } from '@/stores/exportTask'
@@ -239,7 +239,7 @@ const crumbs = computed<Crumb[]>(() => {
   if (chain.length > 0) {
     return chain.map((item, index) => ({
       path: item.path,
-      title: translateTitle(item.title),
+      title: translateMenuTitle(item.path, item.title),
       // 目录没有对应路由，不可跳转；末级是当前页，同样不给链接
       linkable: item.type !== 1 && index < chain.length - 1,
     }))
@@ -250,8 +250,8 @@ const crumbs = computed<Crumb[]>(() => {
     route.matched
       .slice(1)
       .filter((r) => r.meta?.title)
-      // meta.title 可能是静态路由的 i18n key，也可能是后端已翻译好的菜单标题
-      .map((r) => ({ path: r.path, title: translateTitle(r.meta.title), linkable: true }))
+      // meta.title 可能是静态路由的 i18n key，也可能是后端菜单的中文原文
+      .map((r) => ({ path: r.path, title: translateMenuTitle(r.path, r.meta.title), linkable: true }))
   )
 })
 

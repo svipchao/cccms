@@ -34,6 +34,9 @@
       </template>
 
       <template #toolbar-right>
+        <el-button v-if="canAudit" :loading="auditLoading" @click="onAuditVerify"
+          ><template #icon><i class="ri-shield-check-line" /></template> {{ t('log.auditVerify') }}
+        </el-button>
         <el-button v-auth="'cccms:log:export'" @click="onExport"
           ><template #icon><i class="ri-download-2-line" /></template> {{ t('common.export') }}
         </el-button>
@@ -399,6 +402,50 @@
         </el-empty>
       </div>
     </el-drawer>
+
+    <!-- 审计链校验结果：只在平台超管点「校验审计链」后出现 -->
+    <el-dialog v-model="auditVisible" :title="t('log.auditTitle')" width="620px">
+      <template v-if="auditResult">
+        <el-alert
+          :type="auditResult.ok ? 'success' : 'error'"
+          :closable="false"
+          show-icon
+          :title="auditResult.ok ? t('log.auditHealthy') : t('log.auditBroken', { count: auditResult.broken_count })"
+        />
+        <el-descriptions class="audit-desc" :column="2" border size="small">
+          <el-descriptions-item :label="t('log.auditScanned')">{{ auditResult.total }}</el-descriptions-item>
+          <el-descriptions-item :label="t('log.auditUnchained')">{{ auditResult.unchained }}</el-descriptions-item>
+          <el-descriptions-item :label="t('log.auditBrokenCount')">{{ auditResult.broken_count }}</el-descriptions-item>
+          <el-descriptions-item :label="t('log.auditModifiedCount')">
+            {{ auditResult.modified_count }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('log.auditSeal')">
+            <el-tag :type="auditResult.seal_ok ? 'success' : 'danger'" effect="light" size="small">
+              {{ auditResult.seal_ok ? t('log.auditSealOk') : t('log.auditSealBad') }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item :label="t('log.auditDuration')">{{ auditResult.duration_ms }} ms</el-descriptions-item>
+        </el-descriptions>
+
+        <el-alert v-if="auditResult.tail_stale" class="audit-alert" type="warning" :closable="false" show-icon
+          :title="t('log.auditTailStale')"
+        />
+        <div v-if="auditResult.broken_ids.length || auditResult.modified_ids.length" class="audit-ids">
+          <div class="audit-ids-title">{{ t('log.auditIds') }}</div>
+          <div v-if="auditResult.broken_ids.length" class="audit-id-row">
+            <el-tag type="danger" effect="plain" size="small">{{ t('log.auditBrokenTag') }}</el-tag>
+            <span class="audit-id-list">{{ auditResult.broken_ids.join(', ') }}</span>
+          </div>
+          <div v-if="auditResult.modified_ids.length" class="audit-id-row">
+            <el-tag type="warning" effect="plain" size="small">{{ t('log.auditModifiedTag') }}</el-tag>
+            <span class="audit-id-list">{{ auditResult.modified_ids.join(', ') }}</span>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <el-button @click="auditVisible = false">{{ t('common.close') }}</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -420,12 +467,14 @@ import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 import {
   logAction,
+  logAuditVerify,
   logDelete,
   logDetail,
   logExport,
   logList,
   logLoginAnalysis,
   logSession,
+  type AuditVerify,
   type LogAction,
   type LogRow,
 } from '@/api/log'
@@ -1053,6 +1102,25 @@ async function onExport(): Promise<void> {
   exportTaskStore.open()
 }
 
+/* ---- 审计链校验（平台超管；后端另有数据边界校验） ---- */
+const canAudit = computed(() => userStore.hasAuth('cccms:log:audit'))
+const auditLoading = ref(false)
+const auditVisible = ref(false)
+const auditResult = ref<AuditVerify | null>(null)
+
+async function onAuditVerify(): Promise<void> {
+  auditLoading.value = true
+  try {
+    auditResult.value = await logAuditVerify()
+    auditVisible.value = true
+  } catch {
+    // 403 也走这里：错误提示由 api 层统一给出，这里只避免原始异常冒到控制台
+    ElMessage.error(t('log.auditFailed'))
+  } finally {
+    auditLoading.value = false
+  }
+}
+
 /* ---- 详情 ---- */
 const detailVisible = ref(false)
 const detailLoading = ref(false)
@@ -1450,5 +1518,37 @@ async function onDeleteOne(id: number): Promise<void> {
   word-break: break-all;
   background: var(--art-hover-bg);
   border-radius: calc(var(--art-radius) - 2px);
+}
+
+/* ---- 审计链校验结果 ---- */
+.audit-desc {
+  margin-top: 12px;
+}
+
+.audit-alert {
+  margin-top: 12px;
+}
+
+.audit-ids {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.audit-ids-title {
+  margin-bottom: 6px;
+  color: var(--art-muted);
+}
+
+.audit-id-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+
+.audit-id-list {
+  color: var(--art-sub);
+  line-height: 1.6;
+  word-break: break-all;
 }
 </style>

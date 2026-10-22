@@ -13,6 +13,7 @@ from cccms.core.permissions import make_router, permission
 from cccms.db.session import get_session
 from cccms.schemas.base import IdsRequest
 from cccms.schemas.log import (
+    AuditVerifyOut,
     LogActionOut,
     LogAnalysisOut,
     LogDetailOut,
@@ -107,6 +108,17 @@ async def export(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, object]:
     return ok(await log_service.export_logs(session, user, params))
+
+
+@router.post("/audit/verify", response_model=ApiResponse[AuditVerifyOut])
+@permission("cccms:log:audit", "校验审计链", methods=["POST"])
+async def audit_verify(user: UserContext = Depends(get_current_user)) -> dict[str, object]:
+    """校验审计哈希链。
+
+    不依赖 ``get_session``：``verify_chain`` 自己开会话做 keyset 分页，
+    避免把请求会话占用到全表扫完。
+    """
+    return ok(await log_service.verify_audit(user))
 
 
 @router.post("/delete", response_model=ApiResponse[dict[str, object]])

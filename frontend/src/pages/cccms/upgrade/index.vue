@@ -15,7 +15,25 @@
           <template #header>
             <div class="head">
               <span>{{ t('upgrade.current') }}</span>
-              <div>
+              <div class="actions">
+                <el-select
+                  v-if="status.remotes.length"
+                  v-model="remote"
+                  class="remote"
+                  :placeholder="t('upgrade.sourceLabel')"
+                  :disabled="checking || running"
+                  @change="onRemoteChange"
+                >
+                  <el-option
+                    v-for="item in status.remotes"
+                    :key="item.name"
+                    :label="item.name"
+                    :value="item.name"
+                  >
+                    <span class="remote-name">{{ item.name }}</span>
+                    <span class="remote-url">{{ item.url }}</span>
+                  </el-option>
+                </el-select>
                 <el-button :loading="checking" @click="onCheck">{{ t('upgrade.check') }}</el-button>
                 <el-button type="primary" :loading="running" :disabled="!status.can_run" @click="onRun">
                   {{ t('upgrade.run') }}
@@ -88,17 +106,27 @@ const { t } = useI18n({ useScope: 'global' })
 
 const status = ref<UpgradeStatus | null>(null)
 const check = ref<UpgradeCheck | null>(null)
+const remote = ref('')
 const checking = ref(false)
 const running = ref(false)
 
+function onRemoteChange(): void {
+  // 换了来源，上一次的比对结论就不作数了。
+  check.value = null
+}
+
 async function load(): Promise<void> {
   status.value = await upgradeStatus()
+  const list = status.value.remotes ?? []
+  if (!list.some((item) => item.name === remote.value)) {
+    remote.value = (list.find((item) => item.is_default) ?? list[0])?.name ?? ''
+  }
 }
 
 async function onCheck(): Promise<void> {
   checking.value = true
   try {
-    check.value = await upgradeCheck()
+    check.value = await upgradeCheck(remote.value || undefined)
     await load()
   } finally {
     checking.value = false
@@ -113,7 +141,7 @@ async function onRun(): Promise<void> {
     await ElMessageBox.confirm(
       t('upgrade.runConfirmRef', {
         ref: status.value.branch,
-        commit: `origin/${status.value.branch}`,
+        commit: status.value.upstream || status.value.branch,
       }),
       t('upgrade.runTitle'),
       { type: 'warning' },
@@ -123,7 +151,7 @@ async function onRun(): Promise<void> {
   }
   running.value = true
   try {
-    const result = await upgradeRun()
+    const result = await upgradeRun(remote.value || undefined)
     if (result.output) {
       ElMessage.success(result.output.slice(0, 200))
     }
@@ -149,6 +177,25 @@ onMounted(load)
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remote {
+  width: 220px;
+}
+
+.remote-name {
+  margin-right: 12px;
+}
+
+.remote-url {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
 }
 
 .meta {

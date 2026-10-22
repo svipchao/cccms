@@ -21,6 +21,7 @@ from cccms.core.tenant import get_tenant_by_code
 from cccms.core.time import now
 from cccms.models.user import User
 from cccms.services import captcha, mail
+from cccms.services.password_history import ensure_not_reused, remember
 
 logger = logging.getLogger("cccms.password_reset")
 
@@ -192,8 +193,11 @@ async def reset_password(session: AsyncSession, payload: dict[str, Any]) -> None
     validate_password(password, username=user.username, nickname=user.nickname, email=user.email or "")
     if await verify_password_async(password, user.password_hash):
         raise ValidationFailed("新密码不能与原密码相同")
+    await ensure_not_reused(session, tenant_id=user.tenant_id, user_id=user.id, password=password)
+    previous_hash = user.password_hash
     user.password_hash = await hash_password_async(password)
     user.password_changed_at = now()
+    await remember(session, tenant_id=user.tenant_id, user_id=user.id, password_hash=previous_hash)
     await session.commit()
     # 改密后立即作废该用户全部令牌与在线会话（与后台改密保持一致）。
     from cccms.core import session as token_session

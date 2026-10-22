@@ -1,4 +1,12 @@
-// 样式顺序有讲究：Tailwind(含 preflight) → Element Plus(按需) → 覆盖层 → 业务全局
+// 样式顺序有讲究：EP 基础变量 → Tailwind(含 preflight) → EP 暗色变量 → 覆盖层 → 业务全局
+//
+// ⚠️ `base.css` 必须在这里显式排到最前，不能只依赖组件按需样式引入：
+// 每个 `element-plus/es/components/*/style/css` 都会再引它一次，而组件样式是在
+// 页面 chunk 求值时（即 `element.css` **之后**）才注入的，同权重的 `:root`
+// 会把覆盖层映射的 `--el-border-color` / `--el-text-color-*` / 语义色反超：
+// 输入框边框退回 EP 默认的 #dcdfe6（白底 1.4:1，几乎看不见），于是静止态没有
+// 边框、只有聚焦时的蓝色环可见。在这里先求值一次，靠模块去重保证它留在最前。
+import 'element-plus/theme-chalk/base.css'
 import '@/assets/styles/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import 'remixicon/fonts/remixicon.css'

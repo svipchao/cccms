@@ -19,6 +19,12 @@ export interface OnlineSession {
   last_at: string
   /** 令牌过期时间 */
   expire_at: string
+  /** 该用户的在线会话数（>1 表示多端登录，列表里合并为一行） */
+  sessions: number
+  /** 该用户全部会话的 jti */
+  jtis: string[]
+  /** 当前登录的就是这条（任一会话属于自己即为 true） */
+  current: boolean
 }
 
 export function onlineList(params: Record<string, unknown>) {

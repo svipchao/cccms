@@ -15,6 +15,7 @@ export default {
   export: '导出',
   refresh: '刷新',
   back: '返回',
+  close: '关闭',
   tip: '提示',
   success: '操作成功',
   requestFailed: '请求失败',

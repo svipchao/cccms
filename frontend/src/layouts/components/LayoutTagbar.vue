@@ -14,7 +14,7 @@
             <ArtIcon :name="tab.icon" />
           </el-icon>
           <span class="tagbar-item-text">{{
-            tab.path === HOME_PATH ? t('layout.home') : translateTitle(tab.title)
+            tab.path === HOME_PATH ? t('layout.home') : translateMenuTitle(tab.path, tab.title)
           }}</span>
           <!-- 关闭：把命中区做到 22×22（图标仍 12px），原来只有一个 12px 的
                图标可点，误触成本高、也摸不着。 -->
@@ -93,7 +93,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import ArtIcon from '@/components/core/ArtIcon.vue'
-import { translateTitle } from '@/locales/title'
+import { translateMenuTitle } from '@/locales/menuTitle'
 import { useMenuStore } from '@/stores/menu'
 import { HOME_PATH, useWorktabStore } from '@/stores/worktab'
 

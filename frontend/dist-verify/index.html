@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 站点图标：与登录页 / 侧边栏共用同一个文件（public/logo.png） -->
+    <link rel="icon" type="image/png" href="./logo.png" />
+    <link rel="apple-touch-icon" href="./logo.png" />
+    <title>CCCMS 管理系统</title>
+    <style>
+      html,
+      body,
+      #app {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #cccms-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #f6f8fb;
+        transition: opacity 0.25s ease;
+      }
+      #cccms-loader.is-hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      /* 首屏品牌：盾牌 + 系统名（与登录页/侧边栏同一套比例，整体放大 1.5 倍） */
+      .cccms-loader-brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: center;
+      }
+      .cccms-loader-brand img {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+      }
+      .cccms-loader-brand span {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: #444;
+      }
+      .cccms-loader-bar {
+        width: 160px;
+        height: 3px;
+        overflow: hidden;
+        background: #e3e8f0;
+        border-radius: 3px;
+      }
+      .cccms-loader-bar::after {
+        display: block;
+        width: 40%;
+        height: 100%;
+        content: '';
+        background: #2b6cff;
+        border-radius: 3px;
+        animation: cccms-loading 1s ease-in-out infinite;
+      }
+      @keyframes cccms-loading {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(280%);
+        }
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-D0LBA-Lv.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/vue-BhpH3lGW.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-dxoYaQOb.css">
+  </head>
+  <body>
+    <!--
+      ResizeObserver 循环告警拦截（必须在任何 module 之前执行，因此写成内联脚本）。
+
+      【为什么会有这条告警】
+        element-plus 的 el-table 在 fit（默认 true）下用 ResizeObserver 观察自身，
+        回调里重算列宽 → 表格尺寸随之变化 → 同帧内再次触发观察者。
+        按规范浏览器会把后续通知推迟到下一帧，并报
+        `ResizeObserver loop completed with undelivered notifications.`
+        也就是说：**布局是收敛的，页面没有坏**，这只是一条信息性提示。
+
+      【为什么要拦】
+        它会走 `window.onerror`：开发环境下被 Vite 弹成整屏红色错误遮罩（把真正的错误盖住），
+        生产环境下则会当成未捕获异常进错误上报，属于纯噪音。
+
+      【为什么放在 index.html】
+        Vite 的遮罩客户端在监听 window 的 error 事件，注册顺序决定谁能先拦下来；
+        内联在 <head>/<body> 顶部是唯一能保证「先于一切 module 执行」的位置。
+        用捕获阶段 + stopImmediatePropagation，确保后续监听（含 Vite 遮罩）拿不到该事件。
+
+      【只拦这一条】
+        正则精确匹配浏览器原文，其余错误一律照常抛出 —— 不要改成宽松匹配，
+        否则会把真实报错一起吞掉。
+
+        另外：这条告警也可能是**真实布局缺陷**的信号，不要一律当噪音。
+        典型就是 el-table 的高度反馈循环（父容器高度由内容撑开 + 表格 height='100%'）：
+        页面（或页面内滚动容器）高度会持续翻倍增长，同时这条告警刷个不停。
+        判断方法：**偶发一次**是正常的重排，**持续刷屏**就去查 ArtTable 的 height 说明。
+    -->
+    <script>
+      ;(function () {
+        var RE = /^ResizeObserver loop (limit exceeded|completed with undelivered notifications)\.?$/
+        window.addEventListener(
+          'error',
+          function (e) {
+            var msg = e && e.message ? String(e.message) : ''
+            if (RE.test(msg)) {
+              e.stopImmediatePropagation()
+              e.preventDefault()
+            }
+          },
+          true,
+        )
+      })()
+    </script>
+
+    <div id="app"></div>
+    <div id="cccms-loader">
+      <div class="cccms-loader-brand">
+        <img src="./logo.png" alt="logo" />
+        <span>CCCMS</span>
+      </div>
+      <div class="cccms-loader-bar"></div>
+    </div>
+  </body>
+</html>

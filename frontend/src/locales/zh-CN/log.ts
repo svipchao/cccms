@@ -97,4 +97,23 @@ export default {
 
   /* ---- 导出（全局导出任务中心） ---- */
   exportQueued: '已加入导出队列（共 {total} 行），可到右上角「导出任务」查看进度',
+
+  /* ---- 审计链校验（仅平台租户超管） ---- */
+  auditVerify: '校验审计链',
+  auditTitle: '审计链校验结果',
+  auditHealthy: '审计链完整，未发现删除或篡改',
+  auditBroken: '发现 {count} 条链路断裂（prev_hash 对不上）',
+  auditScanned: '扫描行数',
+  auditUnchained: '未入链',
+  auditBrokenCount: '断裂',
+  auditModifiedCount: '被篡改',
+  auditSeal: '封存签名',
+  auditSealOk: '有效',
+  auditSealBad: '校验失败',
+  auditDuration: '耗时',
+  auditTailStale: '链尾与最近一次封存不一致：可能还有未封存的新日志，或封存任务没有运行',
+  auditIds: '涉及 ID（仅显示前 20 条，完整数量见上方）',
+  auditBrokenTag: '断裂',
+  auditModifiedTag: '篡改',
+  auditFailed: '校验失败：需要平台租户的超级管理员身份',
 }

@@ -3,14 +3,14 @@
     <el-sub-menu v-if="hasChildren(m)" :index="String(m.id)">
       <template #title>
         <el-icon><ArtIcon :name="m.icon" /></el-icon>
-        <span>{{ m.title }}</span>
+        <span>{{ translateMenuTitle(m.path, m.title) }}</span>
       </template>
       <SidebarSubmenu :menus="m.children || []" />
     </el-sub-menu>
 
     <el-menu-item v-else :index="m.path" @mouseenter="prefetch(m.path)" @focus="prefetch(m.path)">
       <el-icon><ArtIcon :name="m.icon" /></el-icon>
-      <template #title>{{ m.title }}</template>
+      <template #title>{{ translateMenuTitle(m.path, m.title) }}</template>
     </el-menu-item>
   </template>
 </template>
@@ -20,6 +20,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ArtIcon from '@/components/core/ArtIcon.vue'
+import { translateMenuTitle } from '@/locales/menuTitle'
 import type { MenuNode } from '@/api/types'
 
 const props = defineProps<{ menus: MenuNode[] }>()

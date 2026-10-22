@@ -3,6 +3,14 @@ import instance from './request'
 /** 在线升级只允许本地开发环境，git fetch/pull 可能较慢，统一放宽超时 */
 const SLOW = { timeout: 180000 }
 
+/** 仓库已配置的 git 远端（url 已由后端去掉 userinfo / 查询串） */
+export interface UpgradeRemote {
+  name: string
+  url: string
+  /** 未显式选择时后端会用的远端 */
+  is_default: boolean
+}
+
 export interface UpgradeStatus {
   version: string
   enabled: boolean
@@ -14,7 +22,11 @@ export interface UpgradeStatus {
   dirty: boolean
   behind: number
   ahead: number
+  /** 比对用的上游引用（如 cccms/main），未设置跟踪分支时由远端兜底 */
+  upstream: string
   can_run: boolean
+  /** 页面下拉可选的同步来源；无远端或读取失败时为空 */
+  remotes: UpgradeRemote[]
 }
 
 export interface UpgradeCheck {
@@ -41,18 +53,23 @@ export function upgradeStatus() {
   return instance.get('/upgrade', SLOW) as unknown as Promise<UpgradeStatus>
 }
 
-export function upgradeCheck() {
-  return instance.get('/upgrade/check', SLOW) as unknown as Promise<UpgradeCheck>
+/** remote 缺省时后端按 CCCMS_UPGRADE_REMOTE / 唯一远端决定 */
+function remoteConfig(remote?: string) {
+  return { ...SLOW, params: remote ? { remote } : undefined }
+}
+
+export function upgradeCheck(remote?: string) {
+  return instance.get('/upgrade/check', remoteConfig(remote)) as unknown as Promise<UpgradeCheck>
 }
 
 export function upgradeTags() {
   return instance.get('/upgrade/tags', SLOW) as unknown as Promise<UpgradeTag[]>
 }
 
-export function upgradeInit() {
-  return instance.post('/upgrade/init', undefined, SLOW) as unknown as Promise<UpgradeResult>
+export function upgradeInit(remote?: string) {
+  return instance.post('/upgrade/init', undefined, remoteConfig(remote)) as unknown as Promise<UpgradeResult>
 }
 
-export function upgradeRun() {
-  return instance.post('/upgrade/run', undefined, SLOW) as unknown as Promise<UpgradeResult>
+export function upgradeRun(remote?: string) {
+  return instance.post('/upgrade/run', undefined, remoteConfig(remote)) as unknown as Promise<UpgradeResult>
 }

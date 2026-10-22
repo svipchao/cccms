@@ -143,27 +143,35 @@ async def touch_online(jti: str) -> None:
         return
 
 
-async def rotate_online(old_jti: str, new_jti: str, exp: int) -> None:
+async def rotate_online(old_jti: str, new_jti: str, exp: int) -> bool:
+    """把会话从旧 jti 迁到新 jti；返回 False 表示没抢到（并发续期已被别人接管）。
+
+    「先 hgetall 再 delete」：delete 的返回值是唯一的抢占凭据。续期窗口内的并发请求
+    都会读到同一份旧记录，只有真正删掉它（返回值 1）的那个请求才继续下发新令牌，
+    否则同一用户会在一秒内攒出多条孤儿会话，在线列表里就出现「一个用户好几行」。
+    """
     old_key = Keys.online_session(old_jti)
     new_key = Keys.online_session(new_jti)
     ttl = max(0, exp - int(time.time()))
     if ttl <= 0:
-        return
+        return False
     try:
         client = get_redis()
         payload = cast("dict[str, Any]", await client.hgetall(old_key))
         if not payload:
-            return
+            return False
+        if not await client.delete(old_key):
+            return False
+        await client.zrem(Keys.ONLINE_INDEX, old_jti)
         payload["jti"] = new_jti
         payload["last_at"] = str(int(time.time()))
         payload["exp"] = str(exp)
         await client.hset(new_key, mapping=payload)  # type: ignore[arg-type]
         await client.expire(new_key, ttl)
         await client.zadd(Keys.ONLINE_INDEX, {new_jti: int(time.time())})
-        await client.delete(old_key)
-        await client.zrem(Keys.ONLINE_INDEX, old_jti)
+        return True
     except RedisError:
-        return
+        return False
 
 
 async def remove_online(jti: str) -> None:
