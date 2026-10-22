@@ -41,6 +41,17 @@ export function logDelete(ids: number[]) {
   return http.post<null>('/log/delete', { ids })
 }
 
+/**
+ * 单条日志全文（详情抽屉）。
+ *
+ * 列表为了体积已裁掉 `params` / `result` / `ua`，打开详情时按 id 再取一次。
+ * 后端该接口是 `#[NoAuth]`：能进日志页（`cccms:log:index`）就该能看详情；
+ * 越权或不存在的 id 一律 404，不泄露行是否存在。
+ */
+export function logDetail(id: number) {
+  return http.get<LogRow>('/log/detail', { id })
+}
+
 /** 一次用户操作的链路聚合结果（P2-6）：同一次操作的多个请求共用一个 trace_id */
 export interface LogTrace {
   trace_id: string

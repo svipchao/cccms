@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace plugin\cccms\support;
 
+use RuntimeException;
 use support\Log;
+use support\Redis;
 use think\facade\Db;
 use Throwable;
 
@@ -57,8 +59,26 @@ final class LogChain
     /** 链表不可用时的重检间隔（秒）：避免每次写日志都白跑一次失败的查询 */
     private const RECHECK_SECONDS = 60;
 
-    /** 当前哈希版本：1 = 在 v0 的 16 个字段基础上加入 action_id / session_id */
-    public const VERSION = 1;
+    /**
+     * 当前哈希版本。
+     *
+     * - `v0`：16 个业务字段，无密钥 `sha256`；
+     * - `v1`：在 v0 基础上加入 `action_id` / `session_id`，仍是无密钥 `sha256`；
+     * - `v2`：字段集同 v1，**算法改为 HMAC-SHA256**（密钥取 `AUDIT_SIGNING_KEY`）。
+     *
+     * 为什么要 v2：无密钥的 `sha256` 只能防「改单行不重算」和「删中间行」，
+     * 挡不住有库权限的人——他改完一行后可以把后续所有行的 `row_hash` 全部重算，
+     * 链校验照样通过。HMAC 的密钥不在库里，这条重算路径才被真正堵死。
+     */
+    public const VERSION = 2;
+
+    /**
+     * 降级计数键：没能入链的写入次数累计。
+     *
+     * 「链路不可用 / 未配签名密钥时降级为普通插入」是刻意取舍（日志比链路重要），
+     * 但**降级必须能被看见** —— 否则等于静默失去防篡改能力，而没人会去翻日志。
+     */
+    public const DEGRADED_KEY = 'cccms:logchain:degraded';
 
     /**
      * v0：最早的字段集（历史行 `hash_version = 0`，必须**逐字保持不变**）。
@@ -130,7 +150,9 @@ final class LogChain
     {
         $data = self::normalize($row, self::VERSION);
 
-        if (!self::ready()) {
+        // 链不可用、或未配置签名密钥（v2 起必需）时降级为普通插入：
+        // 少一条链，总比整条日志丢掉好。降级次数记在 `cccms:logchain:degraded`，由 /metrics 暴露。
+        if (!self::ready() || !self::hasSigningKey()) {
             return self::plainInsert($data);
         }
 
@@ -288,20 +310,48 @@ final class LogChain
      */
     private static function fields(int $version): array
     {
-        return $version >= self::VERSION ? self::FIELDS_V1 : self::FIELDS_V0;
+        // 字段集只有「v0（16 字段）」与「v1 及以后（含 action_id / session_id）」两档；
+        // 不能再写成 `>= self::VERSION`：v2 的行用的是 v1 字段集，写成 >= 2 会让 v1 行错用 v0。
+        return $version >= 1 ? self::FIELDS_V1 : self::FIELDS_V0;
     }
 
     /**
      * 计算行哈希。
      *
      * @param array<string,mixed> $normalized 已规范化的行
+     * @param int                 $version    按**行上记录的**版本选算法，不能一律用当前版本
      */
-    public static function hash(string $prevHash, array $normalized): string
+    public static function hash(string $prevHash, array $normalized, int $version = self::VERSION): string
     {
-        return hash(
-            'sha256',
-            $prevHash . "\n" . (string)json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-        );
+        $payload = $prevHash . "\n"
+            . (string)json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        if ($version >= 2) {
+            return hash_hmac('sha256', $payload, self::signingKey());
+        }
+
+        return hash('sha256', $payload);
+    }
+
+    /** 是否已配置链签名密钥。未配置时 `write()` 降级为普通插入（日志比链路更重要）。 */
+    public static function hasSigningKey(): bool
+    {
+        return self::signingKeyRaw() !== '';
+    }
+
+    private static function signingKey(): string
+    {
+        $key = self::signingKeyRaw();
+        if ($key === '') {
+            throw new RuntimeException('AUDIT_SIGNING_KEY 未配置，无法计算审计链签名');
+        }
+
+        return $key;
+    }
+
+    private static function signingKeyRaw(): string
+    {
+        return trim((string)(getenv('AUDIT_SIGNING_KEY') ?: ''));
     }
 
     /** 链表 / 列是否就绪（升级后无需重启：负结论只缓存 60 秒） */
@@ -345,6 +395,8 @@ final class LogChain
      */
     private static function plainInsert(array $data): int
     {
+        self::bumpDegraded();
+
         // 迁移未执行时不写新列（否则插入会因未知列直接失败，日志就没了）
         if (!self::$columnsReady) {
             unset($data['action_id'], $data['session_id'], $data['hash_version']);
@@ -354,5 +406,20 @@ final class LogChain
         $data['row_hash']  = '';
 
         return (int)Db::name('log')->insertGetId($data);
+    }
+
+    /**
+     * 递增降级计数。
+     *
+     * 计数落在 Redis 而不是进程内静态变量：Webman 多进程 + 多实例，进程内计数会失真。
+     * 计数本身失败（Redis 也挂了）不能影响写日志，因此吞掉异常。
+     */
+    private static function bumpDegraded(): void
+    {
+        try {
+            Redis::incr(self::DEGRADED_KEY);
+        } catch (Throwable) {
+            // 计数失败不影响日志写入
+        }
     }
 }

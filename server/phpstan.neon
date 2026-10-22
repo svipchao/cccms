@@ -42,6 +42,22 @@ parameters:
                 # think-orm 的 query/execute 同样是 __callStatic 转发，静态分析看不到。
                 - plugin/cccms/support/LogChain.php
                 - plugin/cccms/command/DbUpgradeCommand.php
+                # 插件表检查（R3）查 information_schema，判断插件表是否已有 tenant_id 列
+                - plugin/cccms/support/DataScopeChecker.php
+
+        # `Redis::setex()` 同样是 facade 的 `__callStatic` 转发（调度进程心跳）。
+        -
+            identifier: staticMethod.notFound
+            message: '#Redis::setex\(\)\.$#'
+            paths:
+                - plugin/cccms/support/CrontabRunner.php
+
+        # think-orm 的 `withTrashed()` 是**查询入口**，按静态方式调用（`Model::withTrashed()`）
+        # 是官方用法，静态分析把它当实例方法。既有调用点按文件计数冻结在 baseline，
+        # 新增一个调用点就会「期望 1 次实际 2 次」式地飘红，因此按方法名统一放行。
+        -
+            identifier: method.staticCall
+            message: '#withTrashed\(\)\.$#'
 
         # Webman 的 Request 由中间件在运行时挂载动态属性（`$user` / `$jti` / `$traceId` /
         # `$controller` / `$action` 等），静态分析看不到这些属性。既有代码的同类报错

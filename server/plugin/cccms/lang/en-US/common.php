@@ -12,6 +12,7 @@ declare(strict_types=1);
 return [
     'not_logged_in'          => 'Not signed in',
     'session_expired'        => 'Your session has expired, please sign in again',
+    'tenant_context_missing' => 'Tenant context is missing, the operation was rejected',
     'invalid_credentials'    => 'Invalid credentials or the user no longer exists',
     'unauthorized'           => 'Not signed in or the session has expired',
     'no_permission'          => 'Permission denied: {slug}',

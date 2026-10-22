@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace plugin\cccms\support;
 
 use support\Log;
+use support\Redis;
 use think\facade\Db;
 use Throwable;
 
@@ -35,10 +36,47 @@ final class CrontabRunner
     /**
      * 纯执行（不做锁与超时判定），供需要自行控制调度时机的场景使用。
      *
+     * **执行身份只由任务归属决定**（P1-2）：定时任务跑在平台进程里，而「立即执行」
+     * 跑在操作者的请求里。若沿用 `request()->user`，同一个任务手动与定时会看到不同的
+     * 数据范围、把数据写到不同租户。这里统一用「任务属主租户」执行：
+     *   - 平台任务（`tenant_id = 0`）→ 平台身份；
+     *   - 租户任务 → 以该租户身份，写入自动落到该租户。
+     * 操作者身份只记在 `sys_crontab_log.source = manual` 上，不参与数据权限。
+     *
      * @param array<string,mixed> $task
      * @return array{status:int,output:string,cost:int}
      */
     public static function run(array $task): array
+    {
+        return self::asOwner($task, static fn (): array => self::runTask($task));
+    }
+
+    /**
+     * 以「任务属主租户」的身份执行一段代码（P1-2）。
+     *
+     * 同时把 `DataScope` 的用户上下文置空：行级范围不该取决于「谁点的立即执行」——
+     * cron 进程本来就没有用户，手动执行也必须一致，否则同一任务两条路径结果不同。
+     * 两者都用 try/finally 恢复，避免常驻进程把身份泄漏给后续请求。
+     *
+     * @param array<string,mixed> $task
+     */
+    private static function asOwner(array $task, callable $fn): mixed
+    {
+        $tenantId = (int)($task['tenant_id'] ?? TenantContext::PLATFORM_ID);
+
+        return DataScope::runAs(
+            null,
+            static fn () => TenantContext::runAs($tenantId, static fn () => $fn())
+        );
+    }
+
+    /**
+     * 真正的任务调用（身份已由 `run()` / `execute()` 固定）。
+     *
+     * @param array<string,mixed> $task
+     * @return array{status:int,output:string,cost:int}
+     */
+    private static function runTask(array $task): array
     {
         $target = trim((string)$task['target']);
         $start  = microtime(true);
@@ -86,7 +124,33 @@ final class CrontabRunner
      * @param string              $source cron / retry / manual
      * @return array{status:int,output:string,cost:int}
      */
+    /**
+     * 调度进程心跳键。
+     *
+     * 与「最近一次任务执行时间」是两个不同信号：任务全是每小时一次时，后者天然很旧，
+     * 无法区分「调度进程死了」与「只是还没到点」。心跳年龄才是进程存活证据。
+     */
+    public const HEARTBEAT_KEY = 'cccms:crontab:heartbeat';
+
+    /** 写一次心跳（由调度进程每秒调用）。失败不影响调度本身。 */
+    public static function heartbeat(): void
+    {
+        try {
+            Redis::setex(self::HEARTBEAT_KEY, 90, (string)time());
+        } catch (Throwable) {
+            // 心跳写失败不能中断调度
+        }
+    }
+
     public static function execute(array $task, int $now, string $source = 'cron'): array
+    {
+        // 认领 / 释放运行锁同样要落在任务属主租户下：平台账号手动执行租户任务时，
+        // 若沿用操作者租户，锁会打在错误的租户行上（`sys_crontab` 参与租户隔离）。
+        return self::asOwner($task, static fn (): array => self::executeWithLock($task, $now, $source));
+    }
+
+    /** 认领 → 执行 → 释放锁（执行身份已由 `execute()` 固定） */
+    private static function executeWithLock(array $task, int $now, string $source): array
     {
         $id      = (int)($task['id'] ?? 0);
         $overlap = strtolower(trim((string)($task['overlap'] ?? 'skip')));
@@ -118,6 +182,14 @@ final class CrontabRunner
      * @param array{status:int,output:string,cost:int} $result
      */
     public static function writeLog(array $task, array $result, int $now, string $source = 'cron'): void
+    {
+        // 日志与「上次 / 下次执行时间」同样归属任务所属租户：平台账号手动执行租户任务时，
+        // 若按操作者租户写，日志会落到平台，与 cron 侧不一致。
+        self::asOwner($task, static fn () => self::writeLogInner($task, $result, $now, $source));
+    }
+
+    /** 真正的落库（身份已由 `writeLog()` 固定） */
+    private static function writeLogInner(array $task, array $result, int $now, string $source): void
     {
         try {
             self::insertLog($task, $result, $now, $source);

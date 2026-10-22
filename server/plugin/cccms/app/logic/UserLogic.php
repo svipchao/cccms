@@ -541,7 +541,9 @@ final class UserLogic
         // uk_username 是**全局唯一索引**（用户名不随租户重复），必须完全绕过租户作用域，
         // 否则「别的租户已占用」会被漏判，插入时撞唯一键；
         // withTrashed() 才能把回收站里的账号也算进来。
-        $q = User::withoutAllScopes()->withTrashed()->where('username', $username);
+        $q = User::withoutAllScopes('uk_username 是全局唯一键，跨租户查重才不会写出撞索引的账号')
+            ->withTrashed()
+            ->where('username', $username);
         if ($excludeId > 0) {
             $q->where('id', '<>', $excludeId);
         }

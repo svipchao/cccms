@@ -7,6 +7,8 @@ export interface TenantRow {
   id: number
   name: string
   code: string
+  /** 自定义域名：绑定后经该域名访问只能使用此租户；`null` 表示未绑定 */
+  domain: string | null
   contact: string
   phone: string
   status: number

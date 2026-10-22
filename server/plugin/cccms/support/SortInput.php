@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\support;
 
+use support\Log;
 use think\db\BaseQuery;
 
 /**
@@ -70,6 +71,12 @@ final class SortInput
 
         if ($prop !== '' && isset($sortable[$prop])) {
             return [$sortable[$prop], $dir === 'asc' ? 'asc' : 'desc'];
+        }
+
+        // 未命中白名单会让前端「点了列头没反应」，而且不报错、不留痕 —— dev 下提级记一条，
+        // 生产保持静默（非法入参可能来自扫描器，warning 会刷满日志）。
+        if ($prop !== '' && (bool)config('app.debug')) {
+            Log::warning('[cccms] 排序字段未命中白名单，已回落到默认排序: ' . $prop);
         }
 
         // 未指定 / 未知列：保持页面原有的默认排序

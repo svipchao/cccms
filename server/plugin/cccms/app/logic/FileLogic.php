@@ -75,6 +75,7 @@ final class FileLogic
             $row['url']           = FileStorage::url((string)$row['path']);
             $row['is_image']      = FileStorage::isImage((string)$row['ext']);
             $row['is_pdf']        = self::isPdf((string)$row['ext']);
+            $row['is_public']     = (int)($row['is_public'] ?? 0);
             $row['category_name'] = $categories[(int)$row['category_id']] ?? '';
         }
         unset($row);
@@ -188,10 +189,60 @@ final class FileLogic
     /** 补全 url / is_image / is_pdf 这类「按当前配置实时生成」的字段 */
     private static function decorate(array $row): array
     {
-        $row['url']      = FileStorage::url((string)$row['path']);
-        $row['is_image'] = FileStorage::isImage((string)$row['ext']);
-        $row['is_pdf']   = self::isPdf((string)$row['ext']);
+        $row['url']       = FileStorage::url((string)$row['path']);
+        $row['is_image']  = FileStorage::isImage((string)$row['ext']);
+        $row['is_pdf']    = self::isPdf((string)$row['ext']);
+        $row['is_public'] = (int)($row['is_public'] ?? 0);
         return $row;
+    }
+
+    /**
+     * 切换单个附件的匿名可读状态。
+     *
+     * 私有附件（`is_public = 0`）的直链会被 `StorageGuard` 拒绝，只能登录后经
+     * `GET /file/download` 读取 —— 静态直出没有登录态，做不到「按人可见」，
+     * 所以用「公开 / 私有」这一档粒度把风险交还给上传者。
+     */
+    public static function setPublic(int $id, bool $public): void
+    {
+        $file = File::newScopedQuery()->where('id', $id)->find();
+        if (!$file) {
+            // 区分「不存在」与「越权」，与删除同一套口径
+            if (File::withoutGlobalScope()->where('id', $id)->find()) {
+                throw new ApiException(I18n::t('file.no_permission'), 403);
+            }
+
+            throw new ApiException(I18n::t('file.not_found'), 404);
+        }
+
+        File::newScopedQuery()->where('id', $id)->update(['is_public' => $public ? 1 : 0]);
+    }
+
+    /**
+     * 取要下载的附件（登录态 + 数据权限）：越权 403、不存在 404。
+     *
+     * @return array{row:array<string,mixed>,absolute:?string} absolute 仅本地驱动有值
+     */
+    public static function findForDownload(int $id): array
+    {
+        $file = File::newScopedQuery()->where('id', $id)->find();
+        if (!$file) {
+            if (File::withoutGlobalScope()->where('id', $id)->find()) {
+                throw new ApiException(I18n::t('file.no_permission'), 403);
+            }
+
+            throw new ApiException(I18n::t('file.not_found'), 404);
+        }
+
+        $row      = $file->toArray();
+        $absolute = FileStorage::driver() === 'local' ? FileStorage::localPath((string)$row['path']) : null;
+
+        // 本地驱动且文件已不在盘上：不要回一个 200 空响应
+        if (FileStorage::driver() === 'local' && $absolute === null) {
+            throw new ApiException(I18n::t('file.not_found'), 404);
+        }
+
+        return ['row' => $row, 'absolute' => $absolute];
     }
 
     /**

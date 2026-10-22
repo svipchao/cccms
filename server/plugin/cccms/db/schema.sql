@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS `sys_tenant` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `name`        varchar(64)  NOT NULL COMMENT '租户名称',
   `code`        varchar(64)  NOT NULL COMMENT '租户标识(全局唯一)',
+  `domain`      varchar(128) DEFAULT NULL COMMENT '自定义域名(小写,不含协议与端口,NULL=未绑定)',
   `contact`     varchar(64)  NOT NULL DEFAULT '' COMMENT '联系人',
   `phone`       varchar(32)  NOT NULL DEFAULT '' COMMENT '联系电话',
   `status`      tinyint      NOT NULL DEFAULT 1 COMMENT '状态 1启用 0禁用',
@@ -35,7 +36,8 @@ CREATE TABLE IF NOT EXISTS `sys_tenant` (
   `update_time` datetime     NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `delete_time` datetime     DEFAULT NULL COMMENT '删除时间(NULL=未删除)',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_code` (`code`)
+  UNIQUE KEY `uk_code` (`code`),
+  UNIQUE KEY `uk_domain` (`domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='租户表';
 
 -- ---------------------------------------------------------------------
@@ -399,13 +401,15 @@ CREATE TABLE IF NOT EXISTS `sys_file` (
   `size`          bigint       NOT NULL DEFAULT 0 COMMENT '字节',
   `driver`        varchar(16)  NOT NULL DEFAULT 'local',
   `hash`          varchar(64)  NOT NULL DEFAULT '' COMMENT 'sha1',
+  `is_public`     tinyint(1)   NOT NULL DEFAULT 0 COMMENT '1=匿名可读(直链可访问) 0=私有(仅登录后经下载接口，默认)',
   `create_by`     bigint unsigned NOT NULL DEFAULT 0,
   `create_time`   datetime     NULL DEFAULT CURRENT_TIMESTAMP,
   `delete_time`   datetime     DEFAULT NULL COMMENT '删除时间(NULL=未删除)',
   PRIMARY KEY (`id`),
   KEY `idx_hash` (`hash`),
   KEY `idx_category` (`category_id`),
-  KEY `idx_tenant` (`tenant_id`)
+  KEY `idx_tenant` (`tenant_id`),
+  KEY `idx_path` (`path`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='附件表';
 
 -- ---------------------------------------------------------------------

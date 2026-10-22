@@ -65,6 +65,8 @@ final class Metrics
             'requests'   => self::httpStats($since),
             'online'     => OnlineSession::count(),
             'crontab'    => self::crontabStats(),
+            'crontab_heartbeat_age' => self::heartbeatAge(),
+            'logchain'   => self::logchainStats(),
             'disk'       => HealthProbe::diskStats(),
             'memory'     => HealthProbe::memoryStats(),
         ];
@@ -157,6 +159,21 @@ final class Metrics
             ['cccms_memory_limit_bytes ' . $limit]
         );
 
+        $add(
+            'cccms_crontab_heartbeat_age_seconds',
+            '调度进程心跳距今秒数；-1 表示取不到（进程未启动或 Redis 不可用）。',
+            'gauge',
+            ['cccms_crontab_heartbeat_age_seconds ' . (int)($snapshot['crontab_heartbeat_age'] ?? -1)]
+        );
+
+        $logchain = (array)($snapshot['logchain'] ?? []);
+        $add(
+            'cccms_logchain_degraded_total',
+            '写入时未能进链的日志条数（签名密钥缺失 / 链表不可用）；-1 表示取值失败。',
+            'gauge',
+            ['cccms_logchain_degraded_total ' . (int)($logchain['degraded'] ?? -1)]
+        );
+
         $add('cccms_metrics_scrape_timestamp_seconds', '本次抓取时间（Unix 秒）。', 'gauge', [
             'cccms_metrics_scrape_timestamp_seconds ' . (int)($snapshot['scrape_at'] ?? time()),
         ]);
@@ -179,6 +196,48 @@ final class Metrics
         } catch (Throwable) {
             return 0;
         }
+    }
+
+    /**
+     * 审计链降级次数。
+     *
+     * 「密钥缺失 / 链表不可用 → 降级普通插入」是有意取舍，但降级必须可见。
+     * 取不到时返回 **-1** 而不是 0：0 会被读成「一切正常」，-1 至少能让看板显示异常。
+     *
+     * @return array{degraded:int}
+     */
+    private static function logchainStats(): array
+    {
+        try {
+            $value = Redis::get(LogChain::DEGRADED_KEY);
+        } catch (Throwable) {
+            return ['degraded' => -1];
+        }
+
+        return ['degraded' => ($value === null || $value === false) ? 0 : (int)$value];
+    }
+
+    /**
+     * 调度进程心跳年龄（秒）。
+     *
+     * 与 `cccms_crontab_last_run_timestamp_seconds` 的分工：
+     * 后者取自「最近一次任务执行」，任务全是每小时一次时天然很旧，
+     * 无法区分「进程死了」与「还没到点」；心跳年龄才是进程存活证据。
+     * 取不到返回 **-1**（未知），不能当 0（= 刚刚还活着）。
+     */
+    private static function heartbeatAge(): int
+    {
+        try {
+            $value = Redis::get(CrontabRunner::HEARTBEAT_KEY);
+        } catch (Throwable) {
+            return -1;
+        }
+
+        if ($value === null || $value === false || $value === '') {
+            return -1;
+        }
+
+        return max(0, time() - (int)$value);
     }
 
     /**

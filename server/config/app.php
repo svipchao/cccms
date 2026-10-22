@@ -15,6 +15,9 @@
 use support\Request;
 
 return [
+    // 应用版本（**唯一字面量**，P2-1）：发布时只改这一处，`docs/更新日志.md` 记录对应条目，
+    // `tests/cases/VersionTest.php` 断言它与 `frontend/package.json` 一致。
+    'version' => '0.1.0',
     // 安全默认：生产环境不得透出异常详情，故默认关闭。
     // 本地开发在 server/.env 中设置 APP_DEBUG=true（见 .env.example）。
     'debug' => (bool)filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN),

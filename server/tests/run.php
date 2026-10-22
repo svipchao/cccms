@@ -25,6 +25,12 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use think\facade\Db;
 
+// 审计链 v2 起用 HMAC-SHA256，写入需要签名密钥。测试环境固定一个：
+// 不设的话 `LogChain::write()` 会走「降级普通插入」分支，链相关用例全部失效
+// （表现为「row_hash 应写入」失败，而不是报错，很容易被误读成库结构问题）。
+// 生产环境由 `SecurityBootstrap` 强制要求真实密钥，未配置直接拒绝启动。
+putenv('AUDIT_SIGNING_KEY=cccms-test-only-signing-key');
+
 // 初始化 think-orm 连接（与 webman worker 启动时 DatabaseBootstrap 做的事一致）。
 // 测试运行器不经过 webman 的启动流程，这里显式注入，让「需库」的集成测试
 // 在 CI（MySQL 服务就绪）下真正执行，而不是永远跳过；本地无库时由 dbAvailable() 自动跳过。

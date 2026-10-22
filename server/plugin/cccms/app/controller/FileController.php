@@ -12,12 +12,26 @@ use plugin\cccms\support\attribute\NoAuth;
 use plugin\cccms\support\attribute\Permission;
 use plugin\cccms\support\attribute\Restrict;
 use plugin\cccms\support\ChunkUpload;
+use plugin\cccms\support\Download;
+use plugin\cccms\support\FileStorage;
 use plugin\cccms\support\I18n;
 use Webman\Http\Request;
 use Webman\Http\Response;
 
 class FileController extends BaseController
 {
+    /** 允许内联渲染（预览）的类型；与 `StorageGuard::INLINE_SAFE` 同一口径 */
+    private const INLINE_MIME = [
+        'jpg'  => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png'  => 'image/png',
+        'gif'  => 'image/gif',
+        'webp' => 'image/webp',
+        'bmp'  => 'image/bmp',
+        'ico'  => 'image/x-icon',
+        'pdf'  => 'application/pdf',
+    ];
+
     #[Permission(slug: 'cccms:file:index', title: '附件列表')]
     public function index(Request $request): Response
     {
@@ -84,6 +98,65 @@ class FileController extends BaseController
     {
         FileLogic::delete((int)$request->input('id', 0));
         return $this->ok(null, I18n::t('common.deleted'));
+    }
+
+    /**
+     * 切换单个附件的「匿名可读」状态。
+     *
+     * 关闭后该附件的 `/storage/...` 直链立即失效（`StorageGuard` 返回 403），
+     * 只能在登录后通过 `GET /file/download` 读取 —— 静态直出没有登录态，
+     * 无法做到「按人可见」，因此粒度是「公开 / 私有」而不是「按角色」。
+     */
+    #[Permission(slug: 'cccms:file:public', title: '设置附件公开状态')]
+    #[Restrict(methods: ['POST'])]
+    public function setPublic(Request $request): Response
+    {
+        FileLogic::setPublic(
+            (int)$request->input('id', 0),
+            filter_var($request->input('is_public', false), FILTER_VALIDATE_BOOLEAN)
+        );
+
+        return $this->ok(null, I18n::t('common.updated'));
+    }
+
+    /**
+     * 私有附件的读取入口：登录即可（不要求附件菜单权限，否则业务页面显示不了自己传的图），
+     * 可见性由数据权限决定（越权 403、不存在 404）。
+     *
+     * - `raw=1`：按扩展名给 `Content-Type` 并 inline 输出 —— 前端取 blob 后喂给 `<img>` /
+     *   PDF 的 `iframe`（`<img src>` 带不了 Bearer 头，这是私有附件预览的唯一通路）；
+     * - 默认：按附件下载，`Content-Disposition` 带原始文件名。
+     */
+    #[NoAuth(title: '下载附件')]
+    public function download(Request $request): Response
+    {
+        ['row' => $row, 'absolute' => $absolute] = FileLogic::findForDownload((int)$request->get('id', 0));
+
+        if ($absolute === null) {
+            // 云存储：访问控制由对方负责（私有 bucket 需在云侧配签名 URL）
+            return redirect(FileStorage::url((string)$row['path']));
+        }
+
+        $response = new Response(200, [
+            'X-Content-Type-Options' => 'nosniff',
+            // 私有内容不进共享缓存：代理 / 浏览器缓存住就等于绕过了「关闭」
+            'Cache-Control'          => 'private, no-store',
+        ]);
+
+        if ($request->get('raw')) {
+            $ext = strtolower((string)$row['ext']);
+
+            return $response
+                ->withHeaders(['Content-Type' => self::INLINE_MIME[$ext] ?? 'application/octet-stream'])
+                ->file($absolute);
+        }
+
+        return $response
+            ->withHeaders([
+                'Content-Type'        => 'application/octet-stream',
+                'Content-Disposition' => Download::disposition((string)($row['original_name'] ?: $row['name'])),
+            ])
+            ->file($absolute);
     }
 
     #[Permission(slug: 'cccms:file:move', title: '移动附件到分类')]

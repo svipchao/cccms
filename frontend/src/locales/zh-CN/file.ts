@@ -25,6 +25,9 @@ export default {
   uploadTimeLabel: '上传时间',
   preview: '预览',
   view: '查看',
+  download: '下载',
+  publicLabel: '公开',
+  publicTip: '公开：直链任何人可访问；私有：直链失效，仅登录后可按权限下载',
 
   /* ---- 工具栏 ---- */
   recycleLabel: '附件',
@@ -65,4 +68,6 @@ export default {
   uploadFailed: '上传失败',
   uploadChunkNoPermission: '没有分片上传权限，请先为该账号授予「分片上传」节点',
   moveSuccess: '已移动 {count} 个附件',
+  publicUpdated: '公开状态已更新',
+  privatePreviewFailed: '私有附件读取失败，请刷新后重试',
 }

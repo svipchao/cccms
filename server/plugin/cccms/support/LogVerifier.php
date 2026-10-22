@@ -105,10 +105,13 @@ final class LogVerifier
                     continue;
                 }
 
-                // 按行上的哈希版本重算：历史行是 16 字段（v0），新行含 action_id / session_id（v1）
-                $expected = LogChain::hash(
+                // 按行上记录的版本重算：v0 = 16 字段（sha256）、v1 = 含 action_id / session_id（sha256）、
+                // v2 = 字段集同 v1 但用 HMAC。版本必须传给 `hash()`，否则 v2 行会被判成「内容被改过」。
+                $rowVersion = (int)($row['hash_version'] ?? 0);
+                $expected   = LogChain::hash(
                     (string)($row['prev_hash'] ?? ''),
-                    LogChain::normalize($row, (int)($row['hash_version'] ?? 0))
+                    LogChain::normalize($row, $rowVersion),
+                    $rowVersion
                 );
                 if ($expected !== $hash) {
                     self::addBreak($totals, $id, 'content_modified', '重算哈希与库中 row_hash 不一致（行内容被改过）');

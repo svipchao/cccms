@@ -11,6 +11,7 @@ return [
     'attempt_tip'         => ', {count} attempts remaining',
     'account_disabled'    => 'This account has been disabled',
     'role_abnormal'       => 'Account role is abnormal, please contact the administrator',
+    'domain_mismatch'     => 'This account does not belong to this site; please sign in through the platform domain',
     'too_many_attempts'   => 'Too many failed sign-in attempts, please try again in {minutes} minute(s)',
     'login_success'       => 'Signed in successfully',
     'maintenance'         => 'The system is under maintenance, please try again later',

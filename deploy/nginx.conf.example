@@ -1,0 +1,67 @@
+# CCCMS 生产 Nginx 样例（同域部署：前端静态 + /api + /storage 反代）
+#
+# 用法：
+#   1. 把 root 改成实际的 frontend/dist 路径；
+#   2. proxy_pass 端口与服务端 `config/server.php` 的 listen 保持一致（默认 8787）；
+#   3. server_name 与证书按实际域名替换。
+#
+# 两条**不能删**的约束（见 docs/02 §5.2）：
+#   - `/storage/` 必须反代到后端。附件的「公开 / 私有」判定与 nosniff、强制下载都在
+#     后端 StorageGuard 中间件里；用 Nginx `root` 直接托管会全部绕过。
+#   - 上传目录禁止解析 PHP。即使某天有人把 `public/storage` 挂到了别的 location，
+#     也不能让上传的文件被当成脚本执行。
+#
+# 注意：本项目后端是常驻内存服务（Workerman），不要配 php-fpm / fastcgi。
+# 需要 WebSocket 时在 /api 的 location 里补 Upgrade / Connection 两个头。
+
+server {
+    listen 80;
+    server_name your.domain;
+
+    # 前端构建产物
+    root /var/www/cccms/frontend/dist;
+    index index.html;
+
+    # 上传/客户端体积上限：后端单文件上限由 upload.max_size（MB）控制，这里留出余量
+    client_max_body_size 64m;
+
+    # 安全响应头（按需调整 CSP）
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    # 带 hash 的静态资源可以长缓存；index.html 不能
+    location /assets/ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # 后端接口
+    location /api/ {
+        proxy_pass http://127.0.0.1:8787/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+
+    # 附件（本地驱动）：**必须**反代到后端，否则「公开 / 私有」开关与响应头加固不生效
+    location ^~ /storage/ {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # 兜底：即便反代规则被误改成静态托管，也不允许执行上传目录里的脚本
+        location ~ \.(php|php5|phtml|phar)$ {
+            deny all;
+        }
+    }
+
+    # SPA 路由回退
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

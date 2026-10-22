@@ -47,6 +47,9 @@ class Crontab
     {
         $now = time();
 
+        // 心跳：证明调度进程本身还活着。/metrics 的 cccms_crontab_heartbeat_age_seconds 读它。
+        CrontabRunner::heartbeat();
+
         // ---- ① 独立重试队列（与 cron 调度严格解耦） ----
         $this->processRetries($now);
 

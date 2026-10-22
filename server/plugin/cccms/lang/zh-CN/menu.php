@@ -64,6 +64,7 @@ return [
     'cccms:file:delete' => '删除附件',
     'cccms:file:index' => '附件列表',
     'cccms:file:move' => '移动附件到分类',
+    'cccms:file:public' => '设置附件公开状态',
     'cccms:file:upload' => '上传附件',
     'cccms:file:upload:chunk' => '分片上传',
     'cccms:generator' => '代码生成',

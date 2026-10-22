@@ -86,7 +86,16 @@ final class ScopedQuery extends Query
         }
 
         DataScope::applyWriteRules($data, $this->model->getName());
-        TenantContext::applyWriteRules($data, $this->model->participatesInTenant());
+
+        // 是否仍挂着租户作用域：`options['scope']` 里有 `tenant` 才算。
+        // `withoutAllScopes()` 的查询没有任何作用域（登录链路更新登录信息属于有意跨租户），
+        // 这类写入不该被「请求内缺身份」的安全网拦下。
+        $scope = $this->options['scope'] ?? null;
+        TenantContext::applyWriteRules(
+            $data,
+            $this->model->participatesInTenant(),
+            is_array($scope) && in_array('tenant', $scope, true)
+        );
     }
 
     /** `Model::save()` 这条路走的是 `options['data']`，同样要过一遍 */

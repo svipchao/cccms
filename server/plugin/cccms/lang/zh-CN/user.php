@@ -9,8 +9,9 @@ return [
     'no_permission_view'        => '无权查看该用户',
     'no_permission_operate'     => '无权操作该用户',
     'username_required'         => '用户名不能为空',
-    'username_exists'           => '用户名已存在',
-    'username_in_trash'         => '账号 {username} 在回收站中，请先恢复或彻底删除',
+    // 不写「已存在」：用户名是全局唯一键，确认存在与否会让 A 租户探知 B 租户的账号（P2-5）
+    'username_exists'           => '该用户名不可用，请更换',
+    'username_in_trash'         => '该用户名不可用；若由本租户删除，请到回收站恢复或彻底删除后重试',
     'password_required'         => '密码不能为空',
     'initial_password_required' => '缺少初始密码',
     'cannot_delete_self'        => '不能删除自己',

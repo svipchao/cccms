@@ -48,6 +48,9 @@ final class ExportTask
     /** 归档文件默认保留分钟数（可用 `export.keep_minutes` 覆盖） */
     public const DEFAULT_KEEP_MINUTES = 60;
 
+    /** running 状态超过该分钟数即判定「生成进程已中断」 */
+    public const DEFAULT_STALE_MINUTES = 30;
+
     /**
      * 落一条待处理任务。
      *
@@ -71,10 +74,34 @@ final class ExportTask
     }
 
     /**
+     * 回收僵死任务：`running` 只有在生成成功后才会被推进，进程被 kill / 重启时
+     * 没人再改它，任务会永久停在「导出中」，前端角标也永远不消失。
+     *
+     * 判定依据是 `update_time`（认领时写入），超过阈值即视为执行进程已中断。
+     *
+     * @return int 回收条数
+     */
+    public static function reconcileStale(int $staleMinutes = self::DEFAULT_STALE_MINUTES): int
+    {
+        $before = date('Y-m-d H:i:s', time() - max(1, $staleMinutes) * 60);
+
+        return (int)Db::name(self::TABLE)
+            ->where('status', self::STATUS_RUNNING)
+            ->where('update_time', '<', $before)
+            ->update([
+                'status'      => self::STATUS_FAILED,
+                'error'       => '执行超时（生成进程已中断）',
+                'update_time' => date('Y-m-d H:i:s'),
+            ]);
+    }
+
+    /**
      * 消费一批待处理任务（供定时任务调用），返回处理数。
      */
     public static function consume(): int
     {
+        self::reconcileStale();
+
         $pending = Db::name(self::TABLE)
             ->where('status', self::STATUS_PENDING)
             ->order('id', 'asc')
@@ -115,6 +142,13 @@ final class ExportTask
         // 走到这个分支的概率极低（仅「刚导出就立刻点下载」）。
         if ((int)$task['status'] === self::STATUS_PENDING) {
             self::runOne($id);
+            $task = Db::name(self::TABLE)->where('id', $id)->find();
+        }
+
+        // 同一兜底思路覆盖「生成到一半进程被 kill」：running 不会自行推进，
+        // Windows 上没有定时消费进程，只能靠这里回收，否则永远拿不到 409 之外的反馈。
+        if ((int)$task['status'] === self::STATUS_RUNNING) {
+            self::reconcileStale();
             $task = Db::name(self::TABLE)->where('id', $id)->find();
         }
 

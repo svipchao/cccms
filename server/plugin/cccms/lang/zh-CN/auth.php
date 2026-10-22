@@ -11,6 +11,7 @@ return [
     'attempt_tip'         => '，还可尝试 {count} 次',
     'account_disabled'    => '账号已被禁用',
     'role_abnormal'       => '账号角色异常，请联系管理员',
+    'domain_mismatch'     => '该账号不属于此站点，请使用平台主域名登录',
     'too_many_attempts'   => '登录失败次数过多，请 {minutes} 分钟后再试',
     'login_success'       => '登录成功',
     'maintenance'         => '系统维护中，请稍后访问',

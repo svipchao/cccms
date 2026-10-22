@@ -40,6 +40,27 @@ final class FileStorage
         return StorageManager::current();
     }
 
+    /**
+     * 本地驱动的物理路径（不存在 / 越界返回 null）。
+     *
+     * `realpath` + 前缀围栏：`path` 来自库表，不能假定可信；私有附件下载也走这里，
+     * 避免 `../` 把 `public/storage` 之外的文件读出去。云存储驱动返回 null（由调用方重定向）。
+     */
+    public static function localPath(string $path): ?string
+    {
+        $base = realpath(public_path() . '/storage');
+        if ($base === false) {
+            return null;
+        }
+
+        $real = realpath($base . '/' . ltrim($path, '/'));
+        if ($real === false || !str_starts_with($real, $base . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return is_file($real) ? $real : null;
+    }
+
     /** 该扩展名是否属于图片（upload.image_ext），供前端决定是否显示缩略图 */
     public static function isImage(string $ext): bool
     {

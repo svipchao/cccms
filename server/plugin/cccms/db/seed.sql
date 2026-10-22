@@ -129,6 +129,9 @@ INSERT IGNORE INTO `sys_config` (`name`, `title`, `type`, `value`, `options`, `g
 ('upload.storage_driver',       '存储驱动',        'select',       'local',                        '[{"label":"本地","value":"local"},{"label":"阿里云 OSS","value":"oss"},{"label":"腾讯云 COS","value":"cos"},{"label":"七牛云","value":"qiniu"}]', '上传', 5, 1, '选中哪个驱动，本页只显示该驱动的凭证项；凭证加密存库，不需要写 .env', NOW(), NOW()),
 ('upload.url_prefix',           '访问前缀',        'input',        '/storage',                     NULL, '上传', 6, 1, '切独立域名 / CDN 时改这里', NOW(), NOW()),
 
+-- 附件匿名访问的总开关（单个附件还有自己的 is_public；这里是"一票否决"）
+('upload.anonymous',            '允许匿名访问附件', 'switch',      '1',                            NULL, '上传', 21, 1, '关闭后所有附件都必须登录后经下载接口读取；开启时按单个附件的「公开」状态放行。⚠️ /storage 必须反代到后端，Nginx 直接托管会绕过该开关', NOW(), NOW()),
+
 -- 上传 · 阿里云 OSS（driver=oss 时必填；密钥类项加密存储，留空 = 保持原值）
 ('upload.oss_access_key_id',     'AccessKey ID',    'input',        '',                             NULL, '上传', 7, 1, '阿里云账号的 AccessKey ID', NOW(), NOW()),
 ('upload.oss_access_key_secret', 'AccessKey Secret','password',     '',                             NULL, '上传', 8, 1, 'AccessKey Secret，加密存储', NOW(), NOW()),

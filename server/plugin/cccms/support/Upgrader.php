@@ -94,23 +94,13 @@ final class Upgrader
 
     // ---------------------------------------------------------------------
     // 环境守卫：只允许在「本地开发环境」执行
+    //
+    // 判定逻辑集中在 Environment（危险功能统一门禁），这里只做转发：
+    // 升级与代码生成器共用同一份「目录自检 + 开关」口径，避免各写一套。
     // ---------------------------------------------------------------------
 
-    /**
-     * 判定「本地开发环境」的标记文件（相对仓库根）。
-     *
-     * 线上是「已构建」形态：前端产物放在 public 下、没有 frontend 源码目录，docs 等目录也不在，
-     * 目录结构与仓库并不一致 —— 此时按仓库相对路径覆盖会写出线上不该有的文件、也覆盖不到线上
-     * 真正要的那份代码，风险很高。因此只有源码仓库（开发环境）才允许在线升级。
-     */
-    private const DEV_MARKER = 'frontend/package.json';
-
-    /** 目录自检缓存有效期（秒）：部署形态不会频繁变化，避免每个请求都扫盘 */
-    private const DEV_CHECK_TTL = 60;
-
-    /** 目录自检缓存 */
-    private static bool $devLayout = false;
-    private static int $devLayoutCheckedAt = 0;
+    /** 开发态标记文件（相对仓库根）。保留常量名兼容旧调用方，真实定义在 Environment */
+    public const DEV_MARKER = Environment::DEV_MARKER;
 
     // ---------------------------------------------------------------------
     // 配置与路径
@@ -209,10 +199,10 @@ final class Upgrader
         throw new ApiException("未知的同步源「{$key}」，可用：{$keys}", 422);
     }
 
-    /** 项目根（server 的上一级，即仓库根） */
+    /** 项目根（server 的上一级，即仓库根）；与危险功能门禁共用同一路径判定 */
     public static function root(): string
     {
-        return rtrim(str_replace('\\', '/', dirname(base_path())), '/');
+        return Environment::root();
     }
 
     /** 项目根内的相对路径 → 绝对路径 */
@@ -896,10 +886,10 @@ final class Upgrader
      */
     public static function environment(): array
     {
-        $dev = self::isDevLayout();
+        $blockedBy = Environment::blockedBy('upgrade');
 
         // 非开发环境是硬拦截，与总开关无关，优先报
-        if (!$dev) {
+        if ($blockedBy === 'environment') {
             return [
                 'key'        => 'production',
                 'allowed'    => false,
@@ -909,7 +899,7 @@ final class Upgrader
             ];
         }
 
-        if (!(bool)self::settings()['enable']) {
+        if ($blockedBy === 'switch') {
             return [
                 'key'        => 'dev',
                 'allowed'    => false,
@@ -928,19 +918,15 @@ final class Upgrader
         ];
     }
 
-    /** 目录自检：仓库根是否存在开发态标记文件（带进程内缓存） */
-    private static function isDevLayout(): bool
+    /**
+     * 目录自检：仓库根是否存在开发态标记文件（带进程内缓存）。
+     *
+     * 转发到 `Environment::isDevLayout()`，供旧调用方（如 SecurityBootstrap）继续使用；
+     * 危险功能的放行判定请直接用 `Environment::featureEnabled()` / `blockedBy()`。
+     */
+    public static function isDevLayout(): bool
     {
-        $now = time();
-        if (self::$devLayoutCheckedAt !== 0 && $now - self::$devLayoutCheckedAt < self::DEV_CHECK_TTL) {
-            return self::$devLayout;
-        }
-
-        clearstatcache();
-        self::$devLayout          = is_file(self::root() . '/' . self::DEV_MARKER);
-        self::$devLayoutCheckedAt = $now;
-
-        return self::$devLayout;
+        return Environment::isDevLayout();
     }
 
     /** 对外动作的统一守卫：总开关关闭、或不在本地开发环境时一律拒绝 */

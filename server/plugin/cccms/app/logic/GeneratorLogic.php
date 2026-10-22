@@ -6,6 +6,7 @@ namespace plugin\cccms\app\logic;
 
 use plugin\cccms\app\model\Menu;
 use plugin\cccms\support\ApiException;
+use plugin\cccms\support\Environment;
 use plugin\cccms\support\I18n;
 use think\facade\Db;
 
@@ -20,8 +21,31 @@ final class GeneratorLogic
     /** 不参与表单/表格的字段 */
     private const IGNORE_FIELDS = ['id', 'create_time', 'update_time', 'delete_time'];
 
+    /**
+     * 环境守卫：生成器会直接写项目文件（php / ts / vue），与在线升级同级风险。
+     *
+     * 两道闸（目录自检 + `plugin.cccms.generator.enable`）统一由 `Environment::blockedBy()`
+     * 判定，任一不过返回 403。与在线升级共用同一入口，不会出现「升级拦住了、生成器没拦住」。
+     *
+     * 这里不依赖权限节点：即使角色授权配错，生产环境也写不进文件。
+     */
+    private static function ensureAvailable(): void
+    {
+        $blockedBy = Environment::blockedBy('generator');
+
+        if ($blockedBy === 'environment') {
+            throw new ApiException(I18n::t('generator.disabled_production'), 403);
+        }
+
+        if ($blockedBy === 'switch') {
+            throw new ApiException(I18n::t('generator.disabled_switch'), 403);
+        }
+    }
+
     public static function tables(): array
     {
+        self::ensureAvailable();
+
         $rows = Db::query(
             'SELECT TABLE_NAME AS name, TABLE_COMMENT AS comment
              FROM information_schema.TABLES
@@ -36,6 +60,8 @@ final class GeneratorLogic
 
     public static function columns(string $table): array
     {
+        self::ensureAvailable();
+
         $rows = Db::query(
             'SELECT COLUMN_NAME AS name, DATA_TYPE AS type, COLUMN_TYPE AS column_type,
                     IS_NULLABLE AS nullable, COLUMN_COMMENT AS comment, COLUMN_KEY AS `key`
@@ -60,6 +86,8 @@ final class GeneratorLogic
      */
     public static function preview(array $config): array
     {
+        self::ensureAvailable();
+
         $ctx = self::context($config);
         return [
             ['path' => "server/plugin/{$ctx['plugin']}/app/model/{$ctx['Module']}.php", 'content' => self::tplModel($ctx)],
@@ -79,6 +107,8 @@ final class GeneratorLogic
      */
     public static function generate(array $config): array
     {
+        self::ensureAvailable();
+
         $ctx = self::context($config);
         $written = [];
 

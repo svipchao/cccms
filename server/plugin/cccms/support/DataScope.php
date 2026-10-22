@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\support;
 
+use InvalidArgumentException;
 use think\facade\Db;
 use Throwable;
 use WeakMap;
@@ -65,6 +66,13 @@ final class DataScope
      */
     private static ?WeakMap $plans = null;
 
+    /**
+     * 字段级动作白名单。
+     *
+     * 保存时 `DataRuleLogic::prepare()` 已按此校验；**执行期还要再校验一次**
+     * （见 `compileFieldRules()`）：手改 SQL、旧版本数据、迁移异常都可能留下非法动作，
+     * 而「遇到未知动作就跳过」等于把本该隐藏 / 掩码的字段原样返回 —— 静默泄漏。
+     */
     public const FIELD_ACTIONS = ['hidden', 'readonly', 'mask', 'encrypt'];
 
     /**
@@ -179,6 +187,33 @@ final class DataScope
         $user    = $request?->user;
 
         return $user instanceof UserContext ? $user : null;
+    }
+
+    /**
+     * 以指定身份执行一段代码（`null` = 平台 / 无身份），执行完**恢复原身份**。
+     *
+     * 为什么需要：定时任务的「立即执行」在**当前 worker 内**跑，沿用操作者身份时，
+     * 同一个任务「手动」与「定时」会处理不同数据集、把数据写到不同租户（P1-2）。
+     * 执行身份应当只由任务归属决定，操作者只体现在日志的 `source=manual` 上。
+     *
+     * 用 try/finally 恢复：webman 的 worker 常驻，身份一旦泄漏给后续请求就是越权。
+     * 无请求上下文（CLI / 调度进程）时直接执行 —— 那里本来就是平台身份。
+     */
+    public static function runAs(?UserContext $user, callable $fn): mixed
+    {
+        $request = function_exists('request') ? request() : null;
+        if ($request === null) {
+            return $fn();
+        }
+
+        $previous = $request->user ?? null;
+        $request->user = $user;
+
+        try {
+            return $fn();
+        } finally {
+            $request->user = $previous;
+        }
     }
 
     /**
@@ -505,12 +540,24 @@ final class DataScope
         if ($user === null || $user->isSuperAdmin()) {
             return;
         }
-        foreach (self::rules($user, 'field', $table) as $rule) {
-            $field = (string)$rule['field'];
+
+        try {
+            $compiled = self::compileFieldRules(self::rules($user, 'field', $table));
+        } catch (InvalidArgumentException $e) {
+            // 编译失败 → 整行拒绝：无法确定损坏的规则原本要保护哪个字段，
+            // 就不能挑「看起来没问题」的部分返回。
+            $row = [];
+            self::reportBrokenRule($e);
+
+            return;
+        }
+
+        foreach ($compiled as $item) {
+            $field = $item['field'];
             if (!array_key_exists($field, $row)) {
                 continue;
             }
-            switch ($rule['action']) {
+            switch ($item['action']) {
                 case 'hidden':
                     unset($row[$field]);
                     break;
@@ -526,6 +573,48 @@ final class DataScope
                     // readonly：出参照常，仅入参剔除
             }
         }
+    }
+
+    /**
+     * 把字段级规则编译成有序的「字段 + 动作」列表。
+     *
+     * 顺序必须保留：同一字段被多条规则命中时，`hidden` 会让字段从行里消失，
+     * 后续规则自然不再处理它；折叠成 `field => action` 映射会改变这个语义。
+     *
+     * 编译失败（动作不在白名单、字段名为空或不是合法列名）直接抛异常，由调用方
+     * **整条拒绝**：规则损坏时不能「跳过这条、其余照旧」—— 那等于把本该隐藏 /
+     * 掩码的字段原样返回。保存侧（`DataRuleLogic::prepare()`）已做同样的校验，
+     * 这里兜的是手改 SQL、旧版本数据、迁移异常。
+     *
+     * @param array<int,array<string,mixed>> $rules 已按目标表过滤后的字段级规则
+     * @return list<array{field:string,action:string}>
+     * @throws InvalidArgumentException
+     */
+    public static function compileFieldRules(array $rules): array
+    {
+        $compiled = [];
+
+        foreach ($rules as $rule) {
+            $field  = trim((string)($rule['field'] ?? ''));
+            $action = strtolower(trim((string)($rule['action'] ?? '')));
+            $id     = (int)($rule['id'] ?? 0);
+
+            if ($field === '' || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $field) !== 1) {
+                throw new InvalidArgumentException(
+                    "字段规则 #{$id} 的字段名非法（" . ($field === '' ? '空' : $field) . '），已按 fail-closed 拒绝'
+                );
+            }
+
+            if (!in_array($action, self::FIELD_ACTIONS, true)) {
+                throw new InvalidArgumentException(
+                    "字段规则 #{$id} 的动作非法（" . ($action === '' ? '空' : $action) . '），已按 fail-closed 拒绝'
+                );
+            }
+
+            $compiled[] = ['field' => $field, 'action' => $action];
+        }
+
+        return $compiled;
     }
 
     /**
@@ -547,11 +636,47 @@ final class DataScope
         if ($user === null || $user->isSuperAdmin()) {
             return;
         }
-        foreach (self::rules($user, 'field', $table) as $rule) {
-            if (in_array($rule['action'], ['hidden', 'mask', 'encrypt', 'readonly'], true)) {
-                unset($data[$rule['field']]);
-            }
+
+        try {
+            $compiled = self::compileFieldRules(self::rules($user, 'field', $table));
+        } catch (InvalidArgumentException $e) {
+            // 与出参同口径：规则不可信时拒绝这次写入，而不是按「部分规则」猜
+            $data = [];
+            self::reportBrokenRule($e);
+
+            return;
         }
+
+        foreach ($compiled as $item) {
+            unset($data[$item['field']]);
+        }
+    }
+
+    /**
+     * 规则损坏时记一条日志（每请求最多一条，避免列表循环里刷屏）。
+     *
+     * 常驻进程下不能用静态变量节流（会跨请求泄漏），所以标记挂在 request 上；
+     * CLI 没有 request 时直接写 —— 那里的数据量本来就不大。
+     */
+    private static function reportBrokenRule(InvalidArgumentException $e): void
+    {
+        $request = function_exists('request') ? request() : null;
+        if ($request !== null) {
+            if (!empty($request->dataScopeRuleBrokenLogged)) {
+                return;
+            }
+            $request->dataScopeRuleBrokenLogged = true;
+        }
+
+        if (!function_exists('runtime_path')) {
+            return;
+        }
+
+        @file_put_contents(
+            runtime_path() . '/logs/data-scope.log',
+            sprintf("[%s] %s\n", date('Y-m-d H:i:s'), $e->getMessage()),
+            FILE_APPEND
+        );
     }
 
     /**

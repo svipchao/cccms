@@ -14,6 +14,7 @@ use plugin\cccms\support\I18n;
 use plugin\cccms\support\LoginThrottle;
 use plugin\cccms\support\OnlineSession;
 use plugin\cccms\support\SysConfig;
+use plugin\cccms\support\TenantContext;
 use plugin\cccms\support\TokenBlacklist;
 use plugin\cccms\support\TokenService;
 use plugin\cccms\support\UserContext;
@@ -31,9 +32,10 @@ final class AuthLogic
         string $password,
         string $captcha = '',
         string $captchaId = '',
+        ?int $domainTenantId = null,
     ): array {
         try {
-            $result = self::attempt($username, $password, $captcha, $captchaId);
+            $result = self::attempt($username, $password, $captcha, $captchaId, $domainTenantId);
         } catch (ApiException $e) {
             LogLogic::recordLogin(0, $username, false, $e->getMessage());
             throw $e;
@@ -54,6 +56,7 @@ final class AuthLogic
         string $password,
         string $captcha,
         string $captchaId,
+        ?int $domainTenantId = null,
     ): array {
         if ($username === '' || $password === '') {
             throw new ApiException(I18n::t('auth.missing_credentials'), 422);
@@ -76,7 +79,7 @@ final class AuthLogic
         // 已进回收站的账号不能登录（用户名仍被占用，但登录入口直接当作不存在）。
         // 显式跳出**全部**作用域：此时还没有当前用户，登录也不解析租户
         // （`username` 是全局唯一键），因此必须连租户一起绕过。
-        $user = User::withoutAllScopes()->where('username', $username)->find();
+        $user = User::withoutAllScopes('登录链路尚未建立用户上下文，用户名是全局唯一键，必须跨租户查')->where('username', $username)->find();
         if (!$user || !password_verify($password, (string)$user['password'])) {
             LoginThrottle::recordFailure($username, $ip);
             throw new ApiException(I18n::t('auth.bad_credentials') . self::attemptTip($username), 422);
@@ -85,9 +88,24 @@ final class AuthLogic
             throw new ApiException(I18n::t('auth.account_disabled'), 403);
         }
 
-        $context = AuthService::buildContext((int)$user['id']);
+        // 自定义域名访问：只放行归属该租户的账号。平台归属（0）的账号必须同时是超管，
+        // 才允许以该租户身份进入 —— 这一步由 `buildContext()` 对非超管返回 null 兜住，
+        // 因此「普通平台账号从客户域名混进来」不会成立。
+        if ($domainTenantId !== null) {
+            $home = (int)($user['tenant_id'] ?? TenantContext::PLATFORM_ID);
+            if ($home !== $domainTenantId && $home !== TenantContext::PLATFORM_ID) {
+                throw new ApiException(I18n::t('auth.domain_mismatch'), 403);
+            }
+        }
+
+        $context = AuthService::buildContext((int)$user['id'], $domainTenantId);
         if ($context === null) {
-            throw new ApiException(I18n::t('auth.role_abnormal'), 403);
+            throw new ApiException(
+                $domainTenantId === null
+                    ? I18n::t('auth.role_abnormal')
+                    : I18n::t('auth.domain_mismatch'),
+                403
+            );
         }
 
         // ③ 维护模式：只允许超管登录（前端也会展示维护公告）
@@ -98,7 +116,7 @@ final class AuthLogic
         LoginThrottle::clear($username, $ip);
 
         // 更新登录信息（登录链路同样没有当前用户上下文，显式跳出**全部**作用域）
-        User::withoutAllScopes()->where('id', $user['id'])->update([
+        User::withoutAllScopes('登录链路尚未建立用户上下文，按 id 更新登录信息')->where('id', $user['id'])->update([
             'login_time' => date('Y-m-d H:i:s'),
             'login_ip'   => $ip,
         ]);

@@ -25,6 +25,9 @@ export default {
   uploadTimeLabel: 'Uploaded at',
   preview: 'Preview',
   view: 'View',
+  download: 'Download',
+  publicLabel: 'Public',
+  publicTip: 'Public: anyone with the link can read it. Private: the link stops working; only signed-in users with permission can download',
 
   /* ---- Toolbar ---- */
   recycleLabel: 'Attachment',
@@ -65,4 +68,6 @@ export default {
   uploadFailed: 'Upload failed',
   uploadChunkNoPermission: 'No chunked upload permission. Grant the "Chunked upload" node to this account first',
   moveSuccess: 'Moved {count} attachment(s)',
+  publicUpdated: 'Visibility updated',
+  privatePreviewFailed: 'Failed to read the private attachment, please refresh and retry',
 }

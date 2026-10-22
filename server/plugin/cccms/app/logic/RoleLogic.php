@@ -188,7 +188,7 @@ final class RoleLogic
         $base = mb_substr($sourceCode, 0, 56);
         // 角色标识是**全局唯一索引**（uk_code），不随租户重复，因此这里必须完全绕过租户作用域；
         // 只看本租户会派生出已被别的租户占用的 code，插入时撞唯一键。
-        $taken = Role::withoutAllScopes()->withTrashed()->column('code');
+        $taken = Role::withoutAllScopes('uk_code 是全局唯一键，派生标识必须跨租户排重')->withTrashed()->column('code');
 
         for ($i = 1; $i <= 50; $i++) {
             $code = $base . ($i === 1 ? '_copy' : '_copy' . $i);
@@ -317,7 +317,7 @@ final class RoleLogic
         }
         // 唯一索引不做软删特例：回收站里的角色仍占用标识（withTrashed 才看得到）；
         // 且 uk_code 是全局索引，必须绕过租户作用域，否则跨租户重名会漏判。
-        $q = Role::withoutAllScopes()->withTrashed()->where('code', $code);
+        $q = Role::withoutAllScopes('uk_code 是全局唯一键，跨租户查重才不会撞索引')->withTrashed()->where('code', $code);
         if ($excludeId > 0) {
             $q->where('id', '<>', $excludeId);
         }

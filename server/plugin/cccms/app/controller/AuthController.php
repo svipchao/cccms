@@ -16,6 +16,7 @@ use plugin\cccms\support\I18n;
 use plugin\cccms\support\PasswordReset;
 use plugin\cccms\support\SysConfig;
 use plugin\cccms\support\TenantContext;
+use plugin\cccms\support\TenantDomain;
 use plugin\cccms\support\TokenService;
 use Throwable;
 use Webman\Http\Request;
@@ -39,6 +40,8 @@ class AuthController extends BaseController
             (string)$request->post('password', ''),
             (string)$request->post('captcha', ''),
             (string)$request->post('captcha_id', ''),
+            // 通过租户自定义域名访问时，登录后只能停在该租户（见 TenantDomain 类注释）
+            TenantDomain::fromRequest(),
         );
         return $this->ok($result, I18n::t('auth.login_success'));
     }
@@ -110,7 +113,7 @@ class AuthController extends BaseController
     #[NoAuth]
     public function tenants(Request $request): Response
     {
-        return $this->ok(TenantLogic::options($request->user));
+        return $this->ok(TenantLogic::options($request->user, TenantDomain::fromRequest()));
     }
 
     /** 切换生效租户：用新 `tid` 重签令牌，前端替换后重新拉取菜单与数据 */
@@ -121,7 +124,8 @@ class AuthController extends BaseController
         $result = TenantLogic::switchTo(
             $request->user,
             (int)$request->post('tenant_id', TenantContext::PLATFORM_ID),
-            (string)($request->jti ?? '')
+            (string)($request->jti ?? ''),
+            TenantDomain::fromRequest()
         );
 
         return $this->ok($result, I18n::t('tenant.switched'));

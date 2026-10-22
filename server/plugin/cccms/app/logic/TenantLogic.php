@@ -13,6 +13,7 @@ use plugin\cccms\support\I18n;
 use plugin\cccms\support\OnlineSession;
 use plugin\cccms\support\SortInput;
 use plugin\cccms\support\TenantContext;
+use plugin\cccms\support\TenantDomain;
 use plugin\cccms\support\TokenService;
 use plugin\cccms\support\UserContext;
 
@@ -30,7 +31,7 @@ use plugin\cccms\support\UserContext;
 final class TenantLogic
 {
     /** 允许写入的字段（白名单） */
-    private const FIELDS = ['name', 'code', 'contact', 'phone', 'status', 'expire_at', 'remark'];
+    private const FIELDS = ['name', 'code', 'domain', 'contact', 'phone', 'status', 'expire_at', 'remark'];
 
     /**
      * 列头可排序列：前端 prop => 真实列名。
@@ -124,8 +125,10 @@ final class TenantLogic
         $payload = self::pick($data);
         self::assertFields($payload, true);
         self::assertUniqueCode((string)$payload['code'], 0);
+        self::assertUniqueDomain((string)($payload['domain'] ?? ''), 0);
 
         $id = (int)Tenant::insertGetId($payload);
+        TenantDomain::flush();
 
         return $id;
     }
@@ -143,11 +146,16 @@ final class TenantLogic
         if (isset($payload['code'])) {
             self::assertUniqueCode((string)$payload['code'], $id);
         }
+        // domain 允许被清空（置 null），此时 isset() 为 false，必须用 array_key_exists
+        if (array_key_exists('domain', $payload)) {
+            self::assertUniqueDomain((string)($payload['domain'] ?? ''), $id);
+        }
         if ($payload === []) {
             return;
         }
 
         Tenant::where('id', $id)->update($payload);
+        TenantDomain::flush();
     }
 
     /**
@@ -178,15 +186,15 @@ final class TenantLogic
      *
      * 非超管返回空数组 —— 切换租户是超管专属能力，普通账号的租户由账号归属决定，
      * 令牌里的 `tid` 与归属不一致时 `AuthService::buildContext()` 会直接 401。
+     *
+     * `$domainTenantId` 非空表示「本次请求来自该租户的自定义域名」：此时**只返回这一个租户**，
+     * 平台条目与其它租户一律不出现 —— 从入口上就断掉「在客户域名下选平台」的路径。
      */
-    public static function options(UserContext $user): array
+    public static function options(UserContext $user, ?int $domainTenantId = null): array
     {
         if (!$user->isSuperAdmin()) {
             return [];
         }
-
-        $list = [self::platformRow()];
-        $list[0]['current'] = $user->tenantId === TenantContext::PLATFORM_ID;
 
         $rows = Tenant::newScopedQuery()
             ->field(['id', 'name', 'code', 'status', 'expire_at'])
@@ -196,22 +204,54 @@ final class TenantLogic
             ->toArray();
 
         $now = date('Y-m-d H:i:s');
+
+        if ($domainTenantId !== null) {
+            foreach ($rows as $row) {
+                if ((int)$row['id'] !== $domainTenantId) {
+                    continue;
+                }
+
+                $expire = (string)($row['expire_at'] ?? '');
+                if ($expire !== '' && $expire <= $now) {
+                    return []; // 域名所属租户已过期：一个候选都不给
+                }
+
+                return [self::optionRow($row, $user->tenantId)];
+            }
+
+            return [];
+        }
+
+        $list = [self::platformRow()];
+        $list[0]['current'] = $user->tenantId === TenantContext::PLATFORM_ID;
+
         foreach ($rows as $row) {
             $expire = (string)($row['expire_at'] ?? '');
             if ($expire !== '' && $expire <= $now) {
                 continue; // 已过期：`TenantContext::usable()` 会判不可用，不进候选
             }
-            $list[] = [
-                'id'          => (int)$row['id'],
-                'name'        => (string)$row['name'],
-                'code'        => (string)$row['code'],
-                'is_platform' => false,
-                'current'     => (int)$row['id'] === $user->tenantId,
-                'expire_at'   => $expire,
-            ];
+            $list[] = self::optionRow($row, $user->tenantId);
         }
 
         return $list;
+    }
+
+    /**
+     * 候选行的统一形状（平台行与租户行字段必须一致，前端只认一套）。
+     *
+     * @param  array<string,mixed> $row
+     * @return array<string,mixed>
+     */
+    private static function optionRow(array $row, int $currentTenantId): array
+    {
+        return [
+            'id'          => (int)$row['id'],
+            'name'        => (string)$row['name'],
+            'code'        => (string)$row['code'],
+            'is_platform' => false,
+            'current'     => (int)$row['id'] === $currentTenantId,
+            'expire_at'   => (string)($row['expire_at'] ?? ''),
+        ];
     }
 
     /**
@@ -221,12 +261,23 @@ final class TenantLogic
      * 否则多实例 / 多进程下会各自维护一份状态。代价是切换后旧令牌仍然有效
      * （它声明的还是旧租户），这是可接受的 —— 两个租户本来都在该超管的权限内。
      *
-     * @param string $jti 当前令牌的 jti（用于把在线会话迁到新令牌）
+     * @param string $jti            当前令牌的 jti（用于把在线会话迁到新令牌）
+     * @param int|null $domainTenantId 本次请求命中的自定义域名租户；非空时只允许停在该租户
      * @return array{token:array<string,mixed>,user:array<string,mixed>}
      */
-    public static function switchTo(UserContext $user, int $tenantId, string $jti = ''): array
-    {
+    public static function switchTo(
+        UserContext $user,
+        int $tenantId,
+        string $jti = '',
+        ?int $domainTenantId = null
+    ): array {
         self::assertSuperAdmin($user);
+
+        // 自定义域名访问：只能停在该域名所属租户，切平台与切别的租户一律拒绝。
+        // 这是需求「自定义域名下不能选择平台登录」的落点之一（另一处是 options()）。
+        if ($domainTenantId !== null && $tenantId !== $domainTenantId) {
+            throw new ApiException(I18n::t('tenant.domain_locked'), 403);
+        }
 
         if ($tenantId !== TenantContext::PLATFORM_ID && !TenantContext::usable($tenantId)) {
             throw new ApiException(I18n::t('tenant.not_usable'), 422);
@@ -314,7 +365,7 @@ final class TenantLogic
         }
 
         $out = [];
-        foreach (User::withoutAllScopes()->withTrashed()->whereIn('tenant_id', $ids)->column('tenant_id') as $owner) {
+        foreach (User::withoutAllScopes('平台侧按租户统计账号数，必须跨租户')->withTrashed()->whereIn('tenant_id', $ids)->column('tenant_id') as $owner) {
             $id = (int)$owner;
             $out[$id] = ($out[$id] ?? 0) + 1;
         }
@@ -342,6 +393,16 @@ final class TenantLogic
             if (array_key_exists($key, $picked)) {
                 $picked[$key] = mb_substr(trim((string)$picked[$key]), 0, $len);
             }
+        }
+
+        // 自定义域名：统一归一化后再入库；空串必须存 NULL
+        // （唯一索引允许任意多个 NULL，但只允许一个空串，否则第二个租户就存不进去）
+        if (array_key_exists('domain', $picked)) {
+            $domain = TenantDomain::normalize((string)($picked['domain'] ?? ''));
+            if ($domain !== '' && !self::isValidDomain($domain)) {
+                throw new ApiException(I18n::t('tenant.domain_invalid'), 422);
+            }
+            $picked['domain'] = $domain === '' ? null : $domain;
         }
 
         return $picked;
@@ -415,5 +476,44 @@ final class TenantLogic
                 422
             );
         }
+    }
+
+    /**
+     * 域名唯一性：`uk_domain` 是全局唯一索引，软删的租户仍占用域名（与 `code` 同口径）。
+     *
+     * 空域名直接放行：库里存的是 NULL，唯一索引不约束 NULL。
+     */
+    private static function assertUniqueDomain(string $domain, int $excludeId): void
+    {
+        if ($domain === '') {
+            return;
+        }
+
+        $q = Tenant::withTrashed()->where('domain', $domain);
+        if ($excludeId > 0) {
+            $q->where('id', '<>', $excludeId);
+        }
+
+        $exist = $q->find();
+        if ($exist) {
+            throw new ApiException(
+                !empty($exist->delete_time)
+                    ? I18n::t('tenant.domain_in_trashed', ['domain' => $domain])
+                    : I18n::t('tenant.domain_exists', ['domain' => $domain]),
+                422
+            );
+        }
+    }
+
+    /**
+     * 域名格式校验：只接受主机名（字母 / 数字 / 连字符 / 点），不允许协议、端口、路径、通配符。
+     *
+     * 刻意放行无点的单段名（`localhost`）与 IP 字面量，方便本地联调：
+     * 这两类在开发机上是真实会用到的绑定值。
+     */
+    private static function isValidDomain(string $domain): bool
+    {
+        return mb_strlen($domain) <= 128
+            && preg_match('/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/', $domain) === 1;
     }
 }

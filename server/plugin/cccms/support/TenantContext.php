@@ -21,6 +21,11 @@ use Throwable;
  *
  * 生效条件：**有当前用户**（`UserContext`）。CLI（定时任务 / 命令 / 迁移）、
  * 登录链路与公共路由没有用户上下文，自动跳过 —— 平台级任务需要跨租户处理数据。
+ *
+ * 但这带来一个静默缺口（P2-2）：**业务请求里**如果丢了租户身份（新增的 `#[NoLogin]`
+ * 公开接口没绑定租户、中间件顺序被改动），跳过就等于「跨租户读全量」。
+ * 因此 `isAnonymousRequest()` 区分了「CLI 无请求」（合法）与「请求内无身份」（缺陷）：
+ * 后者读操作返回空集并记 `runtime/logs/tenant-anomaly.log`，写操作直接 503。
  */
 final class TenantContext
 {
@@ -32,12 +37,111 @@ final class TenantContext
      */
     public const PLATFORM_ID = 0;
 
+    /** 身份形态（见 `mode()`） */
+    public const MODE_TENANT = 'tenant';
+    public const MODE_PLATFORM = 'platform';
+    public const MODE_ANONYMOUS = 'anonymous';
+
+    /**
+     * 执行期身份覆盖（仅 `runAs()` 使用）：`null` = 未覆盖。
+     *
+     * 与 `DataScope` 的请求级 `WeakMap` 不同，这里刻意用一个可恢复的静态值：
+     * 定时任务「立即执行」跑在请求内，但身份必须换成**任务属主租户**，
+     * 而 `request()->user` 是操作者。try/finally 保证执行完恢复，不泄漏给后续请求。
+     */
+    private static ?int $overrideTenantId = null;
+
+    /**
+     * 「当前是否处于 HTTP 请求内」的探测函数（`null` = 用 `request()` 助手）。
+     *
+     * 只给测试用：CLI 测试进程里没有请求上下文，无法覆盖「匿名请求 → 失败关闭」这条分支。
+     *
+     * @var (callable():bool)|null
+     */
+    private static $requestDetector = null;
+
+    /**
+     * 身份形态：`tenant`（租户账号）/ `platform`（平台或显式切换）/ `anonymous`（无身份）。
+     *
+     * `anonymous` 有两种合法来源：CLI（不在请求里）与登录 / 公共路由（在请求里但没鉴权）。
+     * 两者对数据的影响不同 —— 见 `isAnonymousRequest()`。
+     */
+    public static function mode(): string
+    {
+        $tenantId = self::currentTenantId();
+
+        if ($tenantId === null) {
+            return self::MODE_ANONYMOUS;
+        }
+
+        return $tenantId === self::PLATFORM_ID ? self::MODE_PLATFORM : self::MODE_TENANT;
+    }
+
+    /**
+     * 是否「在 HTTP 请求里，但没有租户身份」（P2-2）。
+     *
+     * CLI / 定时任务 / 命令不在请求里，平台级跨租户处理是合法的 → 返回 false；
+     * 而**业务请求**里丢失租户身份只可能是缺陷：新加的 `#[NoLogin]` 公开接口没绑定租户、
+     * 或中间件顺序被改动导致 `CheckLogin` 没跑。此时读操作必须返回空集、
+     * 写操作必须拒绝 —— 否则就是「静默跨租户读全量」。
+     *
+     * 登录 / 找回密码链路同样命中本方法，但它们要么走 `withoutAllScopes()`（显式跨租户），
+     * 要么只碰平台级表（`sys_menu` / `sys_config` / 关联表），因此不受影响。
+     */
+    public static function isAnonymousRequest(): bool
+    {
+        if (self::currentTenantId() !== null) {
+            return false;
+        }
+
+        return self::inRequest();
+    }
+
+    /** @internal 仅供测试替换「当前是否在请求内」的判定 */
+    public static function setRequestDetector(?callable $detector): void
+    {
+        self::$requestDetector = $detector;
+    }
+
+    private static function inRequest(): bool
+    {
+        if (self::$requestDetector !== null) {
+            return (bool)(self::$requestDetector)();
+        }
+
+        $request = function_exists('request') ? request() : null;
+
+        return $request !== null;
+    }
+
     /** 当前请求所属租户；无用户上下文（CLI / 登录链路 / 公共路由）返回 null */
     public static function currentTenantId(): ?int
     {
+        if (self::$overrideTenantId !== null) {
+            return self::$overrideTenantId;
+        }
+
         $user = DataScope::currentUser();
 
         return $user?->tenantId;
+    }
+
+    /**
+     * 以指定租户身份执行一段代码（`TenantContext::PLATFORM_ID` = 平台）。
+     *
+     * 定时任务据此统一「手动 / 定时」两条执行路径的身份（P1-2）：
+     * 同一个任务，谁点的「立即执行」不影响它看到与写入哪个租户的数据。
+     */
+    public static function runAs(int $tenantId, callable $fn): mixed
+    {
+        $previous = self::$overrideTenantId;
+        self::$overrideTenantId = $tenantId;
+
+        try {
+            return $fn();
+        } finally {
+            self::$overrideTenantId = $previous;
+        }
     }
 
     /**
@@ -86,6 +190,11 @@ final class TenantContext
 
         $tenantId = self::currentTenantId();
         if ($tenantId === null) {
+            // 业务请求里丢了租户身份（P2-2）：宁可不返回数据，也不能返回全量
+            if (self::isAnonymousRequest()) {
+                self::failClosed($query);
+            }
+
             return;
         }
 
@@ -110,9 +219,17 @@ final class TenantContext
         unset($data['tenant_id']);
 
         $tenantId = self::currentTenantId();
-        if ($tenantId !== null) {
-            $data['tenant_id'] = $tenantId;
+        if ($tenantId === null) {
+            // 直查写入没有模型层兜底：身份缺失时若继续写，行会落到 tenant_id = 0（平台），
+            // 之后谁都「看不见」它，排查成本极高 —— 直接拒绝
+            if (self::isAnonymousRequest()) {
+                throw new ApiException(I18n::t('common.tenant_context_missing'), 503);
+            }
+
+            return $data;
         }
+
+        $data['tenant_id'] = $tenantId;
 
         return $data;
     }
@@ -180,6 +297,11 @@ final class TenantContext
 
         $tenantId = self::currentTenantId();
         if ($tenantId === null) {
+            // 同上：模型查询走的是同一条租户边界，缺身份时不能放行
+            if (self::isAnonymousRequest()) {
+                self::failClosed($query);
+            }
+
             return;
         }
 
@@ -196,9 +318,12 @@ final class TenantContext
      * 更新语句已经被租户作用域收窄（跨租户的行匹配不到），所以把 tenant_id
      * 一并写入只是同值覆盖，不会把数据搬到别的租户；统一处理反而少一处分支。
      *
-     * @param array<string,mixed> $data 引用传入，调用后 tenant_id 已是服务端认定值
+     * @param array<string,mixed> $data         引用传入，调用后 tenant_id 已是服务端认定值
+     * @param bool                $tenantScoped 该查询是否仍挂着租户作用域。显式
+     *                                          `withoutAllScopes()`（登录链路更新登录信息）
+     *                                          属于有意跨租户，不应被「缺身份」拦下
      */
-    public static function applyWriteRules(array &$data, bool $participates): void
+    public static function applyWriteRules(array &$data, bool $participates, bool $tenantScoped = true): void
     {
         if (!$participates) {
             return;
@@ -209,9 +334,58 @@ final class TenantContext
 
         $tenantId = self::currentTenantId();
         if ($tenantId === null) {
+            if ($tenantScoped && self::isAnonymousRequest()) {
+                throw new ApiException(I18n::t('common.tenant_context_missing'), 503);
+            }
+
             return;
         }
 
         $data['tenant_id'] = $tenantId;
+    }
+
+    /**
+     * 读操作失败关闭：拼一个永假条件（与 `DataScope` 的自定义档无规则同口径）。
+     *
+     * 不用抛异常：列表 / 详情在「丢了身份」时返回空集比 500 更符合直觉，
+     * 同时把事件写进 `runtime/logs/tenant-anomaly.log`，让它在运维侧可见。
+     *
+     * @param mixed $query
+     */
+    private static function failClosed($query): void
+    {
+        $query->whereRaw('1 = 0');
+        self::logAnomaly();
+    }
+
+    /**
+     * 记录一次「请求内缺租户身份」的异常。
+     *
+     * 每个请求最多记一条（挂在 request 上的动态属性），避免列表循环里刷屏；
+     * 常驻进程下不能用静态变量做节流（会跨请求泄漏）。
+     */
+    private static function logAnomaly(): void
+    {
+        $request = function_exists('request') ? request() : null;
+        if ($request === null || !empty($request->tenantAnomalyLogged)) {
+            return;
+        }
+
+        $request->tenantAnomalyLogged = true;
+
+        if (!function_exists('runtime_path')) {
+            return;
+        }
+
+        @file_put_contents(
+            runtime_path() . '/logs/tenant-anomaly.log',
+            sprintf(
+                "[%s] %s %s 无租户身份却访问隔离表（读操作已返回空集）\n",
+                date('Y-m-d H:i:s'),
+                $request->method(),
+                $request->path()
+            ),
+            FILE_APPEND
+        );
     }
 }

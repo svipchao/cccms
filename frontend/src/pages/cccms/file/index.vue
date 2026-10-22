@@ -95,17 +95,30 @@
           <span v-else class="toolbar-tip">{{ t('file.toolbarTip') }}</span>
         </template>
 
-        <!-- is_image 由后台 upload.image_ext 配置推导 -->
+        <!-- is_image 由后台 upload.image_ext 配置推导；私有附件不走直链，显示锁图标 -->
         <template #preview="{ row }">
           <el-image
-            v-if="row.is_image"
+            v-if="row.is_image && row.is_public === 1"
             class="file-thumb"
             :src="row.url"
             :preview-src-list="[row.url]"
             preview-teleported
             fit="cover"
           />
+          <el-icon v-else-if="row.is_public !== 1" :size="18" class="file-thumb-icon">
+            <i class="ri-lock-line" />
+          </el-icon>
           <el-icon v-else :size="18" class="file-thumb-icon"><i class="ri-file-text-line" /></el-icon>
+        </template>
+
+        <template #public="{ row }">
+          <el-tooltip :content="t('file.publicTip')" placement="top">
+            <el-switch
+              :model-value="row.is_public === 1"
+              :disabled="!userStore.hasAuth('cccms:file:public')"
+              :before-change="() => onTogglePublic(row)"
+            />
+          </el-tooltip>
         </template>
 
         <template #ext="{ row }">
@@ -121,6 +134,7 @@
           <el-button link type="primary" @click="openPreview(row)">
             {{ row.is_pdf ? t('file.preview') : t('file.view') }}
           </el-button>
+          <el-button link type="primary" @click="downloadAttachment(row)">{{ t('file.download') }}</el-button>
           <el-popconfirm :title="t('file.deleteConfirm')" @confirm="onDelete(row.id)">
             <template #reference>
               <el-button v-auth="'cccms:file:delete'" link type="danger">{{ t('common.delete') }}</el-button>
@@ -192,6 +206,7 @@
       top="5vh"
       class="pdf-preview-dialog"
       destroy-on-close
+      @closed="onPreviewClosed"
     >
       <iframe v-if="previewUrl" :src="previewUrl" class="pdf-frame" :title="t('file.pdfPreview')" />
       <template #footer>
@@ -224,15 +239,18 @@ import { useRecycle } from '@/composables/useRecycle'
 import { useCategoryTree } from '@/composables/useCategoryTree'
 import { useUserStore } from '@/stores/user'
 import {
+  fileBlobUrl,
   fileDelete,
   fileList,
   fileMove,
+  fileSetPublic,
   fileUpload,
   fileUploadChunk,
   fileUploadComplete,
   fileUploadInit,
   type FileRow,
 } from '@/api/file'
+import { downloadFile } from '@/api/request'
 import type { ArtTableColumn } from '@/types/table'
 
 const MODULE = 'file' as const
@@ -262,8 +280,9 @@ const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'category_name', label: t('file.categoryColumnLabel'), width: 140 },
   { prop: 'ext', label: t('file.typeLabel'), width: 100, align: 'center', slot: 'ext', filter: { type: 'text' } },
   { prop: 'size', label: t('file.sizeLabel'), width: 110, align: 'right', slot: 'size', sortable: 'custom' },
+  { prop: 'is_public', label: t('file.publicLabel'), width: 90, align: 'center', slot: 'public' },
   { prop: 'create_time', label: t('file.uploadTimeLabel'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
-  { prop: 'action', label: t('table.action'), width: 130, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'action', label: t('table.action'), width: 190, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 /* ---- 左侧分类树 ---- */
@@ -433,16 +452,77 @@ async function submitMove(): Promise<void> {
 const previewVisible = ref(false)
 const previewUrl = ref('')
 const previewTitle = ref(t('file.preview'))
+/** 对话框里用的 blob URL（私有附件），关闭时释放 */
+let dialogObjectUrl = ''
+
+/**
+ * 公开附件直接给直链；私有附件先带 token 取 blob。
+ *
+ * 私有附件的直链会被后端 403，且 `<img>` / `iframe` 带不了 Bearer 头 —— 只能取字节再渲染。
+ */
+async function resolveUrl(row: FileRow): Promise<string> {
+  if (row.is_public === 1) {
+    return row.url
+  }
+  try {
+    return await fileBlobUrl(row.id)
+  } catch {
+    ElMessage.error(t('file.privatePreviewFailed'))
+    return ''
+  }
+}
 
 /** 图片由 preview 列的 el-image 内置查看器负责；PDF 用对话框内嵌，其余回退到新窗口 */
-function openPreview(row: FileRow): void {
+async function openPreview(row: FileRow): Promise<void> {
+  const url = await resolveUrl(row)
+  if (!url) {
+    return
+  }
+
   if (row.is_pdf) {
-    previewUrl.value = row.url
+    dialogObjectUrl = url.startsWith('blob:') ? url : ''
+    previewUrl.value = url
     previewTitle.value = row.original_name || t('file.pdfPreview')
     previewVisible.value = true
     return
   }
-  openUrl(row.url)
+
+  openUrl(url)
+  // 新标签页还在用这个 blob，立刻 revoke 会让它变空白；给足加载时间再释放
+  if (url.startsWith('blob:')) {
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
+}
+
+function onPreviewClosed(): void {
+  if (dialogObjectUrl) {
+    URL.revokeObjectURL(dialogObjectUrl)
+    dialogObjectUrl = ''
+  }
+  previewUrl.value = ''
+}
+
+/** 下载：不论公开还是私有都走鉴权接口，文件名由后端 Content-Disposition 给出 */
+async function downloadAttachment(row: FileRow): Promise<void> {
+  await downloadFile('/file/download', { id: row.id }, row.original_name || row.name)
+}
+
+/**
+ * 切换单个附件的公开状态。
+ *
+ * 用 `before-change`：请求成功才允许开关翻转，失败时开关停在原位置（不会出现
+ * 「界面显示私有、实际仍公开」这种和真实状态相反的情况）。
+ */
+async function onTogglePublic(row: FileRow): Promise<boolean> {
+  const next = row.is_public !== 1
+  try {
+    await fileSetPublic(row.id, next)
+    row.is_public = next ? 1 : 0
+    ElMessage.success(t('file.publicUpdated'))
+    return true
+  } catch {
+    return false
+  }
 }
 
 /* ---- 其它 ---- */

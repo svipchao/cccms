@@ -10,4 +10,6 @@ return [
     'dir_create_failed' => '目录创建失败：{dir}',
     'file_exists'      => '文件已存在，未覆盖：{path}',
     'file_write_failed' => '文件写入失败：{path}',
+    'disabled_production' => '代码生成器仅限本地开发环境使用，当前环境已禁用',
+    'disabled_switch'     => '代码生成器已关闭（plugin.cccms.generator.enable = false）',
 ];

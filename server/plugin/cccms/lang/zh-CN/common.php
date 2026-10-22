@@ -11,6 +11,7 @@ declare(strict_types=1);
 return [
     'not_logged_in'          => '未登录',
     'session_expired'        => '登录状态已失效，请重新登录',
+    'tenant_context_missing' => '未识别到租户上下文，操作已拒绝',
     'invalid_credentials'    => '登录凭证无效或用户已失效',
     'unauthorized'           => '未登录或登录已失效',
     'no_permission'          => '权限不足：{slug}',

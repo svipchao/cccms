@@ -64,6 +64,7 @@ return [
     'cccms:file:delete' => 'Delete attachment',
     'cccms:file:index' => 'Attachment list',
     'cccms:file:move' => 'Move attachment to category',
+    'cccms:file:public' => 'Set attachment visibility',
     'cccms:file:upload' => 'Upload attachment',
     'cccms:file:upload:chunk' => 'Chunked upload',
     'cccms:generator' => 'Code generator',

@@ -207,6 +207,9 @@ Route::post('/file/upload/chunk', [FileController::class, 'uploadChunk']);
 Route::post('/file/upload/complete', [FileController::class, 'uploadComplete']);
 Route::post('/file/delete', [FileController::class, 'delete']);
 Route::post('/file/move', [FileController::class, 'move']);
+// 附件公开状态（单个）：私有附件直链失效，只能登录后经 /file/download 读取
+Route::post('/file/public', [FileController::class, 'setPublic']);
+Route::get('/file/download', [FileController::class, 'download']);
 // 附件分类
 Route::get('/file/category', [FileController::class, 'category']);
 Route::post('/file/category/save', [FileController::class, 'categorySave']);

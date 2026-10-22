@@ -99,7 +99,7 @@ final class PostLogic
         if ($code === '') {
             throw new ApiException(I18n::t('post.code_required'), 422);
         }
-        $q = Post::withoutAllScopes()->withTrashed()->where('code', $code);
+        $q = Post::withoutAllScopes('uk_code 是全局唯一键，跨租户查重才不会撞索引')->withTrashed()->where('code', $code);
         if ($excludeId > 0) {
             $q->where('id', '<>', $excludeId);
         }

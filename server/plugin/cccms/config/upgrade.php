@@ -13,6 +13,7 @@ return [
     // 总开关：**默认关闭**，只有本地开发环境才需要打开（线上不要开）。
     // 除本开关外还有一道目录自检：仓库根必须存在 frontend/package.json（说明是完整源码仓库）才允许
     // 执行 —— 线上是「已构建」形态（前端产物在 public 下、无 frontend 源码目录），会被自动拦住。
+    // 判定入口统一为 Environment::blockedBy('upgrade')，与代码生成器等危险功能共用同一口径。
     'enable' => filter_var(getenv('CCCMS_UPGRADE_ENABLE') ?: 'false', FILTER_VALIDATE_BOOL),
 
     // 同步源：可配多个镜像，命令用 --source、页面用下拉切换。

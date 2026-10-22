@@ -126,12 +126,12 @@ final class PasswordReset
             'email'    => (string)$user['email'],
         ]);
 
-        $oldHash = (string)User::withoutGlobalScope()->where('id', $userId)->value('password');
+        $oldHash = (string)User::withoutAllScopes('找回密码链路尚未建立用户上下文，按主键读口令摘要')->where('id', $userId)->value('password');
         if ($oldHash !== '' && password_verify($password, $oldHash)) {
             throw new ApiException(I18n::t('auth.reset_same_password'), 422);
         }
 
-        User::withoutGlobalScope()->where('id', $userId)->update([
+        User::withoutAllScopes('找回密码链路尚未建立用户上下文，按主键重置口令')->where('id', $userId)->update([
             'password' => password_hash($password, PASSWORD_BCRYPT),
         ]);
 
@@ -194,7 +194,8 @@ final class PasswordReset
     /**
      * 按用户名 / 邮箱 / 手机号匹配启用中的账号。
      *
-     * 显式跳出数据权限：找回接口是匿名的，没有当前用户上下文。
+     * 显式跳出**全部**作用域：找回接口是匿名的，没有当前用户上下文，而
+     * 用户名 / 邮箱 / 手机号都是全局唯一键 —— 只跳出数据档位会查不到别的租户的账号。
      * 已删除 / 已禁用账号一律视为不存在（找回不应用于被停用的账号）。
      *
      * @return array<string,mixed>|null
@@ -206,7 +207,7 @@ final class PasswordReset
             return null;
         }
 
-        $row = User::withoutGlobalScope()
+        $row = User::withoutAllScopes('找回密码链路匿名访问，账号是全局唯一键，必须跨租户查')
             ->where('status', 1)
             ->where(static function ($query) use ($account): void {
                 $query->where('username', $account)

@@ -1,4 +1,4 @@
-import { http } from './request'
+import instance, { http } from './request'
 import type { PageResult } from './types'
 
 export interface FileRow {
@@ -19,6 +19,8 @@ export interface FileRow {
   is_image?: boolean
   /** 是否 PDF（后端按扩展名推导，前端据此用 iframe 内嵌预览） */
   is_pdf?: boolean
+  /** 1 = 公开（直链可匿名访问）；0 = 私有（直链 403，需经 /file/download 读取） */
+  is_public?: number
 }
 
 export function fileList(params: Record<string, unknown>) {
@@ -32,6 +34,26 @@ export function fileDelete(id: number) {
 /** 批量移动到分类（categoryId <= 0 表示移出分类） */
 export function fileMove(ids: number[], categoryId: number) {
   return http.post<{ count: number }>('/file/move', { ids, category_id: categoryId })
+}
+
+/** 单个附件的「公开」状态：关闭后直链立即失效（后端 StorageGuard 返回 403） */
+export function fileSetPublic(id: number, isPublic: boolean) {
+  return http.post<null>('/file/public', { id, is_public: isPublic })
+}
+
+/**
+ * 私有附件取 blob URL。
+ *
+ * `<img src>` / `iframe src` 带不了 `Authorization` 头，而私有附件的直链会被 403 ——
+ * 只能先带 token 把字节取回来，再交给浏览器渲染。调用方负责 `URL.revokeObjectURL`。
+ */
+export async function fileBlobUrl(id: number): Promise<string> {
+  const response = (await instance.get('/file/download', {
+    params: { id, raw: 1 },
+    responseType: 'blob',
+  })) as unknown as { data: Blob }
+
+  return URL.createObjectURL(response.data)
 }
 
 // ?? 而非 ||：空串是合法值（生产无前缀），用 || 会退化成 //file/upload

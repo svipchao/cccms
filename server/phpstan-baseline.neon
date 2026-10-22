@@ -61,22 +61,10 @@ parameters:
 			path: plugin/cccms/app/logic/RecycleLogic.php
 
 		-
-			message: '#^Static call to instance method plugin\\cccms\\app\\model\\BaseModel\:\:withTrashed\(\)\.$#'
-			identifier: method.staticCall
-			count: 1
-			path: plugin/cccms/app/logic/RecycleLogic.php
-
-		-
 			message: '#^Static call to instance method plugin\\cccms\\app\\model\\BaseModel\:\:onlyTrashed\(\)\.$#'
 			identifier: method.staticCall
 			count: 1
 			path: plugin/cccms/app/logic/RoleLogic.php
-
-		-
-			message: '#^Static call to instance method plugin\\cccms\\app\\model\\BaseModel\:\:withTrashed\(\)\.$#'
-			identifier: method.staticCall
-			count: 1
-			path: plugin/cccms/app/logic/TenantLogic.php
 
 		-
 			message: '#^Method plugin\\cccms\\app\\logic\\UserLogic\:\:batchDelete\(\) should return array\{affected\: int, skipped\: array\<int\>\} but returns array\{affected\: bool, skipped\: list\}\.$#'
@@ -145,12 +133,6 @@ parameters:
 			path: plugin/cccms/support/MenuSyncer.php
 
 		-
-			message: '#^Static call to instance method plugin\\cccms\\app\\model\\BaseModel\:\:withTrashed\(\)\.$#'
-			identifier: method.staticCall
-			count: 1
-			path: plugin/cccms/support/MenuSyncer.php
-
-		-
 			message: '#^Call to an undefined static method support\\Redis\:\:setex\(\)\.$#'
 			identifier: staticMethod.notFound
 			count: 1
@@ -161,12 +143,6 @@ parameters:
 			identifier: staticMethod.notFound
 			count: 1
 			path: plugin/cccms/support/PasswordReset.php
-
-		-
-			message: '#^Static call to instance method plugin\\cccms\\app\\model\\BaseModel\:\:withTrashed\(\)\.$#'
-			identifier: method.staticCall
-			count: 2
-			path: plugin/cccms/support/PermScanner.php
 
 		-
 			message: '#^Call to an undefined static method support\\Redis\:\:setex\(\)\.$#'

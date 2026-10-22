@@ -9,8 +9,9 @@ return [
     'no_permission_view'        => 'No permission to view this user',
     'no_permission_operate'     => 'No permission to operate this user',
     'username_required'         => 'Username cannot be empty',
-    'username_exists'           => 'Username already exists',
-    'username_in_trash'         => 'Account {username} is in the recycle bin, please restore or permanently delete it first',
+    // Never confirm existence: the username is globally unique, so "already exists" lets tenant A probe tenant B (P2-5)
+    'username_exists'           => 'That username is unavailable, please choose another',
+    'username_in_trash'         => 'That username is unavailable; if it was deleted by this tenant, restore or permanently delete it from the recycle bin first',
     'password_required'         => 'Password cannot be empty',
     'initial_password_required' => 'Missing initial password',
     'cannot_delete_self'        => 'You cannot delete yourself',

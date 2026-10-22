@@ -70,6 +70,10 @@
         <el-form-item :label="t('tenant.codeLabel')" prop="code">
           <el-input v-model="form.code" :placeholder="t('tenant.codePlaceholder')" />
         </el-form-item>
+        <el-form-item :label="t('tenant.domainLabel')" prop="domain">
+          <el-input v-model="form.domain" :placeholder="t('tenant.domainPlaceholder')" clearable />
+          <div class="tenant-readonly">{{ t('tenant.domainTip') }}</div>
+        </el-form-item>
         <el-form-item :label="t('tenant.contactLabel')" prop="contact">
           <el-input v-model="form.contact" :placeholder="t('tenant.contactPlaceholder')" />
         </el-form-item>
@@ -134,6 +138,7 @@ const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
   { prop: 'name', label: t('tenant.nameLabel'), minWidth: 180, slot: 'name', filter: { type: 'text' } },
   { prop: 'code', label: t('tenant.codeLabel'), minWidth: 140, filter: { type: 'text' } },
+  { prop: 'domain', label: t('tenant.domainLabel'), minWidth: 180 },
   { prop: 'contact', label: t('tenant.contactLabel'), minWidth: 110, filter: { type: 'text' } },
   { prop: 'phone', label: t('tenant.phoneLabel'), minWidth: 130, filter: { type: 'text' } },
   { prop: 'user_count', label: t('tenant.userCountLabel'), width: 90, align: 'center', slot: 'userCount' },
@@ -171,13 +176,15 @@ const formRef = ref<FormInstance>()
 const formVisible = ref(false)
 const saving = ref(false)
 
-const emptyForm = { id: 0, name: '', code: '', contact: '', phone: '', expire_at: '', status: 1, remark: '' }
+const emptyForm = { id: 0, name: '', code: '', domain: '', contact: '', phone: '', expire_at: '', status: 1, remark: '' }
 const form = reactive({ ...emptyForm })
 
 // 校验提示同样走 i18n：用 computed 保证切换语言后规则文案立即更新
 const rules = computed<FormRules>(() => ({
   name: [{ required: true, message: t('tenant.nameRequired'), trigger: 'blur' }],
   code: [{ required: true, message: t('tenant.codeRequired'), trigger: 'blur' }],
+  // 只做轻校验，后端会归一化（小写、去端口）并再做一次严格校验
+  domain: [{ pattern: /^$|^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$/, message: t('tenant.domainInvalid'), trigger: 'blur' }],
 }))
 
 function openCreate(): void {
@@ -186,7 +193,8 @@ function openCreate(): void {
 }
 
 function openEdit(record: TenantRow): void {
-  Object.assign(form, emptyForm, record)
+  // domain 在库里可能是 null，直接赋给 el-input 会变成「非受控」，统一转成空串
+  Object.assign(form, emptyForm, record, { domain: record.domain ?? '' })
   formVisible.value = true
 }
 

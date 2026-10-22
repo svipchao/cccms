@@ -65,7 +65,7 @@ final class DataScopeTableLogic
             ];
         }
 
-        $used      = array_map(static fn ($name) => (string)$name, DataScopeTable::withoutAllScopes()->column('table_name'));
+        $used      = array_map(static fn ($name) => (string)$name, DataScopeTable::withoutAllScopes('受控表名单是全局唯一索引，候选列表要跨租户排重')->column('table_name'));
         $available = [];
         foreach ($tables as $bare => $meta) {
             if (in_array($bare, $used, true)) {
@@ -95,7 +95,7 @@ final class DataScopeTableLogic
         }
         // `uk_table` 是**全局唯一索引**：受控表名单不随租户重复登记，
         // 因此查重必须绕过租户作用域，否则会撞唯一键（列表候选也据此排除，见 index()）。
-        if (DataScopeTable::withoutAllScopes()->where('table_name', $table)->count() > 0) {
+        if (DataScopeTable::withoutAllScopes('uk_table 是全局唯一索引，跨租户查重才不会撞索引')->where('table_name', $table)->count() > 0) {
             throw new ApiException(I18n::t('data_scope_table.table_exists'), 422);
         }
 

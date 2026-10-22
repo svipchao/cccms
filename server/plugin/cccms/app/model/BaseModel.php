@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\model;
 
+use InvalidArgumentException;
 use plugin\cccms\support\DataScope;
 use plugin\cccms\support\TenantContext;
 use think\db\BaseQuery;
@@ -196,9 +197,18 @@ abstract class BaseModel extends Model
      *
      * 反例（不要这样写）：为了「看全量用户做存在性校验」而用它 —— 那属于第 1 类之外的
      * 普通业务读取，应该用 `withoutGlobalScope()`（保留租户）。
+     *
+     * `$reason` 是**必填**的：跨租户读取是最高危的一类操作，调用处必须用一句话说清
+     * 「为什么这里可以跨租户」。评审时一眼能看到；空串直接抛异常，避免被当成默认选项。
      */
-    public static function withoutAllScopes(): BaseQuery
+    public static function withoutAllScopes(string $reason): BaseQuery
     {
+        if (trim($reason) === '') {
+            throw new InvalidArgumentException(
+                'withoutAllScopes() 必须说明跨租户理由（登录链路 / CLI / 全局唯一性），不能留空'
+            );
+        }
+
         $model = new static();
         $model->setOption('globalScope', []);
 

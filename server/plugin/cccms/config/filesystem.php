@@ -12,6 +12,9 @@ return [
     'driver'     => getenv('STORAGE_DRIVER') ?: 'local',
 
     // 本地驱动：URL 前缀（同域 /storage）与落盘目录 public/storage
+    //
+    // 匿名可读由「单个附件的 is_public」+ 后台配置 upload.anonymous（总开关）共同决定，
+    // 校验在 StorageGuard 中间件里；⚠️ 因此 /storage 必须反代到后端，Nginx 直接托管会绕过校验。
     'url_prefix' => '/storage',
 
     // 上传白名单与大小上限（所有驱动共用）
