@@ -93,6 +93,9 @@ class LocalStorageDriver:
     def exists(self, relative: str) -> bool:
         return self.blob_path(relative).is_file()
 
+    def size(self, relative: str) -> int:
+        return self.blob_path(relative).stat().st_size
+
     def url(self, relative: str) -> str:
         return f"{self._url_prefix}/{relative}"
 

@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, File, Form, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import Depends, File, Form, Query, Request, UploadFile
+from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cccms.core.auth_deps import get_current_user
 from cccms.core.context import UserContext
 from cccms.core.envelope import ApiResponse, ok
+from cccms.core.http_range import attachment_header, resolve_range
 from cccms.core.pagination import PageResult, page_result
 from cccms.core.params import as_int
 from cccms.core.permissions import make_router, no_auth, permission
@@ -40,25 +41,50 @@ async def index(
     return ok(page_result(total, rows))
 
 
-@router.get("/{file_id}/download", response_model=None, response_class=FileResponse)
+@router.get("/{file_id}/download", response_model=None)
 @no_auth("附件下载")
 async def download(
     file_id: int,
+    request: Request,
     user: UserContext = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> FileResponse:
+) -> Response:
     """纯 Bearer 客户端与"另存为"的唯一出口。
 
     ``@no_auth`` 在这里的语义是"不校验具体权限 slug"：可见性完全由服务层
     ``apply_scope`` 决定（与 ``/storage/<path>`` 一致），匿名请求仍被
     ``get_current_user`` 挡在 401。
+
+    字节流由存储驱动给（不再交给 ``FileResponse``），因此 Range 与
+    ``Content-Length`` 在下面自己处理：断点续传、PDF 翻页、音视频拖动都依赖它们。
     """
-    path, row = await file_service.download_file(session, user, file_id)
-    return FileResponse(
-        path,
-        media_type=row.mime or "application/octet-stream",
-        filename=row.original_name,
-        headers={"Cache-Control": "private, max-age=300"},
+    blob = await file_service.download_file(session, user, file_id)
+    byte_range, satisfiable = resolve_range(request.headers.get("range"), blob.size)
+    if not satisfiable:
+        return Response(
+            status_code=416,
+            headers={"Accept-Ranges": "bytes", "Content-Range": f"bytes */{blob.size}"},
+        )
+
+    headers = {
+        # 通知客户端"可以分段要"，否则浏览器只会整份重下。
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "private, max-age=300",
+        "Content-Disposition": attachment_header(blob.name),
+    }
+    if byte_range is None:
+        headers["Content-Length"] = str(blob.size)
+        return StreamingResponse(
+            blob.stream(), media_type=blob.mime, headers=headers
+        )
+
+    headers["Content-Length"] = str(byte_range.length)
+    headers["Content-Range"] = byte_range.header(blob.size)
+    return StreamingResponse(
+        blob.stream(offset=byte_range.start, length=byte_range.length),
+        status_code=206,
+        media_type=blob.mime,
+        headers=headers,
     )
 
 

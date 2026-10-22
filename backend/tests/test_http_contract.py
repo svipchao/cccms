@@ -203,6 +203,40 @@ def test_file_download_returns_attachment(client: TestClient, fake_backend) -> N
     assert "filename*=utf-8''" in disposition.lower()
 
 
+def test_file_download_sets_length_and_accept_ranges(client: TestClient, fake_backend) -> None:
+    """改成流式后 Content-Length 要自己算：少了它会变成 chunked，下载没有进度也不可续传。"""
+    fake_backend(
+        FileRecord(storage="local", path="p.png", url="/storage/p.png", original_name="p.png", mime="image/png")
+    )
+    response = client.get("/api/file/1/download")
+    assert response.status_code == 200
+    assert response.headers["content-length"] == "4"
+    assert response.headers["accept-ranges"] == "bytes"
+
+
+def test_file_download_serves_range(client: TestClient, fake_backend) -> None:
+    fake_backend(
+        FileRecord(storage="local", path="p.png", url="/storage/p.png", original_name="p.png", mime="image/png")
+    )
+    response = client.get("/api/file/1/download", headers={"Range": "bytes=1-2"})
+
+    assert response.status_code == 206
+    assert response.content == b"PN"
+    assert response.headers["content-range"] == "bytes 1-2/4"
+    assert response.headers["content-length"] == "2"
+
+
+def test_file_download_rejects_unsatisfiable_range(client: TestClient, fake_backend) -> None:
+    fake_backend(
+        FileRecord(storage="local", path="p.png", url="/storage/p.png", original_name="p.png", mime="image/png")
+    )
+    response = client.get("/api/file/1/download", headers={"Range": "bytes=99-"})
+
+    assert response.status_code == 416
+    # 416 必须告诉客户端总长度，否则播放器无从重试。
+    assert response.headers["content-range"] == "bytes */4"
+
+
 def test_file_download_hides_invisible_files(client: TestClient, fake_backend) -> None:
     # 不存在与"无权看"必须同码：否则可以用 id 探测别人的附件。
     fake_backend(None)

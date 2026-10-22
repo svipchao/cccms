@@ -7,6 +7,7 @@ import secrets
 import shutil
 import uuid
 from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from pathlib import Path
 
 import aiofiles
@@ -30,12 +31,30 @@ from cccms.models.user import User, UserDept
 from cccms.schemas.file import FileOut, FileQuery, UploadCompleteRequest, UploadInitOut, UploadInitRequest
 from cccms.schemas.system import CategoryNode
 from cccms.services import dict_service
-from cccms.services.storage import get_driver, local_driver
+from cccms.services.storage import StorageDriver, get_driver, local_driver
 
 IMAGE_EXT = {"jpg", "jpeg", "png", "gif", "webp", "bmp"}
 PDF_EXT = {"pdf"}
 READ_CHUNK = 1024 * 1024
 MAX_CHUNK_INDEX = 100_000
+
+
+@dataclass(frozen=True)
+class Download:
+    """一次附件下载：元信息 + 字节流入口。
+
+    不再把本地 ``Path`` 交给 ``FileResponse``：对象存储没有本地路径可给，
+    交给驱动出流才能一套代码服务两种存储（docs/16 §9.3 第 2 步）。
+    """
+
+    name: str
+    mime: str
+    size: int
+    driver: StorageDriver
+    key: str
+
+    def stream(self, *, offset: int = 0, length: int | None = None) -> AsyncIterator[bytes]:
+        return self.driver.open(self.key, offset=offset, length=length)
 
 
 def _dept_scope(model: type[FileRecord], dept_ids: tuple[int, ...]) -> ColumnElement[bool]:
@@ -170,20 +189,26 @@ async def _visible_file(session: AsyncSession, actor: UserContext, file_id: int)
     return row
 
 
-async def download_file(session: AsyncSession, actor: UserContext, file_id: int) -> tuple[Path, FileRecord]:
-    """返回「当前用户可见」的附件磁盘路径与记录，供 ``/api/file/{id}/download`` 直出。
+async def download_file(session: AsyncSession, actor: UserContext, file_id: int) -> Download:
+    """返回「当前用户可见」的附件下载句柄，供 ``/api/file/{id}/download`` 直出。
 
     与 ``/storage/<path>`` 同一套可见性口径：先过 ``apply_scope``，查不到一律 404，
     不区分"不存在"与"无权看"，避免用 id 探测别人的附件。
     """
     row = await _visible_file(session, actor, file_id)
-    if row.storage != "local":
-        # 对象存储尚未实现（F-01）；接入时这里改为"驱动给直链就 302，否则流式"。
+    driver = get_driver()
+    if row.storage != driver.name:
+        # 记录落在别的驱动上（迁移中常见）：当前实例读不到，按不存在处理而不是 500。
         raise NotFound("附件不存在")
-    path = local_driver().blob_path(row.path)
-    if not path.is_file():
+    if not driver.exists(row.path):
         raise NotFound("附件不存在")
-    return path, row
+    return Download(
+        name=row.original_name or "download",
+        mime=row.mime or "application/octet-stream",
+        size=driver.size(row.path),
+        driver=driver,
+        key=row.path,
+    )
 
 
 async def list_files(

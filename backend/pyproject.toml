@@ -127,6 +127,8 @@ ignore = [
 "src/cccms/services/notice.py" = ["A002"]
 # 数据权限规则匹配/鉴权依赖的分支是按维度逐条展开的，拆函数反而更难核对
 "src/cccms/core/scope.py" = ["PLR0911", "PLR0912"]
+# Range 解析按"没带/多区间/语法错/越界"逐条早返回，拆成多级函数只会更难核对
+"src/cccms/core/http_range.py" = ["PLR0911"]
 "src/cccms/core/auth_deps.py" = ["PLR0911", "PLR0912"]
 "src/cccms/core/middleware.py" = ["PLR0911", "PLR0912", "PLR0915", "PLR0917"]
 "src/cccms/services/file.py" = ["PLR0915"]

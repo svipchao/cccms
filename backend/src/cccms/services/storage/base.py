@@ -33,6 +33,9 @@ class StorageDriver(Protocol):
 
     def exists(self, relative: str) -> bool: ...
 
+    def size(self, relative: str) -> int:
+        """对象字节数。调用方拿它算 ``Content-Length``，所以必须是真实大小而不是库里的旧值。"""
+
     def url(self, relative: str) -> str:
         """站内访问地址（走登录态 + 数据权限链路）。"""
 
