@@ -11,6 +11,7 @@ return [
     'retry_times_invalid'    => 'Retry times must be between 0 and 10',
     'retry_interval_invalid' => 'Retry interval must be at least 1 second',
     'group_name_too_long'    => 'Task group name cannot exceed 32 characters',
+    'params_invalid'         => 'Params must be a valid JSON object',
     'not_found'              => 'Scheduled task not found',
     'no_permission'          => 'No permission to operate this scheduled task',
 ];

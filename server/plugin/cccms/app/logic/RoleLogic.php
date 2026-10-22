@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Role;
 use plugin\cccms\app\model\RoleNode;
 use plugin\cccms\support\ApiException;
@@ -11,6 +12,7 @@ use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
 use plugin\cccms\support\PermissionCache;
 use plugin\cccms\support\Tree;
+use think\facade\Db;
 
 /**
  * 角色管理逻辑（含继承与节点授权）。
@@ -52,8 +54,7 @@ final class RoleLogic
         if (!empty($params['node_id'])) {
             $query->whereIn('id', self::subtreeIds((int)$params['node_id']));
         }
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         $list  = $query->page($page, $limit)->order('sort', 'asc')->order('id', 'asc')->select()->toArray();
 
@@ -89,9 +90,14 @@ final class RoleLogic
         self::assertUniqueCode((string)($data['code'] ?? ''), 0);
 
         $nodes = self::pullNodes($data);
-        // 新增还没有归属，插入语句不需要数据权限条件
-        $id = (int)Role::withoutGlobalScope()->insertGetId($data);
-        self::assignNodes($id, $nodes);
+        // 角色与授权节点同成败：只写进一半会出现「角色存在但无任何权限」
+        $id = Db::transaction(static function () use ($data, $nodes): int {
+            // 新增还没有归属，插入语句不需要数据权限条件
+            $id = (int)Role::withoutGlobalScope()->insertGetId($data);
+            self::assignNodes($id, $nodes);
+
+            return $id;
+        });
 
         // 角色的权限集合变了：让所有用户的权限缓存立即失效
         PermissionCache::bump();
@@ -115,12 +121,14 @@ final class RoleLogic
         $hasNodes = array_key_exists('nodes', $data);
         $nodes    = self::pullNodes($data);
 
-        if ($data) {
-            Role::where('id', $id)->update($data);
-        }
-        if ($hasNodes) {
-            self::assignNodes($id, $nodes);
-        }
+        Db::transaction(static function () use ($data, $id, $hasNodes, $nodes): void {
+            if ($data) {
+                Role::where('id', $id)->update($data);
+            }
+            if ($hasNodes) {
+                self::assignNodes($id, $nodes);
+            }
+        });
 
         PermissionCache::bump();
     }

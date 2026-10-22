@@ -1,12 +1,10 @@
 -- =====================================================================
 -- CCCMS 初始化种子数据（在 schema.sql 之后执行）
 -- 默认管理员：admin / admin123（首次登录后请务必修改）
---
--- 全部使用 INSERT IGNORE，可**重复执行**（靠唯一键去重），
--- 因此升级时可以直接再跑一遍，不会破坏已有数据。
+-- 全部使用 INSERT IGNORE / NOT EXISTS 保证可重复执行。
 -- =====================================================================
 
-SET NAMES utf8mb4;
+SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 -- ---------------------------------------------------------------------
 -- 超管角色（code 唯一，不可改不可删）
@@ -47,7 +45,6 @@ INSERT IGNORE INTO `sys_data_scope_table` (`table_name`, `label`, `status`, `rem
 -- ---------------------------------------------------------------------
 INSERT INTO `sys_crontab` (`name`, `expression`, `target`, `params`, `status`, `group_name`, `overlap`, `timeout`, `retry_times`, `retry_interval`, `remark`, `create_time`, `update_time`)
 SELECT '清理历史日志', '0 0 3 * * *', 'plugin\\cccms\\command\\task\\LogCleanTask', NULL, 1, '系统', 'skip', 600, 1, 300, '每天 03:00 清理 log.keep_days 之前的操作日志', NOW(), NOW()
-FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM `sys_crontab` WHERE `target` = 'plugin\\cccms\\command\\task\\LogCleanTask'
 );
@@ -55,7 +52,6 @@ WHERE NOT EXISTS (
 -- 分片上传的临时文件回收（每小时）：只清 24 小时未继续写入的会话，不依赖任何外部服务
 INSERT INTO `sys_crontab` (`name`, `expression`, `target`, `params`, `status`, `group_name`, `overlap`, `timeout`, `retry_times`, `retry_interval`, `remark`, `create_time`, `update_time`)
 SELECT '清理分片上传临时文件', '0 30 * * * *', 'plugin\\cccms\\command\\task\\ChunkCleanTask', NULL, 1, '系统', 'skip', 600, 1, 300, '每小时 30 分清理 24 小时未完成的分片上传临时目录', NOW(), NOW()
-FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM `sys_crontab` WHERE `target` = 'plugin\\cccms\\command\\task\\ChunkCleanTask'
 );
@@ -63,7 +59,6 @@ WHERE NOT EXISTS (
 -- 消费异步导出任务（每 10 秒）：超阈值导出转后台生成归档文件，顺带清理过期导出
 INSERT INTO `sys_crontab` (`name`, `expression`, `target`, `params`, `status`, `group_name`, `overlap`, `timeout`, `retry_times`, `retry_interval`, `remark`, `create_time`, `update_time`)
 SELECT '消费异步导出任务', '*/10 * * * * *', 'plugin\\cccms\\command\\task\\ExportTaskConsumer', NULL, 1, '系统', 'skip', 600, 1, 300, '每 10 秒生成待处理的导出归档文件，并清理 export.keep_minutes 之前的过期导出', NOW(), NOW()
-FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM `sys_crontab` WHERE `target` = 'plugin\\cccms\\command\\task\\ExportTaskConsumer'
 );
@@ -77,7 +72,6 @@ WHERE NOT EXISTS (
 -- ---------------------------------------------------------------------
 INSERT INTO `sys_crontab` (`name`, `expression`, `target`, `params`, `status`, `group_name`, `overlap`, `timeout`, `retry_times`, `retry_interval`, `remark`, `create_time`, `update_time`)
 SELECT '日志归档到对象存储', '0 0 4 * * *', 'plugin\\cccms\\command\\task\\LogArchiveTask', NULL, 0, '系统', 'skip', 3600, 1, 300, '每天 04:00 归档早于 log.archive.days 的日志到对象存储（默认停用，确认存储可用后启用）', NOW(), NOW()
-FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1 FROM `sys_crontab` WHERE `target` = 'plugin\\cccms\\command\\task\\LogArchiveTask'
 );

@@ -12,49 +12,20 @@ use think\Model;
 use think\model\concern\SoftDelete;
 
 /**
- * 模型基类。表名统一省略 sys_ 前缀（连接配置 prefix 自动补全）。
+ * 模型基类（表名省略 sys_ 前缀，由连接配置补全）。
  *
- * 数据权限：
- *   所有模型**默认接入**（`$globalScope`），查询会自动带上当前用户的数据范围，
- *   业务层不需要记得调用 `DataScope::row()` —— 单条读写入口（详情 / 编辑 / 删除）
- *   同样被覆盖，不会出现「列表过滤了、按 id 直调却越权」的漏网。
+ * 数据权限默认接入：查询与单条读写都会自动带上当前用户的数据范围，业务层不用记得
+ * 调 `DataScope::row()`。参与方式由 `$dataScope` 声明：false 不参与；数组可覆盖
+ * owner / dept / no_baseline；不声明则按 create_by / dept_id 走基线——声明了却没有
+ * 这两列会直接报「列不存在」，逼你把这张表的数据范围写清楚，而不是静默放行。
+ * 预设基线对所有参与模型生效，自定义规则只对登记在 `sys_data_scope_table` 的表生效。
  *
- *   参与方式由模型自己声明 `$dataScope`：
- *     - `false`：不参与（基础设施表，如 sys_menu / sys_config / 字典 / 关联表）；
- *     - 数组：参与，可覆盖 `owner`（「仅本人」按哪列）/ `dept`（「本部门」如何落到本表）
- *       / `no_baseline`（表里没有 owner 与部门列，隔离完全由自定义规则表达）；
- *     - 不声明（默认 `[]`）：按 `create_by` / `dept_id` 走基线。
+ * 租户是比档位更高一层的硬边界（超管也受约束），因此独立成 `tenant` 作用域并排在
+ * `dataScope` 之前；模型用 `$tenantScope = true` 显式声明（默认 false），只有真带
+ * tenant_id 的业务表参与，升级时不会波及存量表。
  *
- *   不声明又确实没有这两列的表，查询会直接报「列不存在」—— 这是**有意的**：
- *   逼你把「这张表的数据范围怎么算」写清楚，而不是静默放行。
- *
- *   生效条件（缺一不可）：
- *     1. 模型参与（`$dataScope !== false`）；
- *     2. 有当前用户（CLI / 定时任务 / 登录链路 / 公共路由没有用户，自动跳过）；
- *     3. 非超管、且角色不是「全部数据」。
- *   预设基线对所有参与的模型生效；**自定义规则**只对登记在 `sys_data_scope_table`
- *   的受控表生效（登记入口见数据权限规则页的「受控表」）。
- *
- *   逃生口：`User::withoutGlobalScope()->where(...)`（think-orm 自带），
- *   用于登录链路、CLI、以及「必须读到全量数据」的场景（如唯一性校验）。
- *
- * 多租户（P2-17）：
- *   租户是**硬边界**，与数据档位是两个层级 —— 数据档位在租户内部再收窄，
- *   而租户过滤连超管都受约束（超管跨租户必须显式「切换租户」）。
- *   因此租户条件**不放进** `DataScope::row()`，而是独立的作用域 `tenant`
- *   （`scopeTenant` → `TenantContext`），并且必须排在 `dataScope` **前面**：
- *   先圈定租户，再在租户内部按档位收窄，语义才不会反。
- *
- *   参与与否由模型显式声明 `$tenantScope = true`（**默认 false**）：
- *   只有真的带 `tenant_id` 列的业务表才参与 —— 基础设施表、关联表、
- *   以及 GeneratorLogic 产出的插件表（`ks_*`）都没有这一列，声明了会拼出
- *   不存在的列直接报错。刻意做成 opt-in 而不是 opt-out，升级时不会波及存量表。
- *
- *   逃生口做了收窄（见本类 `withoutGlobalScope` / `withoutAllScopes`）：
- *   `withoutGlobalScope()` 只解除**数据档位**、**保留租户**，因为项目里约 80 处
- *   调用都是「唯一性 / 存在性校验要看全量」这类需求，它们要的是跳出档位而不是
- *   跳出租户；真正需要跨租户（登录链路、CLI、迁移、全局唯一性）的少数几处
- *   必须显式用 `withoutAllScopes()`，让「我确实要跨租户」在代码里看得见。
+ * 逃生口：`withoutGlobalScope()` 只解除档位、保留租户（唯一性/存在性校验用）；
+ * 真正跨租户（登录、CLI、迁移、全局唯一性）必须显式 `withoutAllScopes()`。
  */
 abstract class BaseModel extends Model
 {
@@ -143,8 +114,8 @@ abstract class BaseModel extends Model
     /**
      * 出参统一过滤：字段级数据权限规则（`hidden` / `mask` / `encrypt`）。
      *
-     * 放在 `toArray()` 里，列表、详情、导出等所有出参路径自动生效，业务层不需要
-     * 记得调用 `DataScope::field()`；写入侧由 `ScopedQuery` 负责剔除不可写字段，
+     * 放在 `toArray()` 里，列表、详情、导出等所有出参路径自动生效；写入侧由
+     * `ScopedQuery` 负责剔除不可写字段，
      * 所以「掩码值被表单原样提交回库」不会发生。
      */
     public function toArray(): array

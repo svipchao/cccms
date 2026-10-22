@@ -6,6 +6,8 @@ import { translateTitle } from '@/locales/title'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { useMenuStore } from '@/stores/menu'
+import { useNoticeStore } from '@/stores/notice'
+import { useExportTaskStore } from '@/stores/exportTask'
 import { useWorktabStore } from '@/stores/worktab'
 import type { MenuNode } from '@/api/types'
 
@@ -209,10 +211,13 @@ router.onError(() => {
   progressDone(ROUTE_PROGRESS)
 })
 
-/** 退出登录后统一清理（路由 + 标签页 + 链路上下文） */
+/** 退出登录后统一清理（路由 + 标签页 + 链路上下文 + 账号级 store） */
 export function resetAfterLogout(): void {
   resetDynamicRoutes()
   useWorktabStore().reset()
+  // 角标与导出轮询属于上一个账号：401 强制登出与手动登出必须走同一套清理
+  useNoticeStore().reset()
+  useExportTaskStore().reset()
   // 链路 ID 不能跨账号复用：否则换账号后的请求会落进上一个人的链路
   resetTrace()
 }

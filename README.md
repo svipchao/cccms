@@ -12,7 +12,7 @@
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883.svg)](https://vuejs.org/)
 [![Element Plus](https://img.shields.io/badge/Element%20Plus-2.x-409eff.svg)](https://element-plus.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-38bdf8.svg)](https://tailwindcss.com/)
-[![MySQL](https://img.shields.io/badge/MySQL-%3E%3D%205.6-4479a1.svg)](https://www.mysql.com/)
+[![MySQL](https://img.shields.io/badge/MySQL-%3E%3D%208.0-4479a1.svg)](https://www.mysql.com/)
 
 </div>
 
@@ -56,7 +56,7 @@ CCCMS 是基于 **Webman 2.x（PHP 常驻内存框架）+ Vue 3** 的中后台�
 
 | 层 | 技术 |
 |----|------|
-| 后端 | PHP >= 8.1、Webman 2.x、think-orm 4.x、MySQL >= 5.6（推荐 8.0）、Redis >= 5.0 |
+| 后端 | PHP >= 8.1、Webman 2.x、think-orm 4.x、MySQL >= 8.0、Redis >= 5.0 |
 | 前端 | Vue 3.5、Vite 5、TypeScript 5、Element Plus 2、Tailwind CSS 4、Pinia、ECharts 6、RemixIcon |
 | 鉴权 | JWT（HS256）+ Redis（验证码 / 限流 / 配置缓存 / 会话分界线） |
 | 部署 | 原生启动 / Docker（`Dockerfile` + `docker-compose.yml`） |
@@ -87,7 +87,7 @@ cccms/
 ### 环境要求
 
 - PHP >= 8.1（推荐 8.3），扩展 `pdo`、`pdo_mysql`、`pcntl`；建议 `redis`、`event`
-- MySQL >= 5.6（推荐 8.0）、Redis >= 5.0、Node.js >= 18
+- MySQL >= 8.0、Redis >= 5.0、Node.js >= 18
 
 ### 后端
 

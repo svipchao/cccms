@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Crontab;
 use plugin\cccms\app\model\CrontabLog;
 use plugin\cccms\support\ApiException;
@@ -79,8 +80,7 @@ final class CrontabLogic
             $query->where('next_run_time', '<=', $nextEnd);
         }
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         SortInput::apply($query, $params, self::SORTABLE);
         $list = $query->page($page, $limit)->select()->toArray();
@@ -192,8 +192,7 @@ final class CrontabLogic
             $query->where('status', (int)$params['status']);
         }
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         $list  = $query->page($page, $limit)->order('id', 'desc')->select()->toArray();
 
@@ -248,12 +247,29 @@ final class CrontabLogic
         return FilterInput::only($data, self::FIELDS);
     }
 
-    /** @return string */
+    /**
+     * 参数统一编码为 JSON 对象。
+     *
+     * 数据库列是 MySQL JSON 类型，非法 JSON 会在写库时报错 —— 在入口就拒绝，
+     * 换成可读的 422，而不是让用户看到驱动的 500。
+     */
     private static function encodeParams(mixed $params): string
     {
-        if (is_string($params)) {
-            return $params === '' ? '{}' : $params;
+        $params = is_string($params) ? trim($params) : $params;
+
+        if ($params === '' || $params === null) {
+            return '{}';
         }
+
+        if (is_string($params)) {
+            json_decode($params, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new ApiException(I18n::t('crontab.params_invalid'), 422);
+            }
+
+            return $params;
+        }
+
         return (string)json_encode($params ?: new \stdClass(), JSON_UNESCAPED_UNICODE);
     }
 

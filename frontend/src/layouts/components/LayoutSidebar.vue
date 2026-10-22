@@ -128,8 +128,6 @@ import { systemRefresh, type RefreshResult, type RefreshScope } from '@/api/syst
 import { tenantOptions, type TenantOption } from '@/api/tenant'
 import { useAppStore } from '@/stores/app'
 import { useMenuStore } from '@/stores/menu'
-import { useNoticeStore } from '@/stores/notice'
-import { useExportTaskStore } from '@/stores/exportTask'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
 import type { MenuNode } from '@/api/types'
@@ -146,8 +144,6 @@ const menuStore = useMenuStore()
 const appStore = useAppStore()
 const userStore = useUserStore()
 const setting = useSettingStore()
-const noticeStore = useNoticeStore()
-const exportTaskStore = useExportTaskStore()
 
 /**
  * el-menu 通过 expose 暴露了 open(index)，内部会用正确的 indexPath 展开整条链，
@@ -334,8 +330,7 @@ async function onLogout(): Promise<void> {
     return
   }
   await userStore.logout()
-  noticeStore.reset()
-  exportTaskStore.reset()
+  // 账号级 store（未读角标 / 导出轮询）由 resetAfterLogout 统一清理
   resetAfterLogout()
   router.push('/login')
 }

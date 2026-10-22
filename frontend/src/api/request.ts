@@ -207,7 +207,8 @@ export async function downloadFile(
   params?: Record<string, unknown>,
   fallbackName = 'export.csv',
 ): Promise<void> {
-  const response = (await instance.get(url, { params, responseType: 'blob' })) as unknown as AxiosResponse<Blob>
+  // 导出类请求不受全局 15s 超时约束：大表 CSV 生成耗时不可控
+  const response = (await instance.get(url, { params, responseType: 'blob', timeout: 0 })) as unknown as AxiosResponse<Blob>
   triggerBlobDownload(response, fallbackName)
 }
 
@@ -222,7 +223,7 @@ export async function downloadFileByPost(
   data?: unknown,
   fallbackName = 'export.xlsx',
 ): Promise<number | null> {
-  const response = (await instance.post(url, data, { responseType: 'blob' })) as unknown as AxiosResponse<Blob>
+  const response = (await instance.post(url, data, { responseType: 'blob', timeout: 0 })) as unknown as AxiosResponse<Blob>
   triggerBlobDownload(response, fallbackName)
 
   const total = Number(response.headers['x-export-rows'] ?? '')

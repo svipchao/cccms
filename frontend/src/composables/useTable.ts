@@ -356,6 +356,9 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
       const rows = (res?.list ?? []) as T[]
       list.value = options.transform ? options.transform(rows) : rows
       total.value = res?.total ?? 0
+    } catch {
+      // 失败提示由请求拦截器统一处理。这里吞掉异常，避免各页 `void load()` 产生
+      // unhandled rejection；保留上一次的数据，用户可直接重试。
     } finally {
       // 本地接口往往十几毫秒就返回，加载动画一闪而过会让人以为「没刷新」。
       // 数据已经在上面赋值了，这里只是让 loading 至少可见一小段时间。

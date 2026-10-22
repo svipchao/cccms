@@ -12,46 +12,20 @@ use SplFileInfo;
 use Throwable;
 
 /**
- * 上游代码同步器：把开源 CCCMS 仓库的框架更新安全地同步到本地。
- *
- * ## 解决什么问题
- *
- * 下游基于某个版本开发了大量业务插件后，框架自身也在演进。此时「哪些文件改过、
- * 能不能覆盖」靠人工无法判断。本类用**三份哈希比对**给出机械结论：
- *
- * ```
- * 基线(base)   —— 上次同步到的上游版本各文件哈希（state.json）
- * 本地(local)  —— 当前磁盘上的文件哈希
- * 上游(remote) —— 目标版本各文件哈希
- * ```
- *
- * ## 分类与处置
+ * 上游代码同步器：用「基线 / 本地 / 上游」三份哈希判断哪些文件能安全覆盖。
  *
  * | 分类 | 条件 | 默认处置 |
  * |---|---|---|
- * | `new` | 上游有、本地无、基线也没有 | 直接写入（真·上游新增） |
- * | `safe` | 本地 == 基线、上游 != 基线 | 覆盖（本地没改过，安全） |
- * | `local` | 本地 != 基线、上游 == 基线 | 保留（本地定制，上游没动） |
- * | `deleted` | 上游有、本地无、基线里有 | 保留（本地主动删除，不上演「复活」） |
- * | `conflict` | 两边都改了 | 只报告；强制覆盖才写入（先备份） |
- * | `removed` | 上游删除、本地 == 基线 | 只报告；清理才删除（先备份） |
+ * | `new` | 上游有、本地无、基线也没有 | 直接写入 |
+ * | `safe` | 本地 == 基线、上游 != 基线 | 覆盖 |
+ * | `local` | 本地 != 基线、上游 == 基线 | 保留（本地定制） |
+ * | `deleted` | 上游有、本地无、基线里有 | 保留（本地主动删除） |
+ * | `conflict` | 两边都改了 | 只报告，强制覆盖需先备份 |
+ * | `removed` | 上游删除、本地 == 基线 | 只报告，清理才删除 |
  * | `same` | 三方一致 | 跳过 |
  *
- * 本地独有文件（既不在基线也不在上游）**永远不动**，所以业务插件天然安全。
- *
- * ## 多源
- *
- * 可配置多个镜像源（如 Gitee 国内镜像 / GitHub 国外），每个源独立缓存一份仓库、
- * 独立 fetch，互不影响；基线状态是**内容哈希**，与源无关，因此切换源不需要重建基线。
- *
- * ## 设计要点
- *
- * 1. **不依赖本地 git 仓库**：只在 `runtime/cccms-upgrade/repo/{源}` 缓存一份上游仓库，
- *    在缓存里 fetch / reset。因此下游把代码拷成非 git 目录、或工作区有未提交改动，
- *    都不影响同步，也不会污染本地版本历史。
- * 2. **覆盖必先备份**：所有被覆盖 / 删除的文件按原相对路径复制到备份目录，可随时回滚。
- * 3. **默认不覆盖冲突**：无人值守（页面一键升级）场景下也不会丢代码。
- * 4. **行尾归一化后再哈希**：避免 Windows(CRLF) 与仓库(LF) 的差异被误判成「本地改过」。
+ * 本地独有文件永远不动，业务插件天然安全。上游仓库缓存在 runtime 下，不依赖
+ * 本地 git；覆盖 / 删除前一律备份；哈希前统一行尾，避免 CRLF 被误判为「改过」。
  */
 final class Upgrader
 {
@@ -91,16 +65,6 @@ final class Upgrader
     public const ORDER = [
         self::CONFLICT, self::SAFE, self::NEW, self::REMOVED, self::LOCAL, self::DELETED, self::SAME,
     ];
-
-    // ---------------------------------------------------------------------
-    // 环境守卫：只允许在「本地开发环境」执行
-    //
-    // 判定逻辑集中在 Environment（危险功能统一门禁），这里只做转发：
-    // 升级与代码生成器共用同一份「目录自检 + 开关」口径，避免各写一套。
-    // ---------------------------------------------------------------------
-
-    /** 开发态标记文件（相对仓库根）。保留常量名兼容旧调用方，真实定义在 Environment */
-    public const DEV_MARKER = Environment::DEV_MARKER;
 
     // ---------------------------------------------------------------------
     // 配置与路径
@@ -894,8 +858,8 @@ final class Upgrader
                 'key'        => 'production',
                 'allowed'    => false,
                 'blocked_by' => 'environment',
-                'reason'     => '当前不是本地开发环境（未发现 ' . self::DEV_MARKER . '），已禁止在线升级',
-                'marker'     => self::DEV_MARKER,
+                'reason'     => '当前不是本地开发环境（未发现 ' . Environment::DEV_MARKER . '），已禁止在线升级',
+                'marker'     => Environment::DEV_MARKER,
             ];
         }
 
@@ -905,7 +869,7 @@ final class Upgrader
                 'allowed'    => false,
                 'blocked_by' => 'switch',
                 'reason'     => '上游同步已关闭（plugin.cccms.upgrade.enable = false）',
-                'marker'     => self::DEV_MARKER,
+                'marker'     => Environment::DEV_MARKER,
             ];
         }
 
@@ -914,19 +878,8 @@ final class Upgrader
             'allowed'    => true,
             'blocked_by' => '',
             'reason'     => '',
-            'marker'     => self::DEV_MARKER,
+            'marker'     => Environment::DEV_MARKER,
         ];
-    }
-
-    /**
-     * 目录自检：仓库根是否存在开发态标记文件（带进程内缓存）。
-     *
-     * 转发到 `Environment::isDevLayout()`，供旧调用方（如 SecurityBootstrap）继续使用；
-     * 危险功能的放行判定请直接用 `Environment::featureEnabled()` / `blockedBy()`。
-     */
-    public static function isDevLayout(): bool
-    {
-        return Environment::isDevLayout();
     }
 
     /** 对外动作的统一守卫：总开关关闭、或不在本地开发环境时一律拒绝 */

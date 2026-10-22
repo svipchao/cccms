@@ -1,15 +1,11 @@
-# CCCMS 一键编排：Webman + MySQL + Redis
+# CCCMS 一键编排：Webman + MySQL 8 + Redis
 #
-#   1) 在 server/ 下准备变量（compose 与 Webman 共用同一份 .env）：
-#        cp .env.example .env
-#        并设置 JWT_SECRET / DATA_ENCRYPT_KEY / DB_PASSWORD
-#   2) 启动：
-#        docker compose up -d --build
-#   3) 首次启动 MySQL 会自动导入 plugin/cccms/db/ 下的 schema.sql 与 seed.sql，
-#      随后进入容器执行菜单/权限同步：
-#        docker compose exec webman php webman cccms:menu-sync
-#        docker compose exec webman php webman cccms:perm-scan
+#   cp .env.example .env       # 设置 JWT_SECRET / DATA_ENCRYPT_KEY / DB_PASSWORD
+#   docker compose up -d --build
+#   docker compose exec webman php webman cccms:menu-sync
+#   docker compose exec webman php webman cccms:perm-scan
 #
+# 首次启动时 MySQL 自动导入 plugin/cccms/db/ 下的 schema.sql 与 seed.sql。
 # 访问 http://localhost:8787 ，默认账号 admin / admin123。
 
 services:
@@ -61,7 +57,7 @@ services:
     restart: unless-stopped
     command:
       - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
+      - --collation-server=utf8mb4_0900_ai_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root123456}
       MYSQL_DATABASE: cccms

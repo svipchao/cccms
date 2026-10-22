@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Tenant;
 use plugin\cccms\app\model\User;
 use plugin\cccms\support\ApiException;
@@ -79,8 +80,7 @@ final class TenantLogic
             $query->where('expire_at', '<=', $end);
         }
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         SortInput::apply($query, $params, self::SORTABLE, 'id', 'asc', 'asc');
         $list = $query->page($page, $limit)->select()->toArray();

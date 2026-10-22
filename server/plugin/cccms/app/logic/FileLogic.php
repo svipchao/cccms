@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Category;
 use plugin\cccms\app\model\File;
 use plugin\cccms\support\ApiException;
@@ -59,8 +60,7 @@ final class FileLogic
             $query->where('create_time', '<=', $end);
         }
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         SortInput::apply($query, $params, self::SORTABLE);
         $list = $query->page($page, $limit)->select()->toArray();

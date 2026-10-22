@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Dept;
 use plugin\cccms\app\model\Notice;
 use plugin\cccms\app\model\NoticeRead;
@@ -20,6 +21,7 @@ use plugin\cccms\support\SortInput;
 use plugin\cccms\support\Tree;
 use plugin\cccms\support\UserContext;
 use think\db\BaseQuery;
+use think\facade\Db;
 
 /**
  * 通知公告。
@@ -129,8 +131,7 @@ final class NoticeLogic
             $query->where('expire_at', '<=', $expireEnd);
         }
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         SortInput::apply($query, $params, self::SORTABLE, 'level', 'desc');
         $list = $query->page($page, $limit)->select()->toArray();
@@ -168,10 +169,13 @@ final class NoticeLogic
             $payload['publish_at'] = date('Y-m-d H:i:s');
         }
 
-        $id = (int)Notice::withoutGlobalScope()->insertGetId($payload);
-        self::syncTargets($id, $scope, $targetIds);
+        // 公告与投放目标同成败：否则会出现「公告存在但谁都看不到」
+        return (int)Db::transaction(static function () use ($payload, $scope, $targetIds): int {
+            $id = (int)Notice::withoutGlobalScope()->insertGetId($payload);
+            self::syncTargets($id, $scope, $targetIds);
 
-        return $id;
+            return $id;
+        });
     }
 
     public static function update(int $id, array $data): void
@@ -182,22 +186,29 @@ final class NoticeLogic
             $payload['publish_at'] = date('Y-m-d H:i:s');
         }
 
-        Notice::where('id', $id)->update($payload);
+        $hasScope = array_key_exists('scope', $data);
+        $scope    = $hasScope ? self::normalizeScope($data['scope'] ?? 0) : 0;
+        $targets  = $hasScope ? self::normalizeTargetIds($scope, $data['target_ids'] ?? []) : [];
 
-        // 定向投放：只要传了 scope 就重设目标（scope=0 视为清空投放）
-        if (array_key_exists('scope', $data)) {
-            $scope = self::normalizeScope($data['scope'] ?? 0);
-            self::syncTargets($id, $scope, self::normalizeTargetIds($scope, $data['target_ids'] ?? []));
-        }
+        Db::transaction(static function () use ($id, $payload, $hasScope, $scope, $targets): void {
+            Notice::where('id', $id)->update($payload);
+
+            // 定向投放：只要传了 scope 就重设目标（scope=0 视为清空投放）
+            if ($hasScope) {
+                self::syncTargets($id, $scope, $targets);
+            }
+        });
     }
 
     public static function delete(int $id): void
     {
         self::read($id);
-        // 软删除：进回收站（见 RecycleLogic 的 notice 类型）
-        Notice::destroy($id);
-        NoticeTarget::where('notice_id', $id)->delete();
-        NoticeRead::where('notice_id', $id)->delete();
+        Db::transaction(static function () use ($id): void {
+            // 软删除：进回收站（见 RecycleLogic 的 notice 类型）
+            Notice::destroy($id);
+            NoticeTarget::where('notice_id', $id)->delete();
+            NoticeRead::where('notice_id', $id)->delete();
+        });
     }
 
     /**
@@ -223,8 +234,7 @@ final class NoticeLogic
         $readUserIds   = array_map('intval', NoticeRead::where('notice_id', $noticeId)->column('user_id'));
 
         $view  = (string)($params['view'] ?? 'read');
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
 
         if ($view === 'unread') {
             $unreadIds = array_values(array_diff($targetUserIds, $readUserIds));
@@ -293,8 +303,7 @@ final class NoticeLogic
             }
         }
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         $rows  = $query->page($page, $limit)->order('level', 'desc')->order('id', 'desc')->select()->toArray();
 
@@ -314,12 +323,17 @@ final class NoticeLogic
     /** 未读数量（顶栏角标） */
     public static function unreadCount(int $userId): int
     {
-        $total = self::visible($userId)->count();
-        if ($total === 0) {
+        $visibleIds = array_map('intval', self::visible($userId)->column('id'));
+        if ($visibleIds === []) {
             return 0;
         }
 
-        return max(0, $total - NoticeRead::where('user_id', $userId)->count());
+        // 只统计「当前可见公告」里的已读：已过期 / 已删除公告的已读记录不能把未读数冲成 0
+        $readIds = array_map('intval', NoticeRead::where('user_id', $userId)
+            ->whereIn('notice_id', $visibleIds)
+            ->column('notice_id'));
+
+        return count(array_diff($visibleIds, $readIds));
     }
 
     public static function markRead(int $userId, int $noticeId): void
@@ -329,18 +343,10 @@ final class NoticeLogic
             throw new ApiException(I18n::t('notice.not_found_or_expired'), 404);
         }
 
-        if (NoticeRead::where('notice_id', $noticeId)->where('user_id', $userId)->find()) {
-            return;   // 已读过，不重复计数
+        // 影响行数决定是否 +1：并发 / 双击时只有真正插入的那次计数
+        if (self::insertRead($noticeId, $userId) > 0) {
+            Notice::where('id', $noticeId)->inc('read_count')->update();
         }
-
-        NoticeRead::create([
-            'notice_id' => $noticeId,
-            'user_id'   => $userId,
-            'read_time' => date('Y-m-d H:i:s'),
-        ]);
-
-        // 冗余计数：只在首次已读时 +1
-        Notice::where('id', $noticeId)->inc('read_count')->update();
     }
 
     /** 全部标记已读 */
@@ -357,15 +363,32 @@ final class NoticeLogic
             return 0;
         }
 
-        $now  = date('Y-m-d H:i:s');
-        $rows = [];
+        $inserted = [];
         foreach ($todo as $id) {
-            $rows[] = ['notice_id' => $id, 'user_id' => $userId, 'read_time' => $now];
+            if (self::insertRead($id, $userId) > 0) {
+                $inserted[] = $id;
+            }
         }
-        NoticeRead::insertAll($rows);
-        Notice::whereIn('id', $todo)->inc('read_count')->update();
 
-        return count($todo);
+        if ($inserted !== []) {
+            Notice::whereIn('id', $inserted)->inc('read_count')->update();
+        }
+
+        return count($inserted);
+    }
+
+    /**
+     * 插入一条已读记录，返回 1 = 本次真正写入，0 = 已存在（含并发写入）。
+     *
+     * 用 INSERT IGNORE 而不是「先查后插」：唯一键 uk_notice_user 保证幂等，
+     * 并发下不会抛重复键，read_count 也只加一次。
+     */
+    private static function insertRead(int $noticeId, int $userId): int
+    {
+        return (int)Db::execute(
+            'INSERT IGNORE INTO `' . Db::name('notice_read')->getTable() . '` (`notice_id`, `user_id`, `read_time`) VALUES (?, ?, ?)',
+            [$noticeId, $userId, date('Y-m-d H:i:s')]
+        );
     }
 
     // ------------------------------------------------------------------

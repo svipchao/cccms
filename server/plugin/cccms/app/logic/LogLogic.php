@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\OperationLog;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\ClientIp;
@@ -129,8 +130,7 @@ final class LogLogic
     {
         $query = self::filtered($params);
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         SortInput::apply($query, $params, self::SORTABLE);
         // params / result / ua 不随列表下发（见 LIST_HIDDEN_FIELDS），详情走 detail()

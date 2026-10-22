@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Dept;
 use plugin\cccms\app\model\Post;
 use plugin\cccms\app\model\Role;
@@ -19,6 +20,7 @@ use plugin\cccms\support\PermissionCache;
 use plugin\cccms\support\SortInput;
 use plugin\cccms\support\Tree;
 use plugin\cccms\support\UserContext;
+use think\facade\Db;
 use Throwable;
 
 /**
@@ -82,8 +84,7 @@ final class UserLogic
             $query->where('login_time', '<=', $end);
         }
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         SortInput::apply($query, $params, self::SORTABLE);
         // 字段级规则（hidden / mask / encrypt）已由 User::toArray() 统一处理
@@ -130,9 +131,15 @@ final class UserLogic
         $deptIds = self::pull($data, 'dept_ids') ?? [];
         $postIds = self::pull($data, 'post_ids') ?? [];
 
-        // 新增还没有「归属」，插入语句不需要数据权限条件
-        $id = (int)User::withoutGlobalScope()->insertGetId($data);
-        self::assign($id, $roleIds, $deptIds, $postIds);
+        // 主表与三张关系表必须同成败，否则会留下「用户存在但没有任何角色」的半截数据
+        $id = Db::transaction(static function () use ($data, $roleIds, $deptIds, $postIds): int {
+            // 新增还没有「归属」，插入语句不需要数据权限条件
+            $id = (int)User::withoutGlobalScope()->insertGetId($data);
+            self::assign($id, $roleIds, $deptIds, $postIds);
+
+            return $id;
+        });
+
         // 角色 / 部门 / 岗位关系变化会影响该用户的权限与数据范围缓存
         PermissionCache::bump();
 
@@ -160,19 +167,22 @@ final class UserLogic
         $deptIds = self::pull($data, 'dept_ids');
         $postIds = self::pull($data, 'post_ids');
 
-        User::newScopedQuery()->where('id', $id)->update($data);
+        Db::transaction(static function () use ($data, $id, $roleIds, $deptIds, $postIds): void {
+            User::newScopedQuery()->where('id', $id)->update($data);
 
-        // 只有显式提供了关联数组时才重设（未提供 = 保持原样，导入「留空不改动」依赖此语义）；
-        // 提供了空数组 = 清空对应关联（表单编辑的默认行为）。
-        if ($roleIds !== null) {
-            self::assignRoles($id, $roleIds);
-        }
-        if ($deptIds !== null) {
-            self::assignDepts($id, $deptIds);
-        }
-        if ($postIds !== null) {
-            self::assignPosts($id, $postIds);
-        }
+            // 只有显式提供了关联数组时才重设（未提供 = 保持原样，导入「留空不改动」依赖此语义）；
+            // 提供了空数组 = 清空对应关联（表单编辑的默认行为）。
+            if ($roleIds !== null) {
+                self::assignRoles($id, $roleIds);
+            }
+            if ($deptIds !== null) {
+                self::assignDepts($id, $deptIds);
+            }
+            if ($postIds !== null) {
+                self::assignPosts($id, $postIds);
+            }
+        });
+
         PermissionCache::bump();
     }
 

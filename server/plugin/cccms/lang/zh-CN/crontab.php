@@ -11,6 +11,7 @@ return [
     'retry_times_invalid'    => '失败重试次数需在 0~10 之间',
     'retry_interval_invalid' => '重试间隔至少 1 秒',
     'group_name_too_long'    => '任务分组不能超过 32 个字符',
+    'params_invalid'         => '参数必须是合法的 JSON 对象',
     'not_found'              => '定时任务不存在',
     'no_permission'          => '无权操作该定时任务',
 ];

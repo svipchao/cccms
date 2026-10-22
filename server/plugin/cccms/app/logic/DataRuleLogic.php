@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\DataRule;
 use plugin\cccms\app\model\Dept;
 use plugin\cccms\app\model\Post;
@@ -85,8 +86,7 @@ final class DataRuleLogic
             $query->whereIn('action', $actions);
         }
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         // 规则列表固定按创建顺序（id asc）输出，不提供列头排序
         $list = $query->page($page, $limit)->order('id', 'asc')->select()->toArray();

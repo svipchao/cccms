@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\DictType;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\DictCache;
@@ -11,8 +12,8 @@ use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
 use plugin\cccms\support\SoftDelete;
 use plugin\cccms\support\TenantContext;
-use plugin\cccms\support\Tree;
 use think\facade\Db;
+use plugin\cccms\support\Tree;
 
 /** 数据字典逻辑。 */
 final class DictLogic
@@ -43,8 +44,7 @@ final class DictLogic
             $query->whereIn('category_id', $categoryIds);
         }
 
-        $page  = max(1, (int)($params['page'] ?? 1));
-        $limit = max(1, (int)($params['limit'] ?? 15));
+        ['page' => $page, 'limit' => $limit] = PageInput::of($params);
         $total = $query->count();
         // 字典类型是低频基础数据，按创建时间倒序即可（不提供列头排序）
         $list = $query->page($page, $limit)->order('id', 'desc')->select()->toArray();
@@ -95,12 +95,14 @@ final class DictLogic
     public static function typeDelete(int $id): void
     {
         self::assertTypeInTenant($id);
-        // 软删除：类型与其下数据一起进回收站
-        $dataIds = SoftDelete::apply(TenantContext::table('dict_data'))->where('type_id', $id)->column('id');
-        if ($dataIds !== []) {
-            SoftDelete::remove(TenantContext::table('dict_data'), $dataIds);
-        }
-        SoftDelete::remove(TenantContext::table('dict_type'), $id);
+        // 软删除：类型与其下数据一起进回收站（两条语句必须同成败，否则会留下孤儿数据）
+        Db::transaction(static function () use ($id): void {
+            $dataIds = SoftDelete::apply(TenantContext::table('dict_data'))->where('type_id', $id)->column('id');
+            if ($dataIds !== []) {
+                SoftDelete::remove(TenantContext::table('dict_data'), $dataIds);
+            }
+            SoftDelete::remove(TenantContext::table('dict_type'), $id);
+        });
         DictCache::bump();
     }
 

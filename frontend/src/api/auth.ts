@@ -20,7 +20,6 @@ export interface Profile {
   super_admin: boolean
   roles: string[]
   permissions: string[]
-  crypto_key?: string
   /** 当前**生效**租户（超管切换后 ≠ home_tenant_id） */
   tenant_id?: number
   /** 账号归属租户（`sys_user.tenant_id`，不随切换变化） */
