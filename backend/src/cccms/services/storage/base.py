@@ -31,6 +31,18 @@ class StorageDriver(Protocol):
     async def delete(self, relative: str) -> None:
         """删除对象；对象本来就不存在时视为成功。"""
 
+    async def quarantine(self, relative: str) -> None:
+        """软删除：把对象移出可下载路径，但保留以便回收站还原。
+
+        local 移到静态目录之外的隔离区；S3 移到 ``_quarantine/`` 前缀（配合桶生命周期规则清理）。
+        """
+
+    async def restore(self, relative: str) -> None:
+        """从隔离区移回可下载路径；隔离区里没有时静默返回。"""
+
+    async def purge(self, relative: str) -> None:
+        """彻底删除，包括隔离区里的副本。"""
+
     def exists(self, relative: str) -> bool: ...
 
     def size(self, relative: str) -> int:

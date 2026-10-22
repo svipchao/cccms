@@ -32,6 +32,14 @@ def _txt_files(root: Path) -> list[Path]:
     return list(root.rglob("*.txt"))
 
 
+def _read(path: Path) -> bytes:
+    return path.read_bytes()
+
+
+def _missing(path: Path) -> bool:
+    return not path.exists()
+
+
 async def _collect(stream: Any) -> bytes:
     return b"".join([chunk async for chunk in stream])
 
@@ -43,10 +51,28 @@ def test_registry_matches_config_constant() -> None:
 
 def test_validate_storage_rejects_unimplemented_driver() -> None:
     assert Settings(_env_file=None, storage_driver="local").validate_storage() == []
+
+    # 没实现的驱动：启动即失败，并列出当前支持的取值。
+    problems = Settings(_env_file=None, storage_driver="oss").validate_storage()
+    assert len(problems) == 1
+    assert "oss" in problems[0]
+    assert "local" in problems[0] and "s3" in problems[0]
+
+
+def test_validate_storage_requires_s3_credentials() -> None:
+    """声明了 s3 却缺桶/凭据 → 拒绝启动，别等第一个附件才 500。"""
     problems = Settings(_env_file=None, storage_driver="s3").validate_storage()
     assert len(problems) == 1
-    assert "s3" in problems[0]
-    assert "local" in problems[0]
+    assert "CCCMS_S3_BUCKET" in problems[0]
+
+    ready = Settings(
+        _env_file=None,
+        storage_driver="s3",
+        s3_bucket="cccms",
+        s3_access_key="key",
+        s3_secret_key="secret",
+    )
+    assert ready.validate_storage() == []
 
 
 def test_get_driver_returns_local(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -142,11 +168,37 @@ def test_url_and_presign(tmp_path: Path) -> None:
     assert driver.presign_url("2026/10/22/a.png", 60) is None
 
 
-def test_quarantine_and_chunks_live_outside_static_root(tmp_path: Path) -> None:
+async def test_local_quarantine_restore_purge(tmp_path: Path) -> None:
     driver = _driver(tmp_path)
-    assert driver.quarantine_path("a.png") == (tmp_path.parent / "quarantine" / "a.png").resolve()
-    assert driver.chunk_root() == (tmp_path / "chunks").resolve()
-    assert driver.chunk_dir("up-1") == (tmp_path / "chunks" / "up-1").resolve()
+
+    async def _body() -> Any:
+        yield b"payload"
+
+    await driver.save("2026/10/22/a.png", _body())
+    assert driver.quarantine_path("2026/10/22/a.png") == (
+        tmp_path.parent / "quarantine" / "2026/10/22/a.png"
+    ).resolve()
+
+    isolated = tmp_path.parent / "quarantine" / "2026/10/22/a.png"
+
+    await driver.quarantine("2026/10/22/a.png")
+    # 隔离区在静态目录之外：旧 URL 立即 404，回收站还能还原。
+    assert driver.exists("2026/10/22/a.png") is False
+    assert _read(isolated) == b"payload"
+
+    await driver.restore("2026/10/22/a.png")
+    assert _read(driver.blob_path("2026/10/22/a.png")) == b"payload"
+
+    await driver.quarantine("2026/10/22/a.png")
+    await driver.purge("2026/10/22/a.png")
+    assert _missing(isolated)
+
+
+async def test_local_quarantine_missing_is_noop(tmp_path: Path) -> None:
+    driver = _driver(tmp_path)
+    await driver.quarantine("never.png")
+    await driver.restore("never.png")
+    await driver.purge("never.png")
 
 
 # --- 上传确实经过驱动 -------------------------------------------------------

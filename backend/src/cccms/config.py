@@ -33,7 +33,7 @@ DEFAULT_ADMIN_PASSWORD = "Admin@123456"  # noqa: S105 - 默认哨兵值, 生产�
 
 # 已实现的存储驱动；与 ``services/storage`` 的注册表由 test_storage.py 断言一致。
 # 这里放常量而不是 import 注册表：config 不该反向依赖 services（会成环）。
-IMPLEMENTED_STORAGE_DRIVERS = ("local",)
+IMPLEMENTED_STORAGE_DRIVERS = ("local", "s3")
 
 DEV_SECRET_KEYS = (
     "jwt_secret",
@@ -145,6 +145,11 @@ class Settings(BaseSettings):
     # 未绑定域名且未显式选择租户时，登录落到该租户（默认平台租户）
     login_default_tenant: str = "platform"
 
+    # 口令 -----------------------------------------------------------------
+    # 改密时比对的旧口令份数（0 = 关闭历史校验，1 = 只拦「与当前相同」）。
+    # 每份是一条 Argon2 哈希，5 份约 1.5KB，单用户改密百次也只占这几行。
+    password_history: int = 5
+
     # CORS -----------------------------------------------------------------
     cors_origins: CsvList = Field(default_factory=list)
 
@@ -154,6 +159,15 @@ class Settings(BaseSettings):
     # Uploads --------------------------------------------------------------
     storage_driver: Literal["local", "oss", "cos", "qiniu", "s3"] = "local"
     storage_local_root: str = str(PROJECT_DIR / "shared" / "uploads")
+    # S3 兼容对象存储（AWS / MinIO / 阿里 OSS 的 S3 端点 / 腾讯 COS 的 S3 端点）。
+    # endpoint 留空表示 AWS 官方端点；自建与 MinIO 必须填，并走 path-style 寻址。
+    s3_endpoint: str = ""
+    s3_region: str = "us-east-1"
+    s3_bucket: str = ""
+    s3_access_key: str = ""
+    s3_secret_key: str = ""
+    # 可选的对象键前缀：同一个桶里给多个环境/租户分目录时用。
+    s3_prefix: str = ""
     storage_url_prefix: str = "/storage"
     # 导出文件常含日志/业务数据，必须落在静态目录之外，只能经鉴权接口下载。
     export_local_root: str = str(PROJECT_DIR / "shared" / "exports")
@@ -191,8 +205,10 @@ class Settings(BaseSettings):
     # Online upgrade (local development only) -------------------------------
     upgrade_enable: bool = False
     upgrade_branch: str = "main"
-    # 远端名不写死：git clone -o cccms 之类会没有 origin，服务端会再按仓库实际远端兜底。
-    upgrade_remote: str = "origin"
+    # 页面未指定来源时优先用的名字（源名或已有远端名）；留空则用第一个内置源。
+    upgrade_remote: str = ""
+    # 同步源清单 name=url,name=url；留空用 services/upgrade.py 的内置 github / gitee。
+    upgrade_sources: str = ""
     upgrade_timeout: int = 60
 
     # Seed -----------------------------------------------------------------
@@ -243,6 +259,13 @@ class Settings(BaseSettings):
         return bool(self.smtp_host.strip() and self.smtp_from.strip())
 
     @property
+    def s3_ready(self) -> bool:
+        """S3 驱动的最小配置：桶与一组凭据。endpoint / region 都有默认值。"""
+        return bool(
+            self.s3_bucket.strip() and self.s3_access_key.strip() and self.s3_secret_key.strip()
+        )
+
+    @property
     def upload_ext_set(self) -> set[str]:
         return {item.strip().lower() for item in self.upload_ext_allow.split(",") if item.strip()}
 
@@ -275,15 +298,21 @@ class Settings(BaseSettings):
         return problems
 
     def validate_storage(self) -> list[str]:
-        """附件后端目前只有 local 实现，其它取值必须显式失败而不是静默降级。
+        """存储后端必须在启动期就判定清楚，不能等第一个附件才 500。
 
-        取值清单见 ``IMPLEMENTED_STORAGE_DRIVERS``；接入 S3 时先加驱动，再放开这里。
+        取值清单见 ``IMPLEMENTED_STORAGE_DRIVERS``；``s3`` 还要求桶与凭据齐全，
+        缺了就拒绝启动——半套配置连上去只会让上传全失败。
         """
         if self.storage_driver not in IMPLEMENTED_STORAGE_DRIVERS:
             supported = " / ".join(IMPLEMENTED_STORAGE_DRIVERS)
             return [
                 f"CCCMS_STORAGE_DRIVER={self.storage_driver} 尚未实现；"
                 f"当前仅支持 {supported}，请勿在配置里声明未接入的存储后端"
+            ]
+        if self.storage_driver == "s3" and not self.s3_ready:
+            return [
+                "CCCMS_STORAGE_DRIVER=s3 需要 CCCMS_S3_BUCKET / CCCMS_S3_ACCESS_KEY / "
+                "CCCMS_S3_SECRET_KEY 同时配置"
             ]
         return []
 

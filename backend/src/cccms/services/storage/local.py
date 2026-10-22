@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import shutil
 from collections.abc import AsyncIterator
 from pathlib import Path
 
@@ -46,12 +48,6 @@ class LocalStorageDriver:
         # 隔离区必须在静态目录之外，软删除后旧 URL 立即 404。
         return safe_join(self._root.parent / "quarantine", relative)
 
-    def chunk_root(self) -> Path:
-        return safe_join(self._root, "chunks")
-
-    def chunk_dir(self, upload_id: str) -> Path:
-        return safe_join(self._root, f"chunks/{upload_id}")
-
     # --- 通用契约 ---------------------------------------------------------
     async def save(self, relative: str, chunks: AsyncIterator[bytes]) -> int:
         target = self.blob_path(relative)
@@ -89,6 +85,27 @@ class LocalStorageDriver:
 
     async def delete(self, relative: str) -> None:
         self.blob_path(relative).unlink(missing_ok=True)
+
+    async def quarantine(self, relative: str) -> None:
+        await asyncio.to_thread(self._move, self.blob_path(relative), self.quarantine_path(relative))
+
+    async def restore(self, relative: str) -> None:
+        await asyncio.to_thread(self._move, self.quarantine_path(relative), self.blob_path(relative))
+
+    async def purge(self, relative: str) -> None:
+        await asyncio.to_thread(self._purge_sync, relative)
+
+    def _purge_sync(self, relative: str) -> None:
+        self.blob_path(relative).unlink(missing_ok=True)
+        self.quarantine_path(relative).unlink(missing_ok=True)
+
+    @staticmethod
+    def _move(source: Path, target: Path) -> None:
+        """同卷 rename（跨盘时 shutil 会退化成本地复制+删除）。"""
+        if not source.is_file():
+            return
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(target))
 
     def exists(self, relative: str) -> bool:
         return self.blob_path(relative).is_file()

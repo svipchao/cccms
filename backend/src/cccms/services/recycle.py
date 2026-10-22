@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cccms.core.context import UserContext
-from cccms.core.errors import Forbidden, ValidationFailed
+from cccms.core.errors import ApiError, Forbidden, ValidationFailed
 from cccms.core.scope import apply_scope
 from cccms.core.time import now
 from cccms.models.crontab import Crontab
@@ -103,8 +103,8 @@ async def restore(
     await session.commit()
     for relative in restored_files:
         try:
-            unquarantine_file(relative)
-        except OSError:
+            await unquarantine_file(relative)
+        except (OSError, ApiError):
             # 数据库已恢复记录, 文件回迁失败需人工介入, 不能静默吞掉。
             logger.warning("恢复附件文件失败: %s", relative, exc_info=True)
     return affected, skipped
@@ -138,7 +138,7 @@ async def purge(
     await session.commit()
     for relative in purged_files:
         try:
-            purge_blob(relative)
-        except OSError:
+            await purge_blob(relative)
+        except (OSError, ApiError):
             logger.warning("彻底删除附件文件失败: %s", relative, exc_info=True)
     return affected, skipped

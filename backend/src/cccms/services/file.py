@@ -20,7 +20,14 @@ from cccms.core.cache import Keys, get_json, set_json
 from cccms.core.cache import delete as cache_delete
 from cccms.core.codes import BizCode
 from cccms.core.context import UserContext
-from cccms.core.errors import Conflict, Forbidden, NotFound, ServiceUnavailable, ValidationFailed
+from cccms.core.errors import (
+    ApiError,
+    Conflict,
+    Forbidden,
+    NotFound,
+    ServiceUnavailable,
+    ValidationFailed,
+)
 from cccms.core.pagination import count_query
 from cccms.core.scope import ScopeConfig, apply_field_actions, apply_scope, without_scope
 from cccms.core.sorting import apply_sort
@@ -31,7 +38,7 @@ from cccms.models.user import User, UserDept
 from cccms.schemas.file import FileOut, FileQuery, UploadCompleteRequest, UploadInitOut, UploadInitRequest
 from cccms.schemas.system import CategoryNode
 from cccms.services import dict_service
-from cccms.services.storage import StorageDriver, get_driver, local_driver
+from cccms.services.storage import StorageDriver, get_driver, safe_join
 
 IMAGE_EXT = {"jpg", "jpeg", "png", "gif", "webp", "bmp"}
 PDF_EXT = {"pdf"}
@@ -82,47 +89,39 @@ def _ext_of(name: str) -> str:
     return Path(name).suffix.lower().lstrip(".")
 
 
-def _live_blob(relative: str) -> Path:
-    return local_driver().blob_path(relative)
+def _staging_root() -> Path:
+    """分片暂存目录永远是**本机**目录，与存储驱动无关。
+
+    分片只是"上传到哪台机器、就在哪台机器合并"的临时数据，合并完成后成品才交给驱动；
+    正因为如此，多节点部署下分片上传需要粘性路由（同一 upload_id 落在同一节点）。
+    """
+    return get_settings().storage_root / "chunks"
 
 
-def _quarantine_blob(relative: str) -> Path:
-    # 隔离区必须在静态目录之外，软删除后旧 URL 立即 404。
-    return local_driver().quarantine_path(relative)
-
-
-def quarantine_file(relative: str) -> None:
+async def quarantine_file(relative: str) -> None:
     if not relative:
         return
-    source = _live_blob(relative)
-    if not source.is_file():
+    driver = get_driver()
+    if not driver.exists(relative):
         return
-    target = _quarantine_blob(relative)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(source), str(target))
+    await driver.quarantine(relative)
 
 
-def unquarantine_file(relative: str) -> None:
+async def unquarantine_file(relative: str) -> None:
     if not relative:
         return
-    source = _quarantine_blob(relative)
-    if not source.is_file():
-        return
-    target = _live_blob(relative)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(source), str(target))
+    await get_driver().restore(relative)
 
 
-def purge_blob(relative: str) -> None:
+async def purge_blob(relative: str) -> None:
     if not relative:
         return
-    for path in (_live_blob(relative), _quarantine_blob(relative)):
-        path.unlink(missing_ok=True)
+    await get_driver().purge(relative)
 
 
 def cleanup_chunks(retention_hours: int = 48) -> int:
     """Remove abandoned chunk directories older than ``retention_hours``."""
-    root = local_driver().chunk_root()
+    root = _staging_root()
     if not root.is_dir():
         return 0
     cutoff = now().timestamp() - max(1, retention_hours) * 3600
@@ -444,8 +443,9 @@ async def delete_files(session: AsyncSession, actor: UserContext, ids: list[int]
     failed: list[int] = []
     for file_id, relative in removed:
         try:
-            quarantine_file(relative)
-        except OSError:
+            await quarantine_file(relative)
+        except (OSError, ApiError):
+            # 驱动可能抛 ServiceUnavailable（对象存储不可用）或 OSError（本地盘权限）。
             failed.append(file_id)
     if failed:
         # 未能移入隔离区的文件仍然公开可下载，必须把数据库删除回滚。
@@ -533,7 +533,8 @@ CHUNK_META_TTL = 86400
 
 
 def _chunk_dir(upload_id: str) -> Path:
-    return local_driver().chunk_dir(upload_id)
+    # upload_id 是客户端回传的，必须防穿越（与 blob 路径同一套 safe_join）。
+    return safe_join(_staging_root(), upload_id)
 
 
 def _chunk_key(upload_id: str) -> str:

@@ -16,9 +16,11 @@ from cccms.core.errors import ServiceUnavailable
 
 from .base import StorageDriver
 from .local import LocalStorageDriver, safe_join
+from .s3 import S3StorageDriver
 
 _BUILDERS: dict[str, Callable[[Settings], StorageDriver]] = {
     "local": LocalStorageDriver.from_settings,
+    "s3": S3StorageDriver.from_settings,
 }
 
 
@@ -49,6 +51,7 @@ def local_driver(settings: Settings | None = None) -> LocalStorageDriver:
 
 __all__ = [
     "LocalStorageDriver",
+    "S3StorageDriver",
     "StorageDriver",
     "get_driver",
     "implemented_drivers",

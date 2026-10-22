@@ -160,7 +160,15 @@ def fake_backend(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path: 
 
 
 def test_storage_is_readable_by_logged_in_owner(client: TestClient, fake_backend) -> None:
-    fake_backend(FileRecord(path="2026/01/01/anything.png", url="/storage/x", original_name="a.png", mime="image/png"))
+    fake_backend(
+        FileRecord(
+            storage="local",
+            path="2026/01/01/anything.png",
+            url="/storage/x",
+            original_name="a.png",
+            mime="image/png",
+        )
+    )
     response = client.get("/storage/2026/01/01/anything.png")
     assert response.status_code == 200
     assert response.content == b"\x89PNG"
