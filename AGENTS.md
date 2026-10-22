@@ -10,7 +10,7 @@
 | `docs/09-前端开发规范.md` | 请求解包、路由、i18n、类型约定 |
 | `docs/03-目录结构.md` | 每个目录放什么 |
 
-历史依据：`docs/项目体检与竞品分析-2026-10-22.md`（体检报告）、`docs/修复记录-2026-10-22.md`（每轮改了什么、为什么、怎么回滚）、`docs/更新日志.md`（已交付版本）。
+历史依据只有两处：`docs/更新日志.md`（**已交付**了什么）与 `docs/开发计划.md` 第〇节（**已定稿的决策**与「观察项的触发信号」）。`README.md` 是项目主页，`docs/README.md` 是文档地图与编写规范。
 
 ## 1. 技术栈与目录
 
@@ -81,8 +81,11 @@ CLI 只有这几个子命令：`init-db` / `migrate` / `seed` / `audit-verify` /
 
 - **`ruff format` 未启用**：`uv run ruff format --check src` 目前有 25 个文件待格式化。不要为了"过检查"整文件格式化——那是无工单重构，会淹没真实 diff。
 - **数据权限只覆盖 5 个模型**（`user` / `log` / `file` / `dept` / `crontab` 注册了 `__data_scope__`）。新模型要显式注册，否则列表不受数据范围约束。
-- **对象存储未实现**：`CCCMS_STORAGE_DRIVER` 只接受 `local`，其它取值启动即失败。
-- 其余待办见 `docs/开发计划.md` 与 `docs/修复记录-2026-10-22.md` 的"未执行项"。
+- **对象存储只做了 S3 协议**：`CCCMS_STORAGE_DRIVER` 接受 `local` / `s3`，`oss` / `cos` / `qiniu` 启动即失败（专有协议没实现）；`s3` 缺桶或缺凭据同样拒绝启动。驱动接口以 `services/storage/base.py` 为准，新增驱动要实现协议并在注册表登记，同时同步 `config.IMPLEMENTED_STORAGE_DRIVERS`（`tests/test_storage.py` 断言两者一致）。
+- **分片暂存是本机的**：`chunks/<upload_id>/` 不随存储驱动走，多节点部署下分片上传需要粘性路由；隔离区按驱动实现（local 在 `shared/quarantine/`，s3 在 `<prefix>/_quarantine/`）。边界见 `docs/16` §九。
+- **邮件投递是同步的**：`services/mail.py` 在请求线程内等待 SMTP（超时 10s）。SMTP 抖动会直接拖慢找回密码接口，且真实发信比"账号不存在"的假响应慢，响应时间仍可作账号存在性旁路。要消除两者需改为入队投递（`docs/15` §6.2 方式 B）。
+- **短信与 Webhook 未接入**：`deliverable_channels()` 在 prod 只认 `email`，别在配置里打开短信开关后假设能发。
+- 其余待办见 `docs/开发计划.md`（按 S / N / F / A / O / U / E 编号）。
 
 ## 8. 工作方式
 
