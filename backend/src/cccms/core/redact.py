@@ -47,3 +47,16 @@ def truncate(text: str | None, limit: int = MAX_TEXT) -> str | None:
     if text is None:
         return None
     return text[:limit]
+
+
+def mask_email(value: str | None) -> str:
+    """日志里不落完整邮箱：``zhangsan@example.com`` → ``z***@example.com``。
+
+    邮箱是个人信息，投递日志只需要能定位到"发给了谁"这一层。
+    """
+    if not value:
+        return ""
+    name, _, domain = value.partition("@")
+    if not domain:
+        return "***"
+    return f"{name[:1] or '*'}***@{domain}"

@@ -8,18 +8,19 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cccms.config import get_settings
+from cccms.config import Settings, get_settings
 from cccms.core.cache import get_redis
 from cccms.core.codes import BizCode
 from cccms.core.config_store import get_bool, get_int
 from cccms.core.context import current_context
 from cccms.core.delivery import deliverable_channels
 from cccms.core.errors import ServiceUnavailable, ValidationFailed
+from cccms.core.redact import mask_email
 from cccms.core.security import hash_password_async, validate_password, verify_password_async
 from cccms.core.tenant import get_tenant_by_code
 from cccms.core.time import now
 from cccms.models.user import User
-from cccms.services import captcha
+from cccms.services import captcha, mail
 
 logger = logging.getLogger("cccms.password_reset")
 
@@ -94,31 +95,78 @@ async def request_code(session: AsyncSession, payload: dict[str, Any]) -> dict[s
     interval = await get_int(session, "security.reset_send_interval", 60, tenant_id=tenant_id)
     user = await _find_user(session, tenant_id, payload)
     if user is None:
-        # 与真实发送保持同样的耗时外形，不透露账号是否存在。
+        # 返回与真实发送相同的成功外壳，不透露账号是否存在
+        # （真实发信更慢，响应时间仍可作旁路，见 docs/15 §6.1）。
         return {"channel": channel, "expires_in": ttl, "username": ""}
 
-    settings = get_settings()
-    if settings.is_prod:
-        # 未接入 SMTP/短信网关时不要在 Redis 留下验证码，否则用户会被冷却期锁住。
-        raise ServiceUnavailable("找回密码通道尚未接入，请先配置 SMTP / 短信网关")
+    target = user.email if channel == "email" else user.phone
+    if not str(target or "").strip():
+        # 账号存在但没绑邮箱/手机：同样返回成功外壳，否则就成了"账号是否绑定"的探测器。
+        return {"channel": channel, "expires_in": ttl, "username": ""}
 
     key = _key(tenant_id, user.id)
     code = f"{secrets.randbelow(1_000_000):06d}"
     try:
         client = get_redis()
-        if await client.exists(f"{key}:interval"):
+        # 冷却键先占位再发信：并发请求里只有一次会真正投递，
+        # 而发不出去时立刻释放，失败的人不会被困在冷却期里。
+        if not await client.set(f"{key}:interval", "1", ex=interval, nx=True):
             raise ValidationFailed(f"发送过于频繁，请 {interval} 秒后再试")
-        if not await client.set(key, code, ex=ttl, nx=True):
-            raise ValidationFailed(f"发送过于频繁，请 {interval} 秒后再试")
-        await client.set(f"{key}:interval", "1", ex=interval)
     except ValidationFailed:
         raise
     except Exception as exc:
         raise ServiceUnavailable("验证码服务不可用") from exc
 
-    # 当前仓库未内置 SMTP / 短信投递实现：开发环境把验证码打到日志便于联调。
-    logger.warning("password reset code for %s on channel %s: %s", user.username, channel, code)
+    try:
+        await _deliver(get_settings(), channel=channel, user=user, code=code, ttl=ttl)
+    except ServiceUnavailable:
+        await _release_send_slot(key)
+        raise
+    except Exception as exc:
+        await _release_send_slot(key)
+        logger.warning("找回密码验证码投递异常 user=%s", user.id, exc_info=True)
+        raise ServiceUnavailable("验证码服务不可用") from exc
+
+    try:
+        # 只有投递成功后才落码：失败路径上 Redis 里不该存在用户看不到的验证码。
+        await client.set(key, code, ex=ttl)
+    except Exception as exc:
+        await _release_send_slot(key)
+        raise ServiceUnavailable("验证码服务不可用") from exc
     return {"channel": channel, "expires_in": ttl, "username": user.username}
+
+
+async def _release_send_slot(key: str) -> None:
+    """释放发送占位，让用户可以立刻重试；释放失败只留痕，不掩盖原始错误。"""
+    try:
+        await get_redis().delete(f"{key}:interval")
+    except Exception:
+        logger.warning("释放密码重置发送占位失败", exc_info=True)
+
+
+async def _deliver(
+    settings: Settings, *, channel: str, user: User, code: str, ttl: int
+) -> None:
+    """按渠道投递验证码。
+
+    邮件走 SMTP；短信尚无投递实现，dev 把验证码打到日志便于联调
+    （prod 下 ``deliverable_channels`` 已把 sms 过滤掉，走不到这里）。
+    """
+    if channel == "email" and settings.smtp_ready:
+        minutes = max(1, ttl // 60)
+        await mail.send_mail(
+            to=str(user.email or ""),
+            subject="找回密码验证码",
+            text=(
+                f"您好 {user.nickname or user.username}：\n\n"
+                f"本次找回密码的验证码为 {code}，{minutes} 分钟内有效。\n"
+                "如非本人操作，请忽略本邮件，并尽快检查账号安全。\n"
+            ),
+            settings=settings,
+        )
+        logger.info("password reset code sent by email to %s", mask_email(user.email))
+        return
+    logger.warning("password reset code for %s on channel %s: %s", user.username, channel, code)
 
 
 async def reset_password(session: AsyncSession, payload: dict[str, Any]) -> None:

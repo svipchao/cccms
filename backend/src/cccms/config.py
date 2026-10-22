@@ -31,6 +31,10 @@ DEV_SECRETS_FILE = BACKEND_DIR / ".dev-secrets.env"
 # 仅供本地开发使用；生产环境必须显式覆盖（见 Settings.validate_secrets）。
 DEFAULT_ADMIN_PASSWORD = "Admin@123456"  # noqa: S105 - 默认哨兵值, 生产启动校验会拒绝
 
+# 已实现的存储驱动；与 ``services/storage`` 的注册表由 test_storage.py 断言一致。
+# 这里放常量而不是 import 注册表：config 不该反向依赖 services（会成环）。
+IMPLEMENTED_STORAGE_DRIVERS = ("local",)
+
 DEV_SECRET_KEYS = (
     "jwt_secret",
     "data_encrypt_key",
@@ -115,6 +119,20 @@ class Settings(BaseSettings):
     # Redis ----------------------------------------------------------------
     redis_url: str = "redis://127.0.0.1:6379/0"
 
+    # Mail (SMTP) ----------------------------------------------------------
+    # 找回密码验证码的唯一投递通道；host 与 from 为空即视为"没有邮件能力"，
+    # 由 ``smtp_ready`` 统一判定，渠道可达性判断与真正发信共用同一口径。
+    smtp_host: str = ""
+    smtp_port: int = 587
+    # 587 一般为 starttls，465 为 ssl，25 视服务商而定（也可能是 none）。
+    smtp_security: Literal["starttls", "ssl", "none"] = "starttls"
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_from_name: str = "CCCMS"
+    # 外部网关抖动不应把登录/找回密码接口拖住，连上就该在 10 秒内给出结论。
+    smtp_timeout: float = 10.0
+
     # Cookies / tokens -----------------------------------------------------
     cookie_secure: bool = False
     cookie_domain: str | None = None
@@ -173,6 +191,8 @@ class Settings(BaseSettings):
     # Online upgrade (local development only) -------------------------------
     upgrade_enable: bool = False
     upgrade_branch: str = "main"
+    # 远端名不写死：git clone -o cccms 之类会没有 origin，服务端会再按仓库实际远端兜底。
+    upgrade_remote: str = "origin"
     upgrade_timeout: int = 60
 
     # Seed -----------------------------------------------------------------
@@ -215,6 +235,14 @@ class Settings(BaseSettings):
         return self.env == "prod"
 
     @property
+    def smtp_ready(self) -> bool:
+        """能否真的把邮件发出去：host 与 from 缺一不可。
+
+        user / password 视服务商而定（内网中继常常免认证），所以不参与判断。
+        """
+        return bool(self.smtp_host.strip() and self.smtp_from.strip())
+
+    @property
     def upload_ext_set(self) -> set[str]:
         return {item.strip().lower() for item in self.upload_ext_allow.split(",") if item.strip()}
 
@@ -247,11 +275,15 @@ class Settings(BaseSettings):
         return problems
 
     def validate_storage(self) -> list[str]:
-        """附件后端目前只有 local 实现，其它取值必须显式失败而不是静默降级。"""
-        if self.storage_driver != "local":
+        """附件后端目前只有 local 实现，其它取值必须显式失败而不是静默降级。
+
+        取值清单见 ``IMPLEMENTED_STORAGE_DRIVERS``；接入 S3 时先加驱动，再放开这里。
+        """
+        if self.storage_driver not in IMPLEMENTED_STORAGE_DRIVERS:
+            supported = " / ".join(IMPLEMENTED_STORAGE_DRIVERS)
             return [
                 f"CCCMS_STORAGE_DRIVER={self.storage_driver} 尚未实现；"
-                "当前仅支持 local，请勿在配置里声明未接入的存储后端"
+                f"当前仅支持 {supported}，请勿在配置里声明未接入的存储后端"
             ]
         return []
 
