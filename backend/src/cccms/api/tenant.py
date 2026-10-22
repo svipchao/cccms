@@ -39,6 +39,8 @@ async def index(
         end=params.end,
         page=params.page,
         limit=params.limit,
+        sort=params.sort,
+        order=params.order,
     )
     return ok(page_result(total, rows))
 

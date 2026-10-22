@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from cccms.schemas.base import LocalDateTime, OptionalLocalDateTime, StrictModel
+from cccms.schemas.sorting import SortQuery
 
 
 class TenantOut(StrictModel):
@@ -33,7 +34,7 @@ class TenantSave(StrictModel):
     remark: str | None = Field(default=None, max_length=500)
 
 
-class TenantQuery(StrictModel):
+class TenantQuery(SortQuery):
     keyword: str | None = None
     name: str | None = None
     code: str | None = None

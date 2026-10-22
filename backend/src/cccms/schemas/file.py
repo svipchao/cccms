@@ -3,9 +3,10 @@ from __future__ import annotations
 from pydantic import Field, field_validator
 
 from cccms.schemas.base import LocalDateTime, StrictModel, blank_to_none
+from cccms.schemas.sorting import SortQuery
 
 
-class FileQuery(StrictModel):
+class FileQuery(SortQuery):
     keyword: str | None = None
     original_name: str | None = None
     category_id: int | None = None

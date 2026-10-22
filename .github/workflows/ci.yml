@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: 后端（ruff + mypy + pytest）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      # uv.lock 已入库；default-groups = dev，因此 ruff / mypy / pytest 一并装上。
+      - name: 安装依赖
+        run: uv sync --frozen
+      - name: 静态检查（ruff）
+        run: uv run ruff check src tests
+      - name: 类型检查（mypy strict）
+        run: uv run mypy src
+      - name: 单元与契约测试
+        run: uv run pytest -q
+
+  frontend:
+    name: 前端（类型 + lint + 单测 + i18n）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 安装依赖
+        run: npm ci
+      - name: 类型检查（vue-tsc）
+        run: npx vue-tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: 单元测试
+        run: npm run test
+      - name: i18n key 一致性
+        run: npm run i18n:check

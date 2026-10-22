@@ -6,11 +6,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cccms.core.context import UserContext, current_context
 from cccms.core.errors import Conflict, Forbidden, NotFound
 from cccms.core.pagination import count_query
+from cccms.core.sorting import apply_sort
 from cccms.core.tenant import invalidate_domain_cache
 from cccms.core.time import now, parse
 from cccms.models.tenant import Tenant
 from cccms.models.user import User
 from cccms.schemas.tenant import TenantOut, TenantSave
+
+# 允许排序的列：前端只给"到期时间"留了排序入口。
+SORTABLE = {"id": Tenant.id, "expire_at": Tenant.expire_at}
 
 
 def assert_platform_admin(actor: UserContext) -> None:
@@ -65,6 +69,8 @@ async def list_tenants(
     end: str | None = None,
     page: int = 1,
     limit: int = 15,
+    sort: str | None = None,
+    order: str = "asc",
 ) -> tuple[int, list[TenantOut]]:
     assert_platform_admin(actor)
     statement = select(Tenant).where(Tenant.delete_time.is_(None))
@@ -91,7 +97,18 @@ async def list_tenants(
     total = int(await session.scalar(count_query(statement)) or 0)
     rows = list(
         (
-            await session.scalars(statement.order_by(Tenant.id.asc()).offset((page - 1) * limit).limit(limit))
+            await session.scalars(
+                apply_sort(
+                    statement,
+                    SORTABLE,
+                    id_column=Tenant.id,
+                    fallback=(Tenant.id.asc(),),
+                    sort=sort,
+                    order=order,
+                )
+                .offset((page - 1) * limit)
+                .limit(limit)
+            )
         ).all()
     )
     counts = await _counts(session, [row.id for row in rows])

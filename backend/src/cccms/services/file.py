@@ -21,6 +21,7 @@ from cccms.core.context import UserContext
 from cccms.core.errors import Conflict, Forbidden, NotFound, ServiceUnavailable, ValidationFailed
 from cccms.core.pagination import count_query
 from cccms.core.scope import ScopeConfig, apply_field_actions, apply_scope, without_scope
+from cccms.core.sorting import apply_sort
 from cccms.core.time import now, parse
 from cccms.models.dict import Category
 from cccms.models.file import FileRecord
@@ -40,6 +41,13 @@ def _dept_scope(model: type[FileRecord], dept_ids: tuple[int, ...]) -> ColumnEle
 
 
 FileRecord.__data_scope__ = ScopeConfig(owner="create_by", dept=_dept_scope)
+
+# 允许排序的列：前端只给"大小"和"上传时间"留了排序入口。
+SORTABLE = {
+    "id": FileRecord.id,
+    "size": FileRecord.size,
+    "create_time": FileRecord.create_time,
+}
 
 
 def _safe_name(name: str | None) -> str:
@@ -218,7 +226,14 @@ async def list_files(
     rows = list(
         (
             await session.scalars(
-                statement.order_by(FileRecord.id.desc())
+                apply_sort(
+                    statement,
+                    SORTABLE,
+                    id_column=FileRecord.id,
+                    fallback=(FileRecord.id.desc(),),
+                    sort=params.sort,
+                    order=params.order,
+                )
                 .offset((params.page - 1) * params.limit)
                 .limit(params.limit)
             )

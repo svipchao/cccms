@@ -11,6 +11,7 @@ from cccms.core.context import UserContext
 from cccms.core.errors import NotFound, ValidationFailed
 from cccms.core.pagination import count_query
 from cccms.core.rbac import has_permission
+from cccms.core.sorting import apply_sort
 from cccms.core.time import now, parse
 from cccms.models.notice import Notice, NoticeRead, NoticeTarget
 from cccms.models.user import Dept, Role, User, UserDept, UserRole
@@ -47,6 +48,14 @@ def _visible_clause(actor: UserContext) -> ColumnElement[bool]:
 
 
 TARGET_TYPE_BY_SCOPE = {1: "dept", 2: "role", 3: "user"}
+
+# 允许排序的列：前端给"发布时间/到期时间/已读数"留了排序入口。
+SORTABLE = {
+    "id": Notice.id,
+    "publish_at": Notice.publish_at,
+    "expire_at": Notice.expire_at,
+    "read_count": Notice.read_count,
+}
 
 
 def _targets(payload: NoticeSave) -> list[NoticeTargetIn]:
@@ -108,6 +117,8 @@ async def list_notices(
     expire_end: str | None = None,
     page: int = 1,
     limit: int = 15,
+    sort: str | None = None,
+    order: str = "asc",
 ) -> tuple[int, list[NoticeListOut]]:
     statement = select(Notice).where(Notice.tenant_id == actor.tenant_id)
     statement = statement.where(Notice.delete_time.is_not(None) if trashed else Notice.delete_time.is_(None))
@@ -141,7 +152,15 @@ async def list_notices(
     rows = list(
         (
             await session.scalars(
-                statement.order_by(Notice.pinned.desc(), Notice.id.desc())
+                apply_sort(
+                    statement,
+                    SORTABLE,
+                    id_column=Notice.id,
+                    # 默认"置顶优先"，与原有行为一致。
+                    fallback=(Notice.pinned.desc(), Notice.id.desc()),
+                    sort=sort,
+                    order=order,
+                )
                 .offset((page - 1) * limit)
                 .limit(limit)
             )

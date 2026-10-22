@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +29,8 @@ async def index(
     trashed: int = 0,
     page: PageNum = 1,
     limit: PageLimit = 15,
+    sort: str | None = None,
+    order: Literal["asc", "desc"] = "asc",
     user: UserContext = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, object]:
@@ -38,6 +42,8 @@ async def index(
         trashed=trashed,
         page=page,
         limit=limit,
+        sort=sort,
+        order=order,
     )
     return ok(page_result(total, rows))
 

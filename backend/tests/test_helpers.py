@@ -6,6 +6,7 @@ import asyncio
 import logging
 
 import pytest
+from sqlalchemy import select
 from starlette.requests import Request
 
 from cccms.config import DEFAULT_ADMIN_PASSWORD, Settings
@@ -22,9 +23,11 @@ from cccms.core.ratelimit import is_heavy_path
 from cccms.core.rbac import merge_data_scope
 from cccms.core.scope import _mask_value, redact_field_value
 from cccms.core.session import token_before_cutoff
+from cccms.core.sorting import apply_sort
 from cccms.core.tenant import _expired
 from cccms.core.time import now
 from cccms.models.log import OperationLog
+from cccms.schemas.log import LogQuery
 from cccms.services.file import _chunk_total, _meta_int, _safe_name
 from cccms.services.generator import _class_name, _snake
 from cccms.services.log import EXPORT_COLUMNS, _csv_header, _csv_line, _csv_safe
@@ -272,6 +275,42 @@ def test_chunk_total_bounds_by_declared_size() -> None:
     assert _chunk_total(chunk * 3, chunk) == 3
     # 分片大小配置异常为 0 时不得除零崩溃。
     assert _chunk_total(chunk, 0) == 1
+
+
+def test_apply_sort_uses_whitelist_and_falls_back() -> None:
+    # 查询模型必须真的接收 sort/order：StrictModel 下漏字段会被静默丢弃，
+    # 前端就会出现"箭头翻转、数据不动"。
+    params = LogQuery(sort="cost", order="desc")
+    assert (params.sort, params.order) == ("cost", "desc")
+
+    sortable = {"cost": OperationLog.cost, "create_time": OperationLog.create_time}
+
+    # 白名单命中：按请求列排序，并追加主键保证分页稳定。
+    picked = apply_sort(
+        select(OperationLog),
+        sortable,
+        id_column=OperationLog.id,
+        fallback=(OperationLog.id.desc(),),
+        sort="cost",
+        order="desc",
+    )
+    picked_sql = str(picked)
+    assert picked_sql.rsplit("ORDER BY", maxsplit=1)[-1].strip() == "sys_log.cost DESC, sys_log.id ASC"
+
+    # 未指定或指定了非白名单列（如 message）：一律回到该模块的 fallback，不得拼进 ORDER BY。
+    for sort, order in ((None, "asc"), ("message", "desc")):
+        dropped = str(
+            apply_sort(
+                select(OperationLog),
+                sortable,
+                id_column=OperationLog.id,
+                fallback=(OperationLog.id.desc(),),
+                sort=sort,
+                order=order,
+            )
+        )
+        order_by = dropped.rsplit("ORDER BY", maxsplit=1)[-1].strip()
+        assert order_by == "sys_log.id DESC"
 
 
 def _log_event() -> LogEvent:

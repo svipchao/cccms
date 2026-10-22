@@ -57,7 +57,7 @@ CCCMS 是一套可直接作为企业级项目起点的中后台系统：
 | 后端 | Python 3.12+、FastAPI、SQLAlchemy 2.0（async）、asyncmy、Pydantic v2、Redis、croniter、prometheus-client |
 | 前端 | Vue 3.5、Vite 5、TypeScript 5、Element Plus 2、Tailwind CSS 4、Pinia、Vue Router、ECharts 6、RemixIcon |
 | 存储 | MySQL 8（utf8mb4）、Redis 6+、本地磁盘（对象存储尚未实现，见 `docs/开发计划.md` F-01） |
-| 工程化 | uv、Ruff、mypy、pytest、ESLint、Prettier、Vitest |
+| 工程化 | uv、Ruff、mypy、pytest、ESLint、Prettier、Vitest、GitHub Actions（`.github/workflows/ci.yml`） |
 
 ---
 

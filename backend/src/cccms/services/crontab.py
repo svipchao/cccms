@@ -18,6 +18,7 @@ from cccms.core.context import UserContext
 from cccms.core.errors import Conflict, NotFound, ValidationFailed
 from cccms.core.pagination import count_query
 from cccms.core.scope import ScopeConfig, apply_scope
+from cccms.core.sorting import apply_sort
 from cccms.core.time import now, parse
 from cccms.db.session import session_scope
 from cccms.models.crontab import Crontab, CrontabLog, CrontabRetry
@@ -216,6 +217,9 @@ TARGETS: dict[str, tuple[str, Task]] = {
 # 定时任务没有 owner / dept 列，只接受自定义规则（no_baseline）。
 Crontab.__data_scope__ = ScopeConfig(no_baseline=True)
 
+# 允许排序的列：前端只给"上次执行时间"留了排序入口。
+SORTABLE = {"id": Crontab.id, "last_run_time": Crontab.last_run_time}
+
 
 def _to_out(row: Crontab) -> CrontabOut:
     return CrontabOut(
@@ -304,7 +308,14 @@ async def list_crontab(
     rows = list(
         (
             await session.scalars(
-                statement.order_by(Crontab.id.asc())
+                apply_sort(
+                    statement,
+                    SORTABLE,
+                    id_column=Crontab.id,
+                    fallback=(Crontab.id.asc(),),
+                    sort=params.sort,
+                    order=params.order,
+                )
                 .offset((params.page - 1) * params.limit)
                 .limit(params.limit)
             )

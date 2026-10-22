@@ -48,6 +48,9 @@ SORTABLE = {
     "status": User.status,
     "create_time": User.create_time,
     "last_login_at": User.last_login_at,
+    # 前端列 prop 是 login_time（用户页表头），与模型字段名不同，必须显式映射；
+    # 缺了这条，点"最后登录"表头会静默回到 id 排序。
+    "login_time": User.last_login_at,
 }
 
 

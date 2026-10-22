@@ -5,9 +5,10 @@ import builtins
 from pydantic import ConfigDict, Field
 
 from cccms.schemas.base import LocalDateTime, StrictModel
+from cccms.schemas.sorting import SortQuery
 
 
-class LogQuery(StrictModel):
+class LogQuery(SortQuery):
     keyword: str | None = None
     username: str | None = None
     title: str | None = None

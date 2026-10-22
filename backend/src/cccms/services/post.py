@@ -6,9 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cccms.core.context import UserContext
 from cccms.core.errors import Conflict, NotFound
 from cccms.core.pagination import count_query
+from cccms.core.sorting import apply_sort
 from cccms.core.time import now
 from cccms.models.user import Post, UserPost
 from cccms.schemas.dept import PostOut, PostSave
+
+# 允许排序的列：前端只给"显示顺序"留了排序入口。
+SORTABLE = {"id": Post.id, "sort": Post.sort}
 
 
 def _to_out(row: Post) -> PostOut:
@@ -33,6 +37,8 @@ async def list_posts(
     trashed: int = 0,
     page: int = 1,
     limit: int = 15,
+    sort: str | None = None,
+    order: str = "asc",
 ) -> tuple[int, list[PostOut]]:
     statement = select(Post).where(Post.tenant_id == actor.tenant_id)
     statement = statement.where(
@@ -47,7 +53,16 @@ async def list_posts(
     rows = list(
         (
             await session.scalars(
-                statement.order_by(Post.sort.asc(), Post.id.asc()).offset((page - 1) * limit).limit(limit)
+                apply_sort(
+                    statement,
+                    SORTABLE,
+                    id_column=Post.id,
+                    fallback=(Post.sort.asc(), Post.id.asc()),
+                    sort=sort,
+                    order=order,
+                )
+                .offset((page - 1) * limit)
+                .limit(limit)
             )
         ).all()
     )

@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import Field
 
 from cccms.schemas.base import LocalDateTime, OptionalLocalDateTime, StrictModel
+from cccms.schemas.sorting import SortQuery
 
 
 class CrontabOut(StrictModel):
@@ -61,7 +62,7 @@ class CrontabTargetOut(StrictModel):
     label: str
 
 
-class CrontabQuery(StrictModel):
+class CrontabQuery(SortQuery):
     keyword: str | None = None
     name: str | None = None
     group_name: str | None = None

@@ -24,6 +24,7 @@ from cccms.core.scope import (
     field_actions,
     redact_field_value,
 )
+from cccms.core.sorting import apply_sort
 from cccms.core.time import now, parse
 from cccms.db.session import session_scope
 from cccms.models.export import ExportTask
@@ -60,6 +61,13 @@ def _dept_scope(model: type[OperationLog], dept_ids: tuple[int, ...]) -> ColumnE
 
 
 OperationLog.__data_scope__ = ScopeConfig(owner="user_id", dept=_dept_scope)
+
+# 允许排序的列（仅前端声明了 sortable: 'custom' 的两列 + 主键）。
+SORTABLE = {
+    "id": OperationLog.id,
+    "create_time": OperationLog.create_time,
+    "cost": OperationLog.cost,
+}
 
 
 def _to_out(row: OperationLog) -> LogOut:
@@ -151,7 +159,14 @@ async def list_logs(
     rows = list(
         (
             await session.scalars(
-                statement.order_by(OperationLog.id.desc())
+                apply_sort(
+                    statement,
+                    SORTABLE,
+                    id_column=OperationLog.id,
+                    fallback=(OperationLog.id.desc(),),
+                    sort=params.sort,
+                    order=params.order,
+                )
                 .offset((params.page - 1) * params.limit)
                 .limit(params.limit)
             )
