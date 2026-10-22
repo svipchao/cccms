@@ -180,6 +180,29 @@ def test_error_message_is_localized_by_accept_language() -> None:
     assert localize(en, "用户名已存在", "error.missing_key") == "用户名已存在"
 
 
+def test_settings_accepts_csv_and_json_lists(tmp_path: Path) -> None:
+    """三个列表型配置既要吃逗号分隔，也要吃 JSON 数组和空串（P0-1 的回归锁）。
+
+    它们用 ``Annotated[list[str], NoDecode]`` 关掉了 pydantic-settings 的 JSON 预解析，
+    改回普通 ``list[str]`` 会让 ``"a,b"`` 在启动时直接报 JSON 解析错误。
+    """
+    env_file = tmp_path / "lists.env"
+    env_file.write_text(
+        "CCCMS_CORS_ORIGINS=https://a.example.com,https://b.example.com\n"
+        "CCCMS_TRUSTED_PROXIES= 10.0.0.1 , 10.0.0.2 \n"
+        'CCCMS_METRICS_ALLOW_IPS=["127.0.0.1", "10.0.0.0/8"]\n',
+        encoding="utf-8",
+    )
+    settings = Settings(_env_file=env_file)
+    assert settings.cors_origins == ["https://a.example.com", "https://b.example.com"]
+    assert settings.trusted_proxies == ["10.0.0.1", "10.0.0.2"]
+    assert settings.metrics_allow_ips == ["127.0.0.1", "10.0.0.0/8"]
+
+    empty_file = tmp_path / "empty.env"
+    empty_file.write_text("CCCMS_CORS_ORIGINS=\n", encoding="utf-8")
+    assert Settings(_env_file=empty_file).cors_origins == []
+
+
 def test_service_unavailable_can_bypass_localization() -> None:
     """需要把具体失败原因带给调用方时（如 git 命令输出），允许显式关掉翻译。"""
     en = Request({"type": "http", "headers": [(b"accept-language", b"en-US")], "query_string": b""})
