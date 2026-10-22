@@ -17,13 +17,12 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from cccms.config import get_settings
 from cccms.core.errors import NotFound
 from cccms.core.permissions import make_router, no_auth
 from cccms.core.scope import apply_scope
 from cccms.db.session import get_session
 from cccms.models.file import FileRecord
-from cccms.services.file import _blob_path
+from cccms.services.storage import local_driver
 
 router = make_router(prefix="/storage", tags=["storage"], auth=True)
 
@@ -50,7 +49,7 @@ async def read_storage(
     if record is None:
         raise NotFound("文件不存在")
 
-    target = _blob_path(get_settings().storage_root, relative)
+    target = local_driver().blob_path(relative)
     if not target.is_file():
         raise NotFound("文件不存在")
     return FileResponse(

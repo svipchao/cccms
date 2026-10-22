@@ -6,6 +6,7 @@ import mimetypes
 import secrets
 import shutil
 import uuid
+from collections.abc import AsyncIterator
 from pathlib import Path
 
 import aiofiles
@@ -29,6 +30,7 @@ from cccms.models.user import User, UserDept
 from cccms.schemas.file import FileOut, FileQuery, UploadCompleteRequest, UploadInitOut, UploadInitRequest
 from cccms.schemas.system import CategoryNode
 from cccms.services import dict_service
+from cccms.services.storage import get_driver, local_driver
 
 IMAGE_EXT = {"jpg", "jpeg", "png", "gif", "webp", "bmp"}
 PDF_EXT = {"pdf"}
@@ -61,26 +63,13 @@ def _ext_of(name: str) -> str:
     return Path(name).suffix.lower().lstrip(".")
 
 
-def _url_for(relative: str) -> str:
-    prefix = get_settings().storage_url_prefix.rstrip("/")
-    return f"{prefix}/{relative}"
-
-
-def _blob_path(root: Path, relative: str) -> Path:
-    resolved_root = root.resolve()
-    path = (resolved_root / relative).resolve()
-    if path != resolved_root and resolved_root not in path.parents:
-        raise ValidationFailed("文件路径不合法")
-    return path
-
-
 def _live_blob(relative: str) -> Path:
-    return _blob_path(get_settings().storage_root, relative)
+    return local_driver().blob_path(relative)
 
 
 def _quarantine_blob(relative: str) -> Path:
     # 隔离区必须在静态目录之外，软删除后旧 URL 立即 404。
-    return _blob_path(get_settings().storage_root.parent / "quarantine", relative)
+    return local_driver().quarantine_path(relative)
 
 
 def quarantine_file(relative: str) -> None:
@@ -114,7 +103,7 @@ def purge_blob(relative: str) -> None:
 
 def cleanup_chunks(retention_hours: int = 48) -> int:
     """Remove abandoned chunk directories older than ``retention_hours``."""
-    root = get_settings().storage_root / "chunks"
+    root = local_driver().chunk_root()
     if not root.is_dir():
         return 0
     cutoff = now().timestamp() - max(1, retention_hours) * 3600
@@ -189,9 +178,9 @@ async def download_file(session: AsyncSession, actor: UserContext, file_id: int)
     """
     row = await _visible_file(session, actor, file_id)
     if row.storage != "local":
-        # 对象存储尚未实现（F-01）；未来接入时在这里分流成预签名 URL。
+        # 对象存储尚未实现（F-01）；接入时这里改为"驱动给直链就 302，否则流式"。
         raise NotFound("附件不存在")
-    path = _blob_path(get_settings().storage_root, row.path)
+    path = local_driver().blob_path(row.path)
     if not path.is_file():
         raise NotFound("附件不存在")
     return path, row
@@ -314,12 +303,13 @@ async def _create_record(
     sha256: str,
     category_id: int | None,
 ) -> FileRecord:
+    driver = get_driver()
     row = FileRecord(
         tenant_id=actor.tenant_id,
         category_id=category_id,
-        storage="local",
+        storage=driver.name,
         path=relative,
-        url=_url_for(relative),
+        url=driver.url(relative),
         original_name=original_name,
         ext=ext,
         mime=mime,
@@ -351,46 +341,49 @@ async def upload_file(
     max_bytes = settings.upload_max_mb * 1024 * 1024
     current = now()
     relative_dir = current.strftime("%Y/%m/%d")
-    target_dir = settings.storage_root / relative_dir
-    target_dir.mkdir(parents=True, exist_ok=True)
     stored = f"{current.strftime('%H%M%S')}{secrets.token_hex(8)}"
     if ext:
         stored = f"{stored}.{ext}"
-    target = target_dir / stored
+    relative = f"{relative_dir}/{stored}"
 
+    # 哈希与大小上限留在服务层，驱动只负责搬运字节：换成 S3 时这两条校验不会漏掉。
+    driver = get_driver()
     sha1 = hashlib.sha1()  # noqa: S324 - 仅用于秒传去重与完整性校验, 非密码学用途
     sha256 = hashlib.sha256()
     total = 0
+
+    async def _body() -> AsyncIterator[bytes]:
+        nonlocal total
+        while True:
+            chunk = await upload.read(READ_CHUNK)
+            if not chunk:
+                return
+            total += len(chunk)
+            if total > max_bytes:
+                raise ValidationFailed(
+                    f"文件超过上限 {settings.upload_max_mb}MB",
+                    code=BizCode.PAYLOAD_TOO_LARGE,
+                    message_key="error.payload_too_large",
+                )
+            sha1.update(chunk)
+            sha256.update(chunk)
+            yield chunk
+
     try:
-        async with aiofiles.open(target, "wb") as handle:
-            while True:
-                chunk = await upload.read(READ_CHUNK)
-                if not chunk:
-                    break
-                total += len(chunk)
-                if total > max_bytes:
-                    raise ValidationFailed(
-                        f"文件超过上限 {settings.upload_max_mb}MB",
-                        code=BizCode.PAYLOAD_TOO_LARGE,
-                        message_key="error.payload_too_large",
-                    )
-                sha1.update(chunk)
-                sha256.update(chunk)
-                await handle.write(chunk)
+        await driver.save(relative, _body())
         if total == 0:
             raise ValidationFailed("不能上传空文件")
     except Exception:
-        target.unlink(missing_ok=True)
+        await driver.delete(relative)
         raise
 
     digest = sha1.hexdigest()
     existing = await _dedupe(session, actor, sha1=digest, size=total)
     if existing is not None:
-        target.unlink(missing_ok=True)
+        await driver.delete(relative)
         names = await _names(session, {existing.create_by})
         return _to_out(existing, create_by_name=names.get(existing.create_by, ""))
 
-    relative = f"{relative_dir}/{stored}"
     row = await _create_record(
         session,
         actor,
@@ -515,7 +508,7 @@ CHUNK_META_TTL = 86400
 
 
 def _chunk_dir(upload_id: str) -> Path:
-    return get_settings().storage_root / "chunks" / upload_id
+    return local_driver().chunk_dir(upload_id)
 
 
 def _chunk_key(upload_id: str) -> str:
@@ -671,38 +664,40 @@ async def complete_upload(
     ext = _ext_of(original)
     current = now()
     relative_dir = current.strftime("%Y/%m/%d")
-    target_dir = get_settings().storage_root / relative_dir
-    target_dir.mkdir(parents=True, exist_ok=True)
     stored = f"{current.strftime('%H%M%S')}{secrets.token_hex(8)}"
     if ext:
         stored = f"{stored}.{ext}"
-    target = target_dir / stored
+    relative = f"{relative_dir}/{stored}"
 
+    # 分片目录是本机暂存，合并后的成品交给驱动；哈希校验同样留在服务层。
+    driver = get_driver()
     sha1 = hashlib.sha1()  # noqa: S324 - 仅用于秒传去重与完整性校验, 非密码学用途
     sha256 = hashlib.sha256()
+
+    async def _body() -> AsyncIterator[bytes]:
+        for _, path in parts:
+            async with aiofiles.open(path, "rb") as source:
+                while True:
+                    chunk = await source.read(READ_CHUNK)
+                    if not chunk:
+                        break
+                    sha1.update(chunk)
+                    sha256.update(chunk)
+                    yield chunk
+
     try:
-        async with aiofiles.open(target, "wb") as handle:
-            for _, path in parts:
-                async with aiofiles.open(path, "rb") as source:
-                    while True:
-                        chunk = await source.read(READ_CHUNK)
-                        if not chunk:
-                            break
-                        sha1.update(chunk)
-                        sha256.update(chunk)
-                        await handle.write(chunk)
+        await driver.save(relative, _body())
         digest = sha1.hexdigest()
         if declared_sha1 and declared_sha1 != digest:
             raise ValidationFailed("文件哈希校验失败，请重新上传")
     except Exception:
-        target.unlink(missing_ok=True)
+        await driver.delete(relative)
         raise
     finally:
         shutil.rmtree(directory, ignore_errors=True)
         await cache_delete(_chunk_key(payload.upload_id))
 
     category_id = _meta_int(meta, "category_id") if meta.get("category_id") is not None else None
-    relative = f"{relative_dir}/{stored}"
     row = await _create_record(
         session,
         actor,

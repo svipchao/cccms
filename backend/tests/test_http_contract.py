@@ -18,13 +18,12 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from cccms.api import storage as storage_module
 from cccms.core import auth_deps
 from cccms.core.context import UserContext, current_context
 from cccms.db.session import get_session
 from cccms.main import app
 from cccms.models.file import FileRecord
-from cccms.services import file as file_service
+from cccms.services.storage import LocalStorageDriver
 
 # /storage 契约测试用的"已登录超管"：超管绕过数据范围，断言只聚焦鉴权是否生效。
 _LOGGED_IN_USER = UserContext(
@@ -148,13 +147,13 @@ def fake_backend(client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path: 
         async def fake_session():
             yield _FakeSession(record)
 
-        def fake_blob_path(root: Path, relative: str) -> Path:
+        def fake_blob_path(driver: object, relative: str) -> Path:
             return blob
 
         app.dependency_overrides[auth_deps.load_user] = fake_load_user
         app.dependency_overrides[get_session] = fake_session
-        monkeypatch.setattr(storage_module, "_blob_path", fake_blob_path)
-        monkeypatch.setattr(file_service, "_blob_path", fake_blob_path)
+        # 路径解析已经收口到驱动：打桩驱动本身即可覆盖 /storage 与 /api/file/{id}/download 两处。
+        monkeypatch.setattr(LocalStorageDriver, "blob_path", fake_blob_path)
 
     yield _install
     app.dependency_overrides.clear()
