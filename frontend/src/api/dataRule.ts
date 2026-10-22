@@ -128,7 +128,10 @@ export function dataRuleOptions() {
  * 传 ids 时按 id 精确取回（编辑回显已绑定的用户）。
  */
 export function dataRuleUsers(params: { keyword?: string; ids?: number[] }) {
-  return http.get<DataRuleOption[]>('/data_rule/users', params)
+  return http.get<DataRuleOption[]>('/data_rule/users', {
+    keyword: params.keyword,
+    ids: params.ids?.length ? params.ids.join(',') : undefined,
+  })
 }
 
 export function dataRuleSave(data: Record<string, unknown>) {

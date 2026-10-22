@@ -430,13 +430,14 @@ onMounted(() => {
   z-index: 1;
 }
 
-/* 盾牌 + 系统名：在蓝色品牌区内水平居中、贴顶显示 */
+/* 盾牌 + 系统名：在蓝色品牌区内水平居中、贴顶显示。
+   与标题之间留 32px（原来 60px，会在头部造成一块无内容的空洞）。 */
 .login-brand-head {
   display: flex;
-  gap: 8px;
+  gap: var(--art-sp-2);
   align-items: center;
   justify-content: center;
-  margin-bottom: 60px;
+  margin-bottom: var(--art-sp-6);
 }
 
 /* 兜底字母标：尺寸与 logo 图保持一致，换图前后占位不跳 */
@@ -484,16 +485,16 @@ onMounted(() => {
 }
 
 .login-brand-title {
-  margin: 0 0 12px;
-  font-size: 26px;
+  margin: 0 0 var(--art-sp-3);
+  font-size: var(--art-fs-h1);
   font-weight: 700;
-  line-height: 1.4;
+  line-height: var(--art-lh-h1);
 }
 
 .login-brand-desc {
-  margin: 0 0 30px;
-  font-size: 13px;
-  line-height: 1.7;
+  margin: 0 0 var(--art-sp-6);
+  font-size: var(--art-fs-body);
+  line-height: var(--art-lh-body);
   opacity: 0.82;
 }
 
@@ -505,10 +506,10 @@ onMounted(() => {
 
 .login-brand-list li {
   display: flex;
-  gap: 8px;
+  gap: var(--art-sp-2);
   align-items: center;
-  margin-bottom: 12px;
-  font-size: 13px;
+  margin-bottom: var(--art-sp-3);
+  font-size: var(--art-fs-dense);
   opacity: 0.92;
 }
 
@@ -522,19 +523,21 @@ onMounted(() => {
 }
 
 .login-form-head {
-  margin-bottom: 26px;
+  margin-bottom: var(--art-sp-5);
 }
 
 .login-form-title {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--art-fs-h2);
   font-weight: 700;
+  line-height: var(--art-lh-h2);
   color: var(--art-main);
 }
 
 .login-form-desc {
-  margin: 6px 0 0;
-  font-size: 13px;
+  margin: var(--art-sp-1) 0 0;
+  font-size: var(--art-fs-body);
+  line-height: var(--art-lh-body);
   color: var(--art-muted);
 }
 
@@ -550,8 +553,8 @@ onMounted(() => {
   height: 40px;
   cursor: pointer;
   object-fit: contain;
-  background: #f2f5fa;
-  border: 1px solid var(--art-card-border);
+  background: var(--art-hover-bg);
+  border: 1px solid var(--art-line-control);
   border-radius: var(--el-border-radius-base);
 }
 
@@ -562,15 +565,16 @@ onMounted(() => {
   margin-bottom: 18px;
 }
 
+/* 中文按钮不需要额外字距：2px 会把「登录」两字拉散，与全站按钮也不一致 */
 .login-submit {
   width: 100%;
-  letter-spacing: 2px;
+  font-weight: 500;
 }
 
 /* ---- 找回密码弹窗 ---- */
 .login-reset-desc {
   margin: 0 0 16px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   color: var(--art-muted);
 }
 

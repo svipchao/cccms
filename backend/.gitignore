@@ -1,0 +1,9 @@
+.env
+.dev-secrets.env
+.dev-secrets.lock
+.dev-secrets.tmp
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

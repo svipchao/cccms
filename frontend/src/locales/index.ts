@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import zhCN from './zh-CN'
-import enUS from './en-US'
 
 /** 可用语言项（label 用于语言切换入口展示） */
 export interface LocaleOption {
@@ -58,8 +57,15 @@ export const i18n = createI18n({
   locale: getLocale(),
   fallbackLocale: DEFAULT_LOCALE,
   messages: {
+    // 只有中文内置（绝大多数用户）：英文包是 ~57KB 源码，塞进入口会让永远用不到
+    // 英文的人替它付下载与解析成本，改成按需加载（见 ensureMessages）。
     'zh-CN': zhCN,
-    'en-US': enUS,
+    /**
+     * 英文占位：空对象**不产生任何运行时体积**，作用是让 `locale` 的类型仍是
+     * `'zh-CN' | 'en-US'`（否则 `createI18n` 会把它收窄成只接受 'zh-CN' 的字面量，
+     * 后面切语言直接 TS2322）。缺的文案由 fallbackLocale 兜底，包到即覆盖。
+     */
+    'en-US': {} as typeof zhCN,
   },
 })
 
@@ -71,6 +77,33 @@ export const i18n = createI18n({
  * 在这些场景里依赖 vue-i18n 的内部类型。
  */
 export const currentLocale = ref(getLocale())
+
+/**
+ * 已装载语言包的语言（中文是内置的，其它语言走动态 import）。
+ *
+ * 语言包加载是**非阻塞**的：locale 立刻切过去，界面先用 `fallbackLocale`（中文）兜底，
+ * 包到了 vue-i18n 的响应式会让界面自动重渲染成目标语言。
+ * 这样「切英文」不会卡住任何一次点击，首屏也不必为英文付体积。
+ */
+const loadedLocales = new Set<AppLocale>([DEFAULT_LOCALE])
+
+async function ensureMessages(locale: AppLocale): Promise<void> {
+  if (loadedLocales.has(locale)) {
+    return
+  }
+  try {
+    if (locale === 'en-US') {
+      const mod = await import('./en-US')
+      i18n.global.setLocaleMessage('en-US', mod.default)
+    }
+    loadedLocales.add(locale)
+  } catch {
+    // 加载失败就一直用兜底语言，不影响功能
+  }
+}
+
+// 本机存的是英文时，启动即开始补包（不阻塞首屏）
+void ensureMessages(i18n.global.locale.value as AppLocale)
 
 /** 非组件上下文使用的翻译函数（组件内优先用 useI18n 以自动追踪响应式） */
 export function t(key: string, named?: Record<string, unknown>): string {
@@ -98,6 +131,8 @@ export function applyDefaultLocale(locale: string): void {
   i18n.global.locale.value = next
   currentLocale.value = next
   document.documentElement.setAttribute('lang', next)
+  // 非阻塞补语言包：切过去先用中文兜底，包到即自动刷新文案
+  void ensureMessages(next)
 }
 
 /**

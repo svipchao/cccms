@@ -32,7 +32,7 @@ const { t } = useI18n({ useScope: 'global' })
 
 <style scoped>
 .recycle-toggle.is-active {
-  color: var(--art-primary);
-  background: var(--art-primary-light, var(--el-color-primary-light-9));
+  color: var(--art-primary-text);
+  background: var(--el-color-primary-light-9);
 }
 </style>

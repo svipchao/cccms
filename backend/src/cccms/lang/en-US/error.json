@@ -1,0 +1,22 @@
+{
+  "error.unauthorized": "Not signed in",
+  "error.token_expired": "Session expired, please sign in again",
+  "error.login_failed": "Incorrect username or password",
+  "error.account_disabled": "Account disabled",
+  "error.account_locked": "Account locked, please try again later",
+  "error.captcha_invalid": "Invalid or expired verification code",
+  "error.csrf_invalid": "Request verification failed, please refresh and retry",
+  "error.password_policy": "Password does not meet the strength policy",
+  "error.delegation_denied": "Cannot grant permissions beyond your own scope",
+  "error.forbidden": "Permission denied",
+  "error.data_scope_denied": "Outside your data scope",
+  "error.not_found": "Not found",
+  "error.method_not_allowed": "Method not allowed",
+  "error.conflict": "Data conflict",
+  "error.validation": "Invalid parameters",
+  "error.rate_limited": "Too many requests, please retry later",
+  "error.payload_too_large": "Request body too large",
+  "error.timeout": "Request timed out",
+  "error.unavailable": "Service unavailable",
+  "error.server": "Internal server error"
+}

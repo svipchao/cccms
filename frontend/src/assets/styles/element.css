@@ -13,7 +13,11 @@
   --el-color-primary-light-9: #eaf0ff;
   --el-color-primary-dark-2: #2256cc;
 
-  /* ---- 语义色 ---- */
+  /* ---- 语义色 ----
+   * 这几个变量同时被 EP 用作**填充色与文字色**（如 link 按钮、light 标签）。
+   * 底色语义留在 `--el-color-x`（EP 内部要拿它算浅色阶），
+   * 文字色在下方按「x-text」逐组件覆盖，避免语义色直接当正文色。
+   */
   --el-color-success: var(--art-success);
   --el-color-warning: var(--art-warning);
   --el-color-danger: var(--art-danger);
@@ -22,16 +26,21 @@
 
   /* ---- 圆角 ---- */
   --el-border-radius-base: var(--art-radius);
-  --el-border-radius-small: calc(var(--art-radius) - 2px);
+  --el-border-radius-small: var(--art-radius-sm);
 
-  /* ---- 文本 / 边框 / 填充 ---- */
+  /* ---- 文本 / 边框 / 填充 ----
+   * 边界拆两档：`--el-border-color` 是**控件**边界（≥3:1，WCAG 1.4.11），
+   * `-light` / `-lighter` 是**装饰**分隔线（卡片、行、分区）。
+   * 原来三者全指向卡片边框色（#e9edf5），导致全站输入框轮廓只有 1.17:1。
+   */
   --el-text-color-primary: var(--art-main);
   --el-text-color-regular: var(--art-sub);
   --el-text-color-secondary: var(--art-muted);
   --el-text-color-placeholder: var(--art-muted);
-  --el-border-color: var(--art-card-border);
-  --el-border-color-light: var(--art-card-border);
-  --el-border-color-lighter: var(--art-card-border);
+  --el-border-color: var(--art-line-control);
+  --el-border-color-light: var(--art-line-subtle);
+  --el-border-color-lighter: var(--art-line-subtle);
+  --el-border-color-extra-light: var(--art-line-subtle);
   --el-fill-color-light: var(--art-hover-bg);
   --el-fill-color-blank: var(--art-card-bg);
   --el-bg-color: var(--art-card-bg);
@@ -43,6 +52,87 @@
   --el-box-shadow: var(--art-shadow-2);
 }
 
+/* ---- 语义色作为「文字」时的对比度修正 ----
+ * 实算（白底）：danger 3.41:1 / success 2.33:1 / warning 2.05:1 / primary 4.48:1，
+ * 全部低于 AA 的 4.5:1。以下几个规则把「文字场景」切到 -text 变体，
+ * 填充场景（按钮底色、标签底色、图标）保持不变。
+ *
+ * 覆盖的是 EP 的变量而不是 `color`：link 按钮的 hover 颜色来自
+ * `--el-button-hover-link-text-color`，只改 `color` 会在 hover 时「弹回」低对比色。
+ */
+.el-button.is-link.el-button--primary {
+  --el-button-text-color: var(--art-primary-text);
+  --el-button-hover-link-text-color: var(--art-primary-text);
+}
+
+.el-button.is-link.el-button--success {
+  --el-button-text-color: var(--art-success-text);
+  --el-button-hover-link-text-color: var(--art-success-text);
+}
+
+.el-button.is-link.el-button--warning {
+  --el-button-text-color: var(--art-warning-text);
+  --el-button-hover-link-text-color: var(--art-warning-text);
+}
+
+.el-button.is-link.el-button--danger {
+  --el-button-text-color: var(--art-danger-text);
+  --el-button-hover-link-text-color: var(--art-danger-text);
+}
+
+/* 标签：light（无 effect 类）与 plain 的文字都压在卡片/浅底上，需要 -text 变体；
+ * dark 效果是白字压深底，保持原样。 */
+.el-tag.el-tag--primary:not(.el-tag--dark) {
+  --el-tag-text-color: var(--art-primary-text);
+}
+
+.el-tag.el-tag--success:not(.el-tag--dark) {
+  --el-tag-text-color: var(--art-success-text);
+}
+
+.el-tag.el-tag--warning:not(.el-tag--dark) {
+  --el-tag-text-color: var(--art-warning-text);
+}
+
+.el-tag.el-tag--danger:not(.el-tag--dark),
+.el-tag.el-tag--error:not(.el-tag--dark) {
+  --el-tag-text-color: var(--art-danger-text);
+}
+
+/* 全局消息条：正文同样取语义色当文字色 */
+.el-message--success {
+  --el-message-text-color: var(--art-success-text);
+}
+
+.el-message--warning {
+  --el-message-text-color: var(--art-warning-text);
+}
+
+.el-message--error {
+  --el-message-text-color: var(--art-danger-text);
+}
+
+/* 表单校验错误：12px 的红色小字是「必须读清楚」的信息，不能只有 3.41:1 */
+.el-form-item__error {
+  color: var(--art-danger-text);
+}
+
+/* 提示条：light 效果的正文直接取语义色当文字色（同 2.05~3.41:1 的问题） */
+.el-alert--success.is-light,
+.el-alert--success.is-light .el-alert__description {
+  color: var(--art-success-text);
+}
+
+.el-alert--warning.is-light,
+.el-alert--warning.is-light .el-alert__description {
+  color: var(--art-warning-text);
+}
+
+.el-alert--error.is-light,
+.el-alert--error.is-light .el-alert__description {
+  color: var(--art-danger-text);
+}
+
 /* ---- 组件级微调 ---- */
 .el-card {
   border-color: var(--art-card-border);
@@ -51,7 +141,7 @@
 }
 
 .el-card__header {
-  padding: 14px 16px;
+  padding: var(--art-sp-3) var(--art-sp-4);
   font-weight: 600;
   border-bottom-color: var(--art-card-border);
 }
@@ -75,21 +165,21 @@ html.dark .el-table {
 }
 
 /*
- * 单元格内边距按密度档位取值：紧凑 4px / 默认 9px / 宽松 12px。
+ * 单元格内边距按密度档位取值：紧凑 4px / 默认 8px / 宽松 12px（全部落在 4px 标度上）。
  * 不能只写一个固定值 —— 本文件在 Element Plus 之后加载，同权重的
  * `.el-table .el-table__cell` 会把 `el-table--small` 的 4px 覆盖掉，
  * 结果选了「紧凑」内边距仍按默认档渲染。
  */
 .el-table .el-table__cell {
-  padding: 9px 0;
+  padding: var(--art-sp-2) 0;
 }
 
 .el-table--small .el-table__cell {
-  padding: 4px 0;
+  padding: var(--art-sp-1) 0;
 }
 
 .el-table--large .el-table__cell {
-  padding: 12px 0;
+  padding: var(--art-sp-3) 0;
 }
 
 /* 分页 */
@@ -98,9 +188,9 @@ html.dark .el-table {
   --el-pagination-button-bg-color: transparent;
 }
 
-/* 弹窗 / 抽屉 */
+/* 弹窗 / 抽屉：比卡片大一档圆角，层级越高越「轻」 */
 .el-dialog {
-  border-radius: var(--art-radius);
+  border-radius: var(--art-radius-lg);
   padding: 0;
 }
 

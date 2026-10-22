@@ -115,13 +115,7 @@
         </div>
         <div v-if="row.session_id" class="log-trace-line">
           <span class="log-trace-tag">{{ t('log.sessionId') }}</span>
-          <el-button
-            v-if="canSession"
-            link
-            type="primary"
-            class="log-trace-id"
-            @click="openSession(row.session_id)"
-          >
+          <el-button v-if="canSession" link type="primary" class="log-trace-id" @click="openSession(row.session_id)">
             {{ row.session_id }}
           </el-button>
           <span v-else class="log-trace log-trace-id">{{ row.session_id }}</span>
@@ -200,72 +194,74 @@
 
     <el-drawer v-model="detailVisible" :title="t('log.detailTitle')" size="680px">
       <div v-loading="detailLoading" class="detail-body">
-      <template v-if="current">
-        <el-descriptions :column="2" border size="small">
-          <el-descriptions-item :label="t('log.result')">
-            <el-tag :type="current.status === 1 ? 'success' : 'danger'" effect="light" size="small">
-              {{ current.status === 1 ? t('log.success') : t('log.failed') }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item :label="t('log.actionName')">{{ current.title || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.node')">{{ current.node || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.username')">{{ current.username || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.time')">{{ current.create_time || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.request')">{{ current.method }} {{ current.path }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.statusCode')">
-            <el-tag :type="statusTag(current.status_code)" effect="light" size="small">
-              {{ current.status_code }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="IP">{{ current.ip || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.cost')">{{ current.cost ?? 0 }} ms</el-descriptions-item>
-          <el-descriptions-item :label="t('log.requestId')">
-            <span class="log-trace">{{ current.trace_id || '—' }}</span>
-          </el-descriptions-item>
-          <el-descriptions-item :label="t('log.actionId')" :span="2">
-            <span class="log-trace">{{ current.action_id || '—' }}</span>
-            <el-button
-              v-if="current.action_id"
-              v-auth="'cccms:log:action'"
-              link
-              type="primary"
-              class="log-trace-btn"
-              @click="openAction(current.action_id)"
+        <template v-if="current">
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item :label="t('log.result')">
+              <el-tag :type="current.status === 1 ? 'success' : 'danger'" effect="light" size="small">
+                {{ current.status === 1 ? t('log.success') : t('log.failed') }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('log.actionName')">{{ current.title || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.node')">{{ current.node || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.username')">{{ current.username || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.time')">{{ current.create_time || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.request')"
+              >{{ current.method }} {{ current.path }}</el-descriptions-item
             >
-              {{ t('log.viewAction') }}
-            </el-button>
-          </el-descriptions-item>
-          <el-descriptions-item :label="t('log.sessionId')" :span="2">
-            <span class="log-trace">{{ current.session_id || '—' }}</span>
-            <el-button
-              v-if="current.session_id"
-              v-auth="'cccms:log:session'"
-              link
-              type="primary"
-              class="log-trace-btn"
-              @click="openSession(current.session_id)"
-            >
-              {{ t('log.viewSession') }}
-            </el-button>
-          </el-descriptions-item>
-          <el-descriptions-item v-if="current.message" :label="t('log.message')" :span="2">
-            {{ current.message }}
-          </el-descriptions-item>
-          <el-descriptions-item label="User-Agent" :span="2">
-            {{ current.ua || '—' }}
-          </el-descriptions-item>
-        </el-descriptions>
+            <el-descriptions-item :label="t('log.statusCode')">
+              <el-tag :type="statusTag(current.status_code)" effect="light" size="small">
+                {{ current.status_code }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="IP">{{ current.ip || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.cost')">{{ current.cost ?? 0 }} ms</el-descriptions-item>
+            <el-descriptions-item :label="t('log.requestId')">
+              <span class="log-trace">{{ current.trace_id || '—' }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('log.actionId')" :span="2">
+              <span class="log-trace">{{ current.action_id || '—' }}</span>
+              <el-button
+                v-if="current.action_id"
+                v-auth="'cccms:log:action'"
+                link
+                type="primary"
+                class="log-trace-btn"
+                @click="openAction(current.action_id)"
+              >
+                {{ t('log.viewAction') }}
+              </el-button>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('log.sessionId')" :span="2">
+              <span class="log-trace">{{ current.session_id || '—' }}</span>
+              <el-button
+                v-if="current.session_id"
+                v-auth="'cccms:log:session'"
+                link
+                type="primary"
+                class="log-trace-btn"
+                @click="openSession(current.session_id)"
+              >
+                {{ t('log.viewSession') }}
+              </el-button>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="current.message" :label="t('log.message')" :span="2">
+              {{ current.message }}
+            </el-descriptions-item>
+            <el-descriptions-item label="User-Agent" :span="2">
+              {{ current.ua || '—' }}
+            </el-descriptions-item>
+          </el-descriptions>
 
-        <div class="log-block">
-          <div class="log-block-title">{{ t('log.params') }}</div>
-          <pre class="log-pre">{{ pretty(current.params) }}</pre>
-        </div>
+          <div class="log-block">
+            <div class="log-block-title">{{ t('log.params') }}</div>
+            <pre class="log-pre">{{ pretty(current.params) }}</pre>
+          </div>
 
-        <div class="log-block">
-          <div class="log-block-title">{{ t('log.response') }}</div>
-          <pre class="log-pre">{{ pretty(current.result) }}</pre>
-        </div>
-      </template>
+          <div class="log-block">
+            <div class="log-block-title">{{ t('log.response') }}</div>
+            <pre class="log-pre">{{ pretty(current.result) }}</pre>
+          </div>
+        </template>
       </div>
     </el-drawer>
 
@@ -718,8 +714,16 @@ watch([() => setting.isDark, locale], async () => {
   renderTrend()
 })
 
+/** resize 合并到一帧内：拖拽窗口时每个事件都同步重算图表会把主线程打满 */
+let resizeFrame = 0
 function onResize(): void {
-  trendChart?.resize()
+  if (resizeFrame) {
+    return
+  }
+  resizeFrame = window.requestAnimationFrame(() => {
+    resizeFrame = 0
+    trendChart?.resize()
+  })
 }
 
 /* ---- 链路视图（一次操作） + 会话轨迹（审计） ---- */
@@ -1030,6 +1034,10 @@ watch(
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
+  if (resizeFrame) {
+    window.cancelAnimationFrame(resizeFrame)
+    resizeFrame = 0
+  }
   // 组件销毁时手动释放：echarts 实例不挂在 DOM 上，不 dispose 会随路由切换堆积
   trendChart?.dispose()
   trendChart = null
@@ -1171,12 +1179,14 @@ async function onDeleteOne(id: number): Promise<void> {
   color: var(--art-main);
 }
 
+/* 语义色作文字时一律用 -text 变体：直接取 --art-success（2.33:1）
+ * 或 --art-danger（3.41:1）在白底上读不清。 */
 .analysis-card-value.is-ok {
-  color: var(--art-success);
+  color: var(--art-success-text);
 }
 
 .analysis-card-value.is-danger {
-  color: var(--art-danger);
+  color: var(--art-danger-text);
 }
 
 .analysis-card-label {
@@ -1195,7 +1205,7 @@ async function onDeleteOne(id: number): Promise<void> {
 
 .analysis-panel-title {
   margin-bottom: 10px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   font-weight: 600;
   color: var(--art-main);
 }
@@ -1235,7 +1245,7 @@ async function onDeleteOne(id: number): Promise<void> {
 
 /* 请求方法标签：选中态用主题色高亮，一眼看出列表被谁过滤，再点一次取消 */
 .log-method-tag.is-active {
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
   border-color: var(--el-color-primary);
   background: var(--el-color-primary-light-9);
 }
@@ -1275,15 +1285,15 @@ async function onDeleteOne(id: number): Promise<void> {
 }
 
 .log-code.is-ok {
-  color: var(--art-success);
+  color: var(--art-success-text);
 }
 
 .log-code.is-warn {
-  color: var(--el-color-warning);
+  color: var(--art-warning-text);
 }
 
 .log-code.is-danger {
-  color: var(--art-danger);
+  color: var(--art-danger-text);
 }
 
 .detail-body {
@@ -1293,7 +1303,7 @@ async function onDeleteOne(id: number): Promise<void> {
 .log-node {
   margin-top: 1px;
   font-family: Consolas, Monaco, monospace;
-  font-size: 11px;
+  font-size: var(--art-fs-caption);
   color: var(--art-muted);
 }
 
@@ -1304,11 +1314,11 @@ async function onDeleteOne(id: number): Promise<void> {
 
 /* 说明跟随记录结果：成功绿、失败红（「登录成功」不应标红） */
 .log-msg.is-ok {
-  color: var(--art-success);
+  color: var(--art-success-text);
 }
 
 .log-msg.is-danger {
-  color: var(--art-danger);
+  color: var(--art-danger-text);
 }
 
 .log-trace {
@@ -1327,7 +1337,7 @@ async function onDeleteOne(id: number): Promise<void> {
 
 .log-trace-tag {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: var(--art-fs-caption);
   line-height: 1.4;
   color: var(--art-muted);
 }
@@ -1335,7 +1345,7 @@ async function onDeleteOne(id: number): Promise<void> {
 .log-trace-id {
   min-width: 0;
   font-family: Consolas, Monaco, monospace;
-  font-size: 11px;
+  font-size: var(--art-fs-caption);
   line-height: 1.4;
   text-align: left;
   word-break: break-all;
@@ -1436,7 +1446,7 @@ async function onDeleteOne(id: number): Promise<void> {
 .log-block-title {
   padding-left: 8px;
   margin-bottom: 8px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   font-weight: 600;
   color: var(--art-main);
   border-left: 3px solid var(--el-color-primary);

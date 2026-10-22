@@ -205,16 +205,9 @@
 <script setup lang="ts">
 defineOptions({ name: 'cccms:file' })
 
-import { computed, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  ElMessage,
-  ElMessageBox,
-  type FormInstance,
-  type FormRules,
-  type UploadRawFile,
-  type UploadRequestOptions,
-} from 'element-plus'
+import { ElMessage, type UploadRawFile, type UploadRequestOptions } from 'element-plus'
 import ArtSplitView from '@/components/core/ArtSplitView.vue'
 import ArtTable from '@/components/core/ArtTable.vue'
 import RecycleToggle from '@/components/core/RecycleToggle.vue'
@@ -307,8 +300,6 @@ const { list, loading, total, page, limit, selection, load, search, onPageChange
     initialQuery: { original_name: '', ext: '', start: '', end: '' },
   })
 
-
-
 /* ---- 上传 ---- */
 const uploading = ref(false)
 /** 上传直接落到左侧选中的分类（全部/未分类 → 0） */
@@ -358,8 +349,6 @@ async function chunkedUpload(file: UploadRawFile, categoryId: number): Promise<F
     throw new Error(t('file.uploadChunkNoPermission'))
   }
 
-  const chunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE))
-
   // 秒传指纹：只有体积可控时才整文件读进内存算 SHA-1；WebCrypto 需要安全上下文
   // （HTTPS / localhost），非安全环境算不出来就跳过秒传（不影响分片续传）。
   let hash = ''
@@ -371,20 +360,27 @@ async function chunkedUpload(file: UploadRawFile, categoryId: number): Promise<F
     }
   }
 
-  const init = await fileUploadInit({ name: file.name, size: file.size, chunks, hash, category_id: categoryId })
+  const init = await fileUploadInit({
+    filename: file.name,
+    size: file.size,
+    sha1: hash || undefined,
+    category_id: categoryId,
+  })
   if (init.instant && init.file) {
     return init.file
   }
 
   const uploadId = init.upload_id as string
+  const chunkSize = init.chunk_size || CHUNK_SIZE
+  const totalChunks = init.total_chunks || Math.max(1, Math.ceil(file.size / chunkSize))
   const received = new Set(init.received ?? [])
-  for (let i = 0; i < chunks; i++) {
+  for (let i = 0; i < totalChunks; i++) {
     // 断点续传：服务端返回已收到的分片序号，跳过它们只补缺的
     if (received.has(i)) {
       continue
     }
-    const start = i * CHUNK_SIZE
-    const blob = file.slice(start, Math.min(start + CHUNK_SIZE, file.size))
+    const start = i * chunkSize
+    const blob = file.slice(start, Math.min(start + chunkSize, file.size))
     await fileUploadChunk(uploadId, i, blob, `${file.name}.part${i}`)
   }
 
@@ -526,7 +522,7 @@ loadCategories()
 }
 
 .cat-node-actions :deep(.el-icon) {
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   color: var(--art-muted);
   cursor: pointer;
 }

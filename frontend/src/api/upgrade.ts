@@ -1,161 +1,58 @@
 import instance from './request'
 
-/**
- * 自动升级（上游框架更新）。
- *
- * 直接用 axios 实例而不是 `http` 包装：升级要 clone / fetch 上游仓库，
- * 首次可能耗时数十秒，需要单独放宽超时（默认 15s 会直接超时）。
- */
-
-/** 升级操作统一放宽到 3 分钟 */
+/** 在线升级只允许本地开发环境，git fetch/pull 可能较慢，统一放宽超时 */
 const SLOW = { timeout: 180000 }
 
-/** 上游同步源（Gitee 国内镜像 / GitHub 国外） */
-export interface UpgradeSource {
-  key: string
-  label: string
-  url: string
-}
-
-/**
- * 运行环境与是否允许在线升级（后端 `Upgrader::environment()`）。
- *
- * `allowed` 为 false 时页面只做提醒，所有升级操作在后端也会被拦截。
- */
-export interface UpgradeEnvironment {
-  /** dev = 本地开发环境；production = 已构建的部署形态 */
-  key: 'dev' | 'production'
-  allowed: boolean
-  /** 是哪一道门槛没过：environment = 不是本地开发环境；switch = 总开关关闭 */
-  blocked_by: '' | 'environment' | 'switch'
-  /** 被拦截的原因（后端给的中文说明） */
-  reason: string
-  /** 判定「开发环境」用的标记文件（相对仓库根） */
-  marker: string
-}
-
-/** 当前版本（来自基线状态文件） */
-export interface UpgradeCurrent {
-  initialized: boolean
-  /** 基线版本（分支 / tag） */
-  base: string
-  commit: string
-  synced_at: string
-  files: number
-}
-
-export interface UpgradeOverview {
+export interface UpgradeStatus {
+  version: string
   enabled: boolean
-  environment: UpgradeEnvironment
-  git_available: boolean
-  initialized: boolean
-  current: UpgradeCurrent
-  sources: UpgradeSource[]
-  default_source: string
-  track: string
-  default_base: string
-  backup_dir: string
-}
-
-export interface UpgradeCommit {
-  hash: string
-  short: string
-  author: string
-  date: string
-  message: string
-}
-
-/** 分类计数：new / safe / local / deleted / conflict / removed / same */
-export type UpgradeSummary = Record<string, number>
-
-/** 变更文件（只含非 same 的，已按关注度排序） */
-export interface UpgradeFile {
-  path: string
-  kind: string
-  kind_label: string
-  added: number
-  deleted: number
-  binary: boolean
-}
-
-export interface UpgradePlan {
-  source: UpgradeSource
-  ref: string
+  reason: string
+  branch: string
   commit: string
-  base: string
-  base_commit: string
-  summary: UpgradeSummary
-  files: UpgradeFile[]
-  commits: UpgradeCommit[]
-  lines: { added: number; deleted: number }
-  /** 本地独有文件数（业务插件，不会被改动） */
-  local_only: number
-  /** 可直接覆盖的数量（可安全覆盖 + 上游新增） */
-  upgradable: number
-  /** 需要人工合并的冲突数 */
-  pending: number
-  has_update: boolean
+  commit_time: string | null
+  latest_tag: string
+  dirty: boolean
+  behind: number
+  ahead: number
+  can_run: boolean
 }
 
-export interface UpgradeInitResult {
-  source: UpgradeSource
-  ref: string
-  commit: string
-  fallback: string
-  total: number
-  modified: number
-  missing: number
-  local_only: number
+export interface UpgradeCheck {
+  behind: number
+  ahead: number
+  latest_tag: string
+  upstream: string
+  commits: string[]
 }
 
-export interface UpgradeRunResult {
-  ref: string
-  commit: string
-  written: number
-  removed: number
-  backed: number
-  skipped: string[]
-  backup_dir: string
-  report: string
-  maintenance: unknown
-  maintenance_error: string
-  /** 有文件变动时需要 reload / 重启服务才会生效 */
-  need_reload: boolean
+export interface UpgradeTag {
+  name: string
+  subject: string
+  date: string | null
 }
 
-export function upgradeOverview() {
-  return instance.get('/upgrade', SLOW) as unknown as Promise<UpgradeOverview>
+export interface UpgradeResult {
+  output: string
+  changed: boolean
+  restart_required: boolean
 }
 
-export function upgradeCheck(source: string, ref?: string) {
-  return instance.get('/upgrade/check', {
-    params: { source, ref: ref || undefined },
-    ...SLOW,
-  }) as unknown as Promise<UpgradePlan>
+export function upgradeStatus() {
+  return instance.get('/upgrade', SLOW) as unknown as Promise<UpgradeStatus>
 }
 
-export function upgradeTags(source: string) {
-  return instance.get('/upgrade/tags', {
-    params: { source },
-    ...SLOW,
-  }) as unknown as Promise<{ tags: string[] }>
+export function upgradeCheck() {
+  return instance.get('/upgrade/check', SLOW) as unknown as Promise<UpgradeCheck>
 }
 
-export function upgradeInit(source: string, ref?: string) {
-  return instance.post(
-    '/upgrade/init',
-    { source, ref: ref || undefined },
-    SLOW,
-  ) as unknown as Promise<UpgradeInitResult>
+export function upgradeTags() {
+  return instance.get('/upgrade/tags', SLOW) as unknown as Promise<UpgradeTag[]>
 }
 
-export function upgradeRun(payload: {
-  source: string
-  ref?: string
-  force?: boolean
-  prune?: boolean
-  /** 强制对齐上游：覆盖本地定制 / 恢复本地删除 / 删除上游已移除 */
-  force_all?: boolean
-}) {
-  return instance.post('/upgrade/run', payload, SLOW) as unknown as Promise<UpgradeRunResult>
+export function upgradeInit() {
+  return instance.post('/upgrade/init', undefined, SLOW) as unknown as Promise<UpgradeResult>
+}
+
+export function upgradeRun() {
+  return instance.post('/upgrade/run', undefined, SLOW) as unknown as Promise<UpgradeResult>
 }

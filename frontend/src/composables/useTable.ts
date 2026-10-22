@@ -3,8 +3,14 @@ import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import type { PageResult } from '@/types/table'
 
-/** 加载动画的最短可见时长（ms） */
-const MIN_LOADING_MS = 300
+/**
+ * 加载动画的最短可见时长（ms）。
+ *
+ * 原先是 300ms：本地接口十几毫秒就返回，为了「让 loading 别一闪而过」硬等 300ms，
+ * 等于给每次查询/翻页都人为加了 200~300ms 的等待。降到 120ms 既能避免闪烁
+ * （一帧约 16ms，120ms 已经足够看清状态变化），又不至于让用户感觉卡顿。
+ */
+const MIN_LOADING_MS = 120
 
 /** 筛选条件自动记忆的存储前缀（沿用 `cccms_table_width:` 的命名风格） */
 const FILTER_PREFIX = 'cccms_table_filter:'

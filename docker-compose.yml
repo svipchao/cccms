@@ -1,0 +1,92 @@
+# 本地/单机编排：API + 调度器 + MySQL + Redis
+# 生产请把密钥放进 secret 管理，不要用这里的默认值。
+services:
+  mysql:
+    image: mysql:8.4
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-cccms-root}
+      MYSQL_DATABASE: cccms
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  migrate:
+    build: ./backend
+    command: ["python", "-m", "cccms.cli", "init-db"]
+    env_file: [./backend/.env]
+    environment:
+      CCCMS_ENV: prod
+      CCCMS_DB_HOST: mysql
+      CCCMS_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      mysql: {condition: service_healthy}
+    restart: "no"
+
+  api:
+    build: ./backend
+    command:
+      - uvicorn
+      - cccms.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --proxy-headers
+    env_file: [./backend/.env]
+    environment:
+      CCCMS_ENV: prod
+      CCCMS_DB_HOST: mysql
+      CCCMS_REDIS_URL: redis://redis:6379/0
+    volumes:
+      - shared-uploads:/app/shared/uploads
+      - shared-exports:/app/shared/exports
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+
+  scheduler:
+    build: ./backend
+    command: ["python", "-m", "cccms.scheduler"]
+    env_file: [./backend/.env]
+    environment:
+      CCCMS_ENV: prod
+      CCCMS_DB_HOST: mysql
+      CCCMS_REDIS_URL: redis://redis:6379/0
+    volumes:
+      - shared-uploads:/app/shared/uploads
+      - shared-exports:/app/shared/exports
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:
+  shared-uploads:
+  shared-exports:

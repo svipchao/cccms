@@ -127,13 +127,14 @@ defineExpose({ tabsRef })
     background-color 0.2s;
 }
 
+/* 文字色用 -text 变体：主色直接当正文只有 4.48:1，差一点点不达标 */
 .art-tabs:not(.is-card) :deep(.el-tabs__item.is-active) {
   font-weight: 600;
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
 }
 
 .art-tabs:not(.is-card) :deep(.el-tabs__item:not(.is-active):hover) {
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
   background: var(--art-tabs-bg-hover);
 }
 

@@ -1,0 +1,144 @@
+[project]
+name = "cccms"
+version = "0.1.0"
+description = "CCCMS - Python rewrite (FastAPI + SQLAlchemy 2.0 async + MySQL 8)"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.115.6",
+    "uvicorn[standard]>=0.34.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncmy>=0.2.9",
+    "alembic>=1.14.0",
+    "pydantic>=2.10.4",
+    "pydantic-settings>=2.7.0",
+    "email-validator>=2.2.0",
+    "pyjwt>=2.10.1",
+    "argon2-cffi>=23.1.0",
+    "cryptography>=44.0.0",
+    "redis>=5.2.1",
+    "orjson>=3.10.13",
+    "python-multipart>=0.0.20",
+    "jinja2>=3.1.5",
+    "openpyxl>=3.1.5",
+    "structlog>=24.4.0",
+    "prometheus-client>=0.21.1",
+    "httpx>=0.28.1",
+    "nh3>=0.2.20",
+    "pyotp>=2.9.0",
+    "qrcode>=8.0",
+    "pillow>=11.1.0",
+    "typer>=0.15.1",
+    "rich>=13.9.4",
+    "croniter>=6.0.0",
+    "aiofiles>=24.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "testcontainers[mysql,redis]>=4.9.0",
+    "hypothesis>=6.123.2",
+    "schemathesis>=3.39.0",
+    "ruff>=0.8.6",
+    "mypy>=1.14.0",
+    "freezegun>=1.5.1",
+    "pre-commit>=4.0.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cccms"]
+
+[tool.uv]
+package = true
+default-groups = ["dev"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "unit: fast unit tests",
+    "integration: needs MySQL/Redis containers",
+    "contract: API contract tests",
+    "security: authorization/tenant/isolation tests",
+    "slow: slow tests",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 110
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "T20", "SIM",
+    "PTH", "RUF", "ASYNC", "S", "BLE", "PL",
+]
+ignore = [
+    "E501",      # line length handled by formatter
+    "B008",      # FastAPI Depends() in defaults is idiomatic
+    "PLR0913",   # many args in services is acceptable
+    "S101",      # assert in tests
+    # 产品文案、注释与日志均为中文，全角标点是正常书写而非歧义字符
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    # 数据权限档位(1-5)、HTTP 状态码、分片阈值等比较值有明确业务含义
+    "PLR2004",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004", "S105", "S106"]
+# 生成器输出的是代码模板文本，SQL 片段与类型映射分支不是运行期查询
+"src/cccms/services/generator.py" = ["S608", "PLR0911", "PLR0912", "PLR2004"]
+# 路由参数名是前端契约的一部分(id/type/dict 与既有接口一致)，不能为了避开内置名而改
+"src/cccms/api/**" = ["A002", "A004", "PLR0917"]
+# 异常类名已被服务层、测试与前端错误码映射引用，加 Error 后缀会破坏契约
+"src/cccms/core/errors.py" = ["N818"]
+# 进程级单例(Redis 客户端、引擎、审计队列、导出闸门)需要模块级可变状态
+"src/cccms/core/cache.py" = ["PLW0603"]
+"src/cccms/core/audit.py" = ["PLW0603"]
+"src/cccms/core/security.py" = ["PLW0603"]
+"src/cccms/db/session.py" = ["PLW0603"]
+"src/cccms/services/log.py" = ["PLW0603", "PLR0912"]
+# 延迟导入用于打断循环依赖(permissions <-> rbac/auth、seeds <-> cli)并缩短 CLI 启动
+"src/cccms/core/permissions.py" = ["PLC0415"]
+"src/cccms/api/auth.py" = ["PLC0415"]
+"src/cccms/services/auth.py" = ["PLC0415"]
+"src/cccms/services/password_reset.py" = ["PLC0415"]
+"src/cccms/services/user.py" = ["PLC0415"]
+"src/cccms/schemas/generator.py" = ["PLC0415"]
+"src/cccms/seeds.py" = ["PLC0415"]
+"src/cccms/cli.py" = ["PLC0415"]
+# 服务层沿用与查询参数一致的业务字段名(type 表示字典/通知类型)
+"src/cccms/services/dict_service.py" = ["A002", "PLR0912"]
+"src/cccms/services/notice.py" = ["A002"]
+# 数据权限规则匹配/鉴权依赖的分支是按维度逐条展开的，拆函数反而更难核对
+"src/cccms/core/scope.py" = ["PLR0911", "PLR0912"]
+"src/cccms/core/auth_deps.py" = ["PLR0911", "PLR0912"]
+"src/cccms/core/middleware.py" = ["PLR0911", "PLR0912", "PLR0915", "PLR0917"]
+"src/cccms/services/file.py" = ["PLR0915"]
+"src/cccms/api/online.py" = ["PLR0912"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+exclude = ["migrations/versions/"]
+
+[[tool.mypy.overrides]]
+module = ["croniter.*", "qrcode.*", "pyotp.*", "nh3.*", "asyncmy.*", "aiofiles.*"]
+ignore_missing_imports = true

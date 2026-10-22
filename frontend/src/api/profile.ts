@@ -13,8 +13,8 @@ export interface ProfileDetail {
   login_time: string | null
   login_ip: string
   create_time: string | null
-  /** 角色名（含继承来的祖先角色） */
-  roles: string[]
+  /** 角色（含继承来的祖先角色） */
+  roles: Array<{ id: number; code: string; name: string }>
   /** 所属部门名 */
   depts: string[]
 }

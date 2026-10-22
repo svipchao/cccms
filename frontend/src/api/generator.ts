@@ -23,6 +23,19 @@ export interface GenerateResult {
   menu_snippet: string
 }
 
+interface PreviewResponse {
+  module: string
+  files: Record<string, string>
+  menu_snippet: string
+}
+
+interface GenerateResponse {
+  module: string
+  written: string[]
+  skipped: string[]
+  menu_snippet: string
+}
+
 export function generatorTables() {
   return http.get<TableInfo[]>('/generator/tables')
 }
@@ -31,10 +44,22 @@ export function generatorColumns(table: string) {
   return http.get<ColumnInfo[]>('/generator/columns', { table })
 }
 
-export function generatorPreview(config: Record<string, unknown>) {
-  return http.post<GeneratedFile[]>('/generator/preview', config)
+export async function generatorPreview(config: Record<string, unknown>): Promise<GeneratedFile[]> {
+  const data = await http.post<PreviewResponse>('/generator/preview', config)
+  return Object.entries(data.files).map(([path, content]) => ({ path, content }))
 }
 
-export function generatorGenerate(config: Record<string, unknown>) {
-  return http.post<GenerateResult>('/generator/generate', config)
+export async function generatorGenerate(config: Record<string, unknown>): Promise<GenerateResult> {
+  const data = await http.post<GenerateResponse>('/generator/generate', config)
+  const module = data.module
+  return {
+    files: data.written,
+    menu: {
+      slug: `cccms:${module}:index`,
+      title: String(config.title ?? module),
+      path: `/${module}`,
+      component: module,
+    },
+    menu_snippet: data.menu_snippet,
+  }
 }

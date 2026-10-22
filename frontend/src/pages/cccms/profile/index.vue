@@ -20,7 +20,7 @@
 
           <el-descriptions :column="1" border size="small" class="profile-desc">
             <el-descriptions-item :label="t('profile.role')">
-              {{ detail.roles?.length ? detail.roles.join('、') : '—' }}
+              {{ detail.roles?.length ? detail.roles.map((r) => r.name).join('、') : '—' }}
             </el-descriptions-item>
             <el-descriptions-item :label="t('profile.dept')">
               {{ detail.depts?.length ? detail.depts.join('、') : '—' }}

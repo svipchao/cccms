@@ -91,7 +91,10 @@ export function noticeOptions() {
 
 /** 投放目标-用户候选：按关键词模糊搜索；传 ids 按 id 精确回显 */
 export function noticeUsers(params: { keyword?: string; ids?: number[] }) {
-  return http.get<NoticeUserOption[]>('/notice/users', params)
+  return http.get<NoticeUserOption[]>('/notice/users', {
+    keyword: params.keyword,
+    ids: params.ids?.length ? params.ids.join(',') : undefined,
+  })
 }
 
 /** 已读回执统计报表 */

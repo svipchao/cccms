@@ -8,8 +8,14 @@
     @close="exportStore.close()"
   >
     <el-tabs v-model="exportStore.activeTab" class="msg-tabs">
-      <!-- 我的消息 -->
-      <el-tab-pane :label="t('layout.notice')" name="notice">
+      <!-- 我的消息：未读数挂在 tab 上，与顶栏角标同源（角标不再混入导出任务数） -->
+      <el-tab-pane name="notice">
+        <template #label>
+          <span class="msg-tab-label">
+            {{ t('layout.notice') }}
+            <span v-if="noticeStore.unread > 0" class="msg-tab-count">{{ noticeStore.unread }}</span>
+          </span>
+        </template>
         <div class="notice-head">
           <el-button v-if="noticeStore.unread > 0" link type="primary" size="small" @click="markAllRead">
             {{ t('layout.noticeAllRead') }}
@@ -17,7 +23,7 @@
         </div>
 
         <div v-loading="noticeStore.loading" class="notice-list">
-          <el-empty v-if="noticeStore.items.length === 0" :description="t('layout.noticeEmpty')" :image-size="70" />
+          <el-empty v-if="noticeStore.items.length === 0" :description="t('layout.noticeEmpty')" :image-size="80" />
           <div
             v-for="item in noticeStore.items"
             :key="item.id"
@@ -45,8 +51,14 @@
         </div>
       </el-tab-pane>
 
-      <!-- 导出任务 -->
-      <el-tab-pane :label="t('export.title')" name="export">
+      <!-- 导出任务：未完成任务数单独计数 -->
+      <el-tab-pane name="export">
+        <template #label>
+          <span class="msg-tab-label">
+            {{ t('export.title') }}
+            <span v-if="exportStore.unfinished > 0" class="msg-tab-count">{{ exportStore.unfinished }}</span>
+          </span>
+        </template>
         <div class="export-toolbar">
           <el-button size="small" :loading="exportStore.loading" @click="exportStore.load()">
             <template #icon><i class="ri-refresh-line" /></template>
@@ -198,6 +210,25 @@ function download(row: ExportTaskRow): void {
   margin-top: -8px;
 }
 
+.msg-tab-label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* 计数字：底色用 danger-text 而不是 danger —— 白字压 #f4524d 只有 3.41:1 */
+.msg-tab-count {
+  min-width: 16px;
+  padding: 0 4px;
+  font-size: var(--art-fs-caption);
+  font-variant-numeric: tabular-nums;
+  line-height: 16px;
+  color: #fff;
+  text-align: center;
+  background: var(--art-danger-text);
+  border-radius: 8px;
+}
+
 /* ---- 我的消息 ---- */
 .notice-head {
   display: flex;
@@ -270,7 +301,7 @@ function download(row: ExportTaskRow): void {
 .notice-item-status {
   flex-shrink: 0;
   margin-left: auto;
-  color: var(--art-danger);
+  color: var(--art-danger-text);
 }
 
 .notice-item-status.is-read {
@@ -361,7 +392,7 @@ function download(row: ExportTaskRow): void {
 .notice-detail-content :deep(code) {
   padding: 2px 4px;
   font-family: Consolas, Menlo, monospace;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   background: var(--el-fill-color);
   border-radius: 4px;
 }
@@ -371,7 +402,7 @@ function download(row: ExportTaskRow): void {
   padding: 10px 12px;
   overflow-x: auto;
   font-family: Consolas, Menlo, monospace;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   background: var(--el-fill-color-dark);
   border-radius: 6px;
 }
@@ -382,7 +413,7 @@ function download(row: ExportTaskRow): void {
 }
 
 .notice-detail-content :deep(a) {
-  color: var(--art-primary);
+  color: var(--art-primary-text);
   text-decoration: underline;
 }
 
@@ -415,7 +446,7 @@ function download(row: ExportTaskRow): void {
   max-width: 90px;
   overflow: hidden;
   font-size: 12px;
-  color: var(--art-danger);
+  color: var(--art-danger-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -409,8 +409,6 @@ const { list, loading, total, page, limit, load, search, onPageChange, onLimitCh
   initialQuery: { name: '', type: '' },
 })
 
-
-
 /* ---- 字典类型 ---- */
 const typeFormRef = ref<FormInstance>()
 const typeVisible = ref(false)
@@ -664,7 +662,7 @@ loadCategories()
 }
 
 .cat-node-actions :deep(.el-icon) {
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   color: var(--art-muted);
   cursor: pointer;
 }

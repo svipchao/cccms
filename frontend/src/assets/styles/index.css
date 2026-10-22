@@ -56,8 +56,8 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
-  font-size: 14px;
-  line-height: 1.5715;
+  font-size: var(--art-fs-body);
+  line-height: var(--art-lh-body);
   color: var(--art-main);
   background: var(--art-body-bg);
   -webkit-font-smoothing: antialiased;
@@ -65,6 +65,38 @@ body {
 }
 
 a {
-  color: var(--art-primary);
+  color: var(--art-primary-text);
   text-decoration: none;
+}
+
+/* =====================================================================
+ * 键盘焦点环（WCAG 2.4.7）
+ *
+ * Element Plus 的组件自带 focus-visible 描边，这里只补「原生 / 自定义控件」，
+ * 避免出现双环。组件里也不要再写裸 `outline: none` —— 那会让键盘用户
+ * 完全看不到焦点落在哪里；需要去掉鼠标点击的描边时用下面的
+ * `:focus:not(:focus-visible)` 规则，它只影响指针操作。
+ * ===================================================================== */
+a:focus-visible,
+button:not(.el-button):focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:not([tabindex='-1']):focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 2px;
+}
+
+/* =====================================================================
+ * 动效降级：前庭敏感 / 低性能设备关闭位移与循环动画
+ * （主题切换的「禁过渡」另见 app.css 的 .theme-transition-off）
+ * ===================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

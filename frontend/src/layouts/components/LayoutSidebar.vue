@@ -2,7 +2,7 @@
   <aside
     class="sidebar"
     :class="{ 'is-collapsed': collapsed, 'is-mobile': mobile, 'is-open': mobile && !collapsed }"
-    :style="{ width: mobile ? '230px' : sidebarWidth }"
+    :style="{ width: mobile ? 'var(--art-sidebar-width)' : sidebarWidth }"
   >
     <!-- 用户卡片（顶部）：头像行（头像 + 信息 + 注销登录）+ 图标行（切换平台 / 主题 / 语言 / 缓存） -->
     <div class="sidebar-user">
@@ -17,7 +17,7 @@
               {{
                 userStore.superAdmin
                   ? t('layout.superAdmin')
-                  : (userStore.profile?.roles || []).join(' / ') || t('layout.normalUser')
+                  : (userStore.profile?.roles || []).map((r) => r.name).join(' / ') || t('layout.normalUser')
               }}
             </span>
           </div>
@@ -156,7 +156,14 @@ const exportTaskStore = useExportTaskStore()
 const menuRef = ref()
 
 const activeMenu = computed(() => route.path)
-const sidebarWidth = computed(() => `${props.collapsed ? 64 : 230}px`)
+/**
+ * 宽度只从 token 取，不能写死数字。
+ * 之前这里硬编码 230px，而 tokens.css 里声明的是 220px —— 改 token 不生效，
+ * 设计系统与实现各说各话。
+ */
+const sidebarWidth = computed(() =>
+  props.collapsed ? 'var(--art-sidebar-collapsed-width)' : 'var(--art-sidebar-width)',
+)
 
 /** 回溯出当前路径的所有祖先目录 id */
 function findChain(menus: MenuNode[], path: string, chain: string[]): string[] | null {
@@ -375,7 +382,7 @@ async function onLogout(): Promise<void> {
 /* ---- 用户卡片（头像行 + 图标行） ---- */
 .sidebar-user {
   flex-shrink: 0;
-  padding: 12px 10px;
+  padding: var(--art-sp-3) var(--art-sp-2);
   border-bottom: 1px solid var(--art-card-border);
 }
 
@@ -439,6 +446,8 @@ async function onLogout(): Promise<void> {
   justify-content: space-around;
 }
 
+/* 图标按钮：不要写 outline: none —— 键盘焦点环由 index.css 的
+ * `button:not(.el-button):focus-visible` 统一提供，否则键盘用户看不见焦点。 */
 .sidebar-user-action {
   display: inline-flex;
   align-items: center;
@@ -451,7 +460,6 @@ async function onLogout(): Promise<void> {
   background: transparent;
   border: none;
   border-radius: 50%;
-  outline: none;
   transition: background-color 0.15s ease;
 }
 
@@ -496,11 +504,12 @@ async function onLogout(): Promise<void> {
   gap: 4px;
 }
 
+/* 备案号：11px 低于可读下限，统一并到 12px（caption 档） */
 .sidebar-footer {
   flex-shrink: 0;
-  padding: 10px 14px 14px;
-  font-size: 11px;
-  line-height: 1.6;
+  padding: var(--art-sp-3) var(--art-sp-4) var(--art-sp-4);
+  font-size: var(--art-fs-caption);
+  line-height: var(--art-lh-caption);
   color: var(--art-muted);
   text-align: center;
   border-top: 1px solid var(--art-card-border);
@@ -513,7 +522,10 @@ async function onLogout(): Promise<void> {
 }
 
 .sidebar :deep(.el-menu) {
-  padding: 6px 8px;
+  /* 选中项文字压在 light-9 底上：主色只有 3.92:1，换成 -text 变体（5.6:1） */
+  --el-menu-active-color: var(--art-primary-text);
+  --el-menu-hover-text-color: var(--art-primary-text);
+  padding: var(--art-sp-2);
   background: transparent;
   border-right: none;
 }
@@ -528,7 +540,6 @@ async function onLogout(): Promise<void> {
 
 .sidebar :deep(.el-menu-item.is-active) {
   font-weight: 600;
-  color: var(--el-color-primary);
   background: var(--el-color-primary-light-9);
 }
 

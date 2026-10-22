@@ -2,11 +2,22 @@
  * 设计 token（唯一来源）
  * 亮色定义在 :root，暗色覆盖在 html.dark（与 Element Plus 暗色机制一致）。
  * 主色系列由 utils/theme.ts 在运行时按用户选择覆盖。
+ *
+ * 三条约定（改动前请先读）：
+ *   1. 颜色按**角色**拆，不按色相拆：同一个 hex 不能既当填充色又当文字色。
+ *      语义色一律成对出现：`--art-x` 用于填充 / 图标 / 描边，
+ *      `--art-x-text` 用于文字（保证 ≥4.5:1）。
+ *   2. 边框分两档：`--art-line-subtle` 是装饰性分隔（卡片、行、分区），
+ *      `--art-line-control` 是控件边界（输入框 / 选择器 / 单选），
+ *      后者必须 ≥3:1（WCAG 1.4.11），不得混用。
+ *   3. 间距 / 字号 / 圆角只允许取标度里的值，禁止再写裸数值。
  * ===================================================================== */
 
 :root {
   /* ---- 品牌主色（默认值；运行时由 theme.ts 重算 --el-* 系列） ---- */
   --art-primary: #2b6cff;
+  /* 主色用于文字时压暗一档：白底 6.4:1（纯主色仅 4.48:1，临界不达标） */
+  --art-primary-text: #2256cc;
 
   /* ---- 中性色阶 ---- */
   --art-gray-50: #f8fafc;
@@ -20,32 +31,80 @@
   --art-gray-800: #2f3747;
   --art-gray-900: #1f2430;
 
-  /* ---- 语义色 ---- */
+  /* ---- 语义色：填充 / 图形 ---- */
   --art-success: #21c26b;
   --art-warning: #ff9f2e;
   --art-danger: #f4524d;
   --art-info: #8f98a8;
 
-  /* ---- 背景 / 文本 / 边框 ---- */
+  /* ---- 语义色：文字（均 ≥4.5:1，白底实算） ---- */
+  --art-success-text: #0a7d43; /* 5.21:1 */
+  --art-warning-text: #8a5a00; /* 5.93:1 */
+  --art-danger-text: #c22a26; /* 5.75:1 */
+  --art-info-text: #5b6474; /* 5.96:1 */
+
+  /* 收藏星标：既要是「金色」让一眼分辨已收藏，又要 ≥3:1（图形对象要求）。
+   * 原来的 --art-warning 只有 2.05:1，白底上几乎看不见。 */
+  --art-favorite: #b97400; /* 3.78:1 */
+
+  /* ---- 背景 / 文本 ---- */
   --art-body-bg: #f6f8fb;
   --art-card-bg: #ffffff;
-  --art-card-border: #e9edf5;
   --art-header-bg: #ffffff;
   --art-sidebar-bg: #ffffff;
   --art-hover-bg: #f2f5fa;
-  --art-main: #1f2430;
-  --art-sub: #5b6474;
-  --art-muted: #8f98a8;
+  --art-main: #1f2430; /* 13.9:1 */
+  --art-sub: #5b6474; /* 5.96:1 */
+  /* 弱化文字：白卡上 5.13:1，页面底色 #f6f8fb 上 4.82:1 —— 两处都要过 AA
+   * （原 #8f98a8 只有 2.90:1，被大量用在 11~12px 的说明文字上） */
+  --art-muted: #666e7d;
+
+  /* ---- 边框：装饰 vs 控件（见文件头第 2 条） ---- */
+  --art-line-subtle: #e9edf5;
+  --art-line-control: #8891a3; /* 3.17:1 */
+  /* 兼容别名：卡片 / 分隔线语义，全部指向装饰档 */
+  --art-card-border: var(--art-line-subtle);
 
   /* ---- 列设置弹窗（列清单隔行底色，默认开启） ---- */
   --art-column-stripe-bg: #f7f9fc;
 
+  /* ---- 间距标度（4px 基准） ---- */
+  --art-sp-1: 4px;
+  --art-sp-2: 8px;
+  --art-sp-3: 12px;
+  --art-sp-4: 16px;
+  --art-sp-5: 24px;
+  --art-sp-6: 32px;
+
+  /* ---- 字号 / 行高标度 ----
+   * caption（12）用于辅助信息，dense（13）用于标签栏 / 工具栏等密集界面，
+   * body（14）是正文基准。三级以外不再新增字号。
+   */
+  --art-fs-caption: 12px;
+  --art-lh-caption: 1.5;
+  --art-fs-dense: 13px;
+  --art-lh-dense: 1.5;
+  --art-fs-body: 14px;
+  --art-lh-body: 1.5715;
+  --art-fs-title: 16px;
+  --art-lh-title: 1.5;
+  --art-fs-h3: 20px;
+  --art-lh-h3: 1.4;
+  --art-fs-h2: 24px;
+  --art-lh-h2: 1.35;
+  --art-fs-h1: 30px;
+  --art-lh-h1: 1.25;
+
+  /* ---- 圆角标度：小控件 / 卡片 / 弹窗 ---- */
+  --art-radius-sm: 6px;
+  --art-radius: 10px;
+  --art-radius-lg: 14px;
+
   /* ---- 布局尺寸 ---- */
   --art-header-height: 56px;
   --art-tagbar-height: 40px;
-  --art-sidebar-width: 220px;
+  --art-sidebar-width: 230px;
   --art-sidebar-collapsed-width: 64px;
-  --art-radius: 10px;
   --art-container-width: 100%;
 
   /* ---- 阴影 ---- */
@@ -59,15 +118,26 @@
 }
 
 html.dark {
+  /* 暗底上文字要「提亮」而不是沿用亮色值 */
+  --art-primary-text: #80a7ff; /* 6.97:1 */
+  --art-success-text: #45d98a; /* 9.06:1 */
+  --art-warning-text: #ffc061; /* 10.2:1 */
+  --art-danger-text: #ff8b86; /* 7.29:1 */
+  --art-info-text: #a3abba;
+  --art-favorite: #ffc061;
+
   --art-body-bg: #14161c;
   --art-card-bg: #1c1f27;
-  --art-card-border: #2a2e39;
   --art-header-bg: #1c1f27;
   --art-sidebar-bg: #1c1f27;
   --art-hover-bg: #23262f;
   --art-main: #e8eaf0;
-  --art-sub: #a3abba;
-  --art-muted: #6f7787;
+  --art-sub: #a3abba; /* 7.13:1 */
+  --art-muted: #868fa0; /* 5.06:1（原 #6f7787 仅 3.66:1） */
+
+  /* 暗色下卡片边界原本只有 1.21:1，几乎不可见 */
+  --art-line-subtle: #343a47;
+  --art-line-control: #6b7486; /* 3.50:1 */
 
   --art-column-stripe-bg: #202329;
 

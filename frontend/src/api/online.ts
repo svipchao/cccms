@@ -32,5 +32,5 @@ export function onlineKick(jti: string) {
 
 /** 强制某用户的所有会话下线 */
 export function onlineKickUser(userId: number) {
-  return http.post<{ sessions: number }>('/online/kickUser', { user_id: userId })
+  return http.post<{ sessions: number }>('/online/kickUser', { id: userId })
 }

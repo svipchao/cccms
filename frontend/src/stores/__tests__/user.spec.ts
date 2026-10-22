@@ -88,14 +88,6 @@ describe('useUserStore', () => {
     expect(store.tenantSwitched).toBe(true)
   })
 
-  it('crypto_key 只在有值时下发', () => {
-    const store = useUserStore()
-
-    expect(store.cryptoKey).toBe('')
-    store.profile = profile({ crypto_key: 'k1' })
-    expect(store.cryptoKey).toBe('k1')
-  })
-
   it('login 写入令牌并落地用户信息', async () => {
     loginMock.mockResolvedValue({
       token: { token: 'new-token', expires_at: 0 },

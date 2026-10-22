@@ -249,7 +249,7 @@ watch(
 }
 
 .cron-sep {
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   color: var(--art-sub);
   white-space: nowrap;
 }

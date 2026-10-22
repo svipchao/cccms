@@ -39,12 +39,12 @@
       </template>
 
       <template #expression="{ row }">
-        <el-tag effect="plain" size="small">{{ row.expression }}</el-tag>
+        <el-tag effect="plain" size="small">{{ row.cron }}</el-tag>
       </template>
 
       <!-- 表达式说明：与 CronEditor 同源（describeCron + useCronDescription），认不出来显示「自定义表达式」 -->
       <template #desc="{ row }">
-        <span class="desc-cell">{{ describe(row.expression) }}</span>
+        <span class="desc-cell">{{ describe(row.cron) }}</span>
       </template>
 
       <template #status="{ row }">
@@ -92,11 +92,11 @@
         </el-form-item>
         <el-form-item :label="t('crontab.targetLabel')" prop="target">
           <el-select v-model="form.target" :placeholder="t('crontab.targetPlaceholder')" style="width: 100%">
-            <el-option v-for="item in targets" :key="item.class" :label="item.label" :value="item.class" />
+            <el-option v-for="item in targets" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('crontab.expressionLabel')" prop="expression">
-          <CronEditor v-model="form.expression" />
+        <el-form-item :label="t('crontab.expressionLabel')" prop="cron">
+          <CronEditor v-model="form.cron" />
         </el-form-item>
         <el-form-item :label="t('crontab.paramsLabel')" prop="params">
           <el-input
@@ -231,9 +231,9 @@
                   {{ currentTask?.name || '—' }}
                 </el-descriptions-item>
                 <el-descriptions-item :label="t('crontab.expressionLabel')">
-                  <code class="log-code">{{ currentTask?.expression || '—' }}</code>
-                  <span v-if="currentTask?.expression" class="log-desc-text">
-                    {{ describe(currentTask.expression) }}
+                  <code class="log-code">{{ currentTask?.cron || '—' }}</code>
+                  <span v-if="currentTask?.cron" class="log-desc-text">
+                    {{ describe(currentTask.cron) }}
                   </span>
                 </el-descriptions-item>
                 <el-descriptions-item :label="t('crontab.targetLabel')">
@@ -262,7 +262,7 @@
               </div>
             </template>
 
-            <el-empty v-else :description="t('crontab.logDetailEmpty')" :image-size="70" />
+            <el-empty v-else :description="t('crontab.logDetailEmpty')" :image-size="60" />
           </div>
         </div>
 
@@ -338,7 +338,7 @@ const columns = computed<ArtTableColumn[]>(() => [
     filter: { type: 'text' },
   },
   {
-    prop: 'expression',
+    prop: 'cron',
     label: t('crontab.expressionColumnLabel'),
     width: 160,
     align: 'center',
@@ -417,7 +417,7 @@ const emptyForm = {
   group_name: '',
   target: '',
   // 6 段：每天 2 点整（编辑器始终生成 6 段，秒=0 即整分钟触发）
-  expression: '0 0 2 * * *',
+  cron: '0 0 2 * * *',
   params: '',
   status: 1,
   overlap: 'skip',
@@ -432,7 +432,7 @@ const form = reactive({ ...emptyForm })
 const rules = computed<FormRules>(() => ({
   name: [{ required: true, message: t('crontab.nameRequired'), trigger: 'blur' }],
   target: [{ required: true, message: t('crontab.targetRequired'), trigger: 'change' }],
-  expression: [{ required: true, message: t('crontab.expressionRequired'), trigger: 'change' }],
+  cron: [{ required: true, message: t('crontab.expressionRequired'), trigger: 'change' }],
 }))
 
 function openCreate(): void {
@@ -657,7 +657,7 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   padding: 1px 6px;
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
   cursor: pointer;
   border-radius: 4px;
   transition:
@@ -767,7 +767,7 @@ onMounted(async () => {
 
 .log-detail-label {
   margin-bottom: 6px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   font-weight: 600;
   color: var(--art-main);
 }

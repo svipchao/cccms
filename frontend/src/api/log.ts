@@ -28,8 +28,19 @@ export interface LogRow {
   create_time: string
 }
 
+export interface LogDetail extends LogRow {
+  tenant_id?: number
+  prev_hash?: string | null
+  row_hash?: string | null
+}
+
 export function logList(params: Record<string, unknown>) {
   return http.get<PageResult<LogRow>>('/log', params)
+}
+
+/** 单条日志详情（含 UA / 参数 / 响应 / 审计哈希） */
+export function logDetail(id: number) {
+  return http.get<LogDetail>('/log/detail', { id })
 }
 
 /** 导出 CSV（按当前筛选与数据范围；一律异步，结果到全局「导出任务」面板下载） */

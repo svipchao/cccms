@@ -136,7 +136,7 @@ instance.interceptors.response.use(
       }
     } else if (status && error?.config?.responseType === 'blob' && error?.response?.data instanceof Blob) {
       // blob 下载类请求（导出文件）的错误响应体也是 Blob，读不出后端 message：
-      // 异步解析出 JSON 里的 message 再提示（如「所选登录账号下没有广告账户」），
+      // 异步解析出 JSON 里的 message 再提示（如「导出任务尚未完成」），
       // 而不是只给一句笼统的「请求错误(422)」
       error.response.data
         .text()

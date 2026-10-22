@@ -41,6 +41,14 @@ const FALLBACK: AppUiConfig = {
 const DEFAULT_LOGO = './logo.png'
 
 /**
+ * 上次成功下发的配置的本地缓存键。
+ *
+ * 用于 `hydrate()` 在挂载前同步回填 —— 把「首屏必须等一个配置接口」变成
+ * 「首屏用上次的配置，接口回来后再校正」。
+ */
+const CACHE_KEY = 'cccms_app_config'
+
+/**
  * 品牌与 UI 默认值（来自 sys_config 的 system.* / ui.* 分组）。
  *
  * 启动时拉一次，用于：系统名称、Logo、备案号、版权、维护公告、
@@ -74,17 +82,51 @@ export const useAppStore = defineStore('app', () => {
   /** 全局水印参数（后台「配置管理 → 水印」） */
   const watermark = computed<AppWatermarkConfig>(() => config.value.watermark ?? FALLBACK_WATERMARK)
 
+  /** 把接口返回合并到兜底值之上（保持字段完整，避免后端少下发某组时界面炸掉） */
+  function merge(res: AppUiConfig): AppUiConfig {
+    return {
+      system: { ...FALLBACK.system, ...(res.system ?? {}) },
+      ui: { ...FALLBACK.ui, ...(res.ui ?? {}) },
+      security: { ...FALLBACK_SECURITY, ...(res.security ?? {}) },
+      watermark: { ...FALLBACK_WATERMARK, ...(res.watermark ?? {}) },
+      locale: res.locale || FALLBACK.locale,
+      locales: res.locales?.length ? res.locales : FALLBACK.locales,
+    }
+  }
+
+  /**
+   * 同步回填上次成功下发的配置（stale-while-revalidate 的 stale 部分）。
+   *
+   * 目的是让 `app.mount()` **不必等任何请求**：品牌名 / Logo / 主题 / 水印
+   * 这类纯装饰数据，用上次的缓存就够渲染出正确界面，随后 `load()` 再静默校正。
+   * 首次访问（无缓存）时什么也不做，直接用内置兜底值。
+   */
+  function hydrate(): void {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY)
+      if (!raw) {
+        return
+      }
+      config.value = merge(JSON.parse(raw) as AppUiConfig)
+      // 缓存里已经带了默认主题：提前应用，避免首屏闪一下再变色
+      useSettingStore().applySystemDefaults(config.value.ui)
+      if (!hasLocalePref() && config.value.locale) {
+        applyDefaultLocale(config.value.locale)
+      }
+    } catch {
+      // 缓存损坏 / localStorage 不可用：忽略，走兜底值
+    }
+  }
+
   async function load(): Promise<void> {
     try {
       const res = await configUi()
       if (res) {
-        config.value = {
-          system: { ...FALLBACK.system, ...(res.system ?? {}) },
-          ui: { ...FALLBACK.ui, ...(res.ui ?? {}) },
-          security: { ...FALLBACK_SECURITY, ...(res.security ?? {}) },
-          watermark: { ...FALLBACK_WATERMARK, ...(res.watermark ?? {}) },
-          locale: res.locale || FALLBACK.locale,
-          locales: res.locales?.length ? res.locales : FALLBACK.locales,
+        config.value = merge(res)
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(config.value))
+        } catch {
+          // localStorage 不可用（隐私模式 / 配额满）：不影响本次会话
         }
       }
     } catch {
@@ -112,6 +154,7 @@ export const useAppStore = defineStore('app', () => {
     tagsView,
     resetChannels,
     watermark,
+    hydrate,
     load,
   }
 })

@@ -100,7 +100,7 @@ function onCustomColor(value: string | null): void {
 
 <style scoped>
 .setting-block {
-  margin-bottom: 26px;
+  margin-bottom: var(--art-sp-5);
 }
 
 .setting-label {
@@ -108,7 +108,7 @@ function onCustomColor(value: string | null): void {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   color: var(--art-sub);
 }
 
@@ -124,14 +124,15 @@ function onCustomColor(value: string | null): void {
   align-items: center;
 }
 
+/* 色块：焦点环由 index.css 的统一规则提供（原本的 outline: none 会让
+ * 键盘用户完全看不到当前选中哪个色块）。 */
 .setting-color {
   width: 24px;
   height: 24px;
   padding: 0;
   cursor: pointer;
   border: 2px solid transparent;
-  border-radius: 6px;
-  outline: none;
+  border-radius: var(--art-radius-sm);
   transition: transform 0.15s ease;
 }
 

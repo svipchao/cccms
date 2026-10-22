@@ -334,9 +334,16 @@ async function setLink(): Promise<void> {
 .art-rich-editor {
   width: 100%;
   border: 1px solid var(--el-border-color);
-  border-radius: 6px;
+  border-radius: var(--art-radius-sm);
   overflow: hidden;
   background: var(--art-card-bg);
+}
+
+/* 内容区是 contenteditable，自身不做 outline；焦点提示改由容器承担 ——
+ * 否则键盘 Tab 进来后完全看不出焦点落在编辑器上。 */
+.art-rich-editor:focus-within {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 2px var(--el-color-primary-light-8);
 }
 
 .art-rich-editor.is-disabled {
@@ -392,7 +399,7 @@ async function setLink(): Promise<void> {
 }
 
 .art-rich-editor-glyph {
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   font-weight: 500;
 }
 
@@ -430,10 +437,11 @@ async function setLink(): Promise<void> {
 }
 
 .art-rich-editor-body :deep(.ProseMirror) {
-  padding: 10px 12px;
-  font-size: 14px;
-  line-height: 1.7;
+  padding: var(--art-sp-2) var(--art-sp-3);
+  font-size: var(--art-fs-body);
+  line-height: var(--art-lh-body);
   color: var(--art-main);
+  /* 焦点环在容器上（见 .art-rich-editor:focus-within） */
   outline: none;
 }
 
@@ -491,7 +499,7 @@ async function setLink(): Promise<void> {
 .art-rich-editor-body :deep(.ProseMirror code) {
   padding: 2px 4px;
   font-family: Consolas, Menlo, monospace;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   background: var(--el-fill-color);
   border-radius: 4px;
 }
@@ -501,7 +509,7 @@ async function setLink(): Promise<void> {
   padding: 10px 12px;
   overflow-x: auto;
   font-family: Consolas, Menlo, monospace;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   background: var(--el-fill-color-dark);
   border-radius: 6px;
 }
@@ -512,7 +520,7 @@ async function setLink(): Promise<void> {
 }
 
 .art-rich-editor-body :deep(.ProseMirror a) {
-  color: var(--art-primary);
+  color: var(--art-primary-text);
   text-decoration: underline;
 }
 

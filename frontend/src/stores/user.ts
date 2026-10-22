@@ -11,7 +11,6 @@ export const useUserStore = defineStore('user', () => {
   const permissions = computed<string[]>(() => profile.value?.permissions ?? [])
   const superAdmin = computed<boolean>(() => !!profile.value?.super_admin)
   const nickname = computed<string>(() => profile.value?.nickname || profile.value?.username || '')
-  const cryptoKey = computed<string>(() => (profile.value as Profile & { crypto_key?: string })?.crypto_key || '')
 
   /** 当前**生效**租户（超管切换后与归属租户不同） */
   const tenantId = computed<number>(() => profile.value?.tenant_id ?? 0)
@@ -72,7 +71,6 @@ export const useUserStore = defineStore('user', () => {
     permissions,
     superAdmin,
     nickname,
-    cryptoKey,
     tenantId,
     homeTenantId,
     tenantSwitched,

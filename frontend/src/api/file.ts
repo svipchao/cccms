@@ -55,13 +55,7 @@ export interface UploadInitResult {
   received?: number[]
 }
 
-export function fileUploadInit(data: {
-  name: string
-  size: number
-  chunks: number
-  hash?: string
-  category_id?: number
-}) {
+export function fileUploadInit(data: { filename: string; size: number; sha1?: string; category_id?: number }) {
   return http.post<UploadInitResult>('/file/upload/init', data)
 }
 
@@ -70,9 +64,9 @@ export function fileUploadChunk(uploadId: string, index: number, chunk: Blob, fi
   const form = new FormData()
   form.append('upload_id', uploadId)
   form.append('index', String(index))
-  form.append('chunk', chunk, fileName)
+  form.append('file', chunk, fileName)
 
-  return http.post<{ received: number; total_chunks: number }>('/file/upload/chunk', form)
+  return http.post<{ size: number }>('/file/upload/chunk', form)
 }
 
 export function fileUploadComplete(uploadId: string) {

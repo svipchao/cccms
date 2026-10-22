@@ -302,7 +302,7 @@ onMounted(syncTreeChecked)
   gap: 8px;
   align-items: center;
   padding: 4px 6px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   cursor: pointer;
   border-radius: 4px;
 }
@@ -312,7 +312,7 @@ onMounted(syncTreeChecked)
 }
 
 .art-node-picker-item.is-checked {
-  color: var(--art-primary);
+  color: var(--art-primary-text);
 }
 
 .art-node-picker-item-label {

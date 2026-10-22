@@ -6,7 +6,7 @@ export interface CrontabRow {
   name: string
   /** 任务分组（仅用于归类与筛选） */
   group_name: string
-  expression: string
+  cron: string
   target: string
   params: unknown
   status: number
@@ -35,7 +35,7 @@ export interface CrontabLogRow {
 }
 
 export interface TaskTarget {
-  class: string
+  value: string
   label: string
 }
 

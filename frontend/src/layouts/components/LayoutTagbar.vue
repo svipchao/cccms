@@ -16,9 +16,18 @@
           <span class="tagbar-item-text">{{
             tab.path === HOME_PATH ? t('layout.home') : translateTitle(tab.title)
           }}</span>
-          <el-icon v-if="!tab.pinned" class="tagbar-item-close" :size="12" @click.stop="close(tab.path)">
+          <!-- 关闭：把命中区做到 22×22（图标仍 12px），原来只有一个 12px 的
+               图标可点，误触成本高、也摸不着。 -->
+          <button
+            v-if="!tab.pinned"
+            type="button"
+            class="tagbar-item-close"
+            :aria-label="t('layout.tagbar.close')"
+            :title="t('layout.tagbar.close')"
+            @click.stop="close(tab.path)"
+          >
             <i class="ri-close-line" />
-          </el-icon>
+          </button>
         </div>
       </div>
     </el-scrollbar>
@@ -48,12 +57,17 @@
         <el-button text circle size="small">
           <el-icon :size="15"><i class="ri-more-2-fill" /></el-icon>
         </el-button>
+        <!-- 与右键菜单同一份命令定义：文案、顺序、分隔线只有一处，不会两边各说各话 -->
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="closeOthers">{{ t('layout.tagbar.closeOthers') }}</el-dropdown-item>
-            <el-dropdown-item command="closeLeft">{{ t('layout.tagbar.closeLeft') }}</el-dropdown-item>
-            <el-dropdown-item command="closeRight">{{ t('layout.tagbar.closeRight') }}</el-dropdown-item>
-            <el-dropdown-item command="closeAll" divided>{{ t('layout.tagbar.closeAll') }}</el-dropdown-item>
+            <el-dropdown-item
+              v-for="item in commandsFor(worktab.active)"
+              :key="item.command"
+              :command="item.command"
+              :divided="item.divided"
+            >
+              {{ item.label }}
+            </el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -61,15 +75,14 @@
 
     <teleport to="body">
       <ul v-if="contextVisible" class="tagbar-context" :style="{ left: `${contextPos.x}px`, top: `${contextPos.y}px` }">
-        <li @click="runContext('refresh')">{{ t('layout.tagbar.refresh') }}</li>
-        <li v-if="contextPinnable" @click="runContext('pin')">
-          {{ contextPinned ? t('layout.tagbar.unpin') : t('layout.tagbar.pin') }}
+        <li
+          v-for="item in commandsFor(contextTarget)"
+          :key="item.command"
+          :class="{ 'is-divided': item.divided }"
+          @click="runContext(item.command)"
+        >
+          {{ item.label }}
         </li>
-        <li @click="runContext('close')">{{ t('layout.tagbar.close') }}</li>
-        <li @click="runContext('closeOthers')">{{ t('layout.tagbar.closeOthers') }}</li>
-        <li @click="runContext('closeLeft')">{{ t('layout.tagbar.closeLeft') }}</li>
-        <li @click="runContext('closeRight')">{{ t('layout.tagbar.closeRight') }}</li>
-        <li @click="runContext('closeAll')">{{ t('layout.tagbar.closeAll') }}</li>
       </ul>
     </teleport>
   </div>
@@ -102,8 +115,38 @@ const contextVisible = ref(false)
 const contextPos = reactive({ x: 0, y: 0 })
 const contextTarget = ref<string>('')
 
-const contextPinnable = computed(() => contextTarget.value !== HOME_PATH)
-const contextPinned = computed(() => worktab.tabs.find((t) => t.path === contextTarget.value)?.pinned ?? false)
+/** 一个标签页操作项（右键菜单与「⋯」下拉共用） */
+interface TabCommand {
+  command: string
+  label: string
+  /** 与上一组之间画分隔线（破坏性操作单独成组） */
+  divided?: boolean
+}
+
+/**
+ * 标签页操作命令表。
+ *
+ * 原来右键菜单和「⋯」下拉是两份手写清单，条目还不一样（下拉少了刷新 / 固定 / 关闭），
+ * 同一件操作换个入口就找不到。这里收敛成唯一一份定义，两个入口都从它渲染。
+ */
+function commandsFor(path: string): TabCommand[] {
+  const pinned = worktab.tabs.find((tab) => tab.path === path)?.pinned ?? false
+  const list: TabCommand[] = [{ command: 'refresh', label: t('layout.tagbar.refresh') }]
+
+  // 首页常驻，不提供固定 / 关闭
+  if (path !== HOME_PATH) {
+    list.push({ command: 'pin', label: pinned ? t('layout.tagbar.unpin') : t('layout.tagbar.pin') })
+    list.push({ command: 'close', label: t('layout.tagbar.close') })
+  }
+
+  list.push(
+    { command: 'closeOthers', label: t('layout.tagbar.closeOthers') },
+    { command: 'closeLeft', label: t('layout.tagbar.closeLeft') },
+    { command: 'closeRight', label: t('layout.tagbar.closeRight') },
+    { command: 'closeAll', label: t('layout.tagbar.closeAll'), divided: true },
+  )
+  return list
+}
 
 function go(path: string): void {
   worktab.setActive(path)
@@ -173,8 +216,22 @@ function apply(command: string, path: string): void {
   }
 }
 
-onMounted(() => document.addEventListener('click', hideContextMenu))
-onBeforeUnmount(() => document.removeEventListener('click', hideContextMenu))
+/** Esc 关闭右键菜单：自绘菜单不关会一直浮在页面上 */
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape' && contextVisible.value) {
+    hideContextMenu()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', hideContextMenu)
+  document.addEventListener('keydown', onKeydown)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', hideContextMenu)
+  document.removeEventListener('keydown', onKeydown)
+})
 </script>
 
 <style scoped>
@@ -202,35 +259,40 @@ onBeforeUnmount(() => document.removeEventListener('click', hideContextMenu))
 
 .tagbar-list {
   display: flex;
-  gap: 6px;
+  gap: var(--art-sp-2);
   align-items: center;
-  padding: 4px 0;
+  padding: var(--art-sp-1) 0;
 }
 
 .tagbar-item {
   display: flex;
   flex-shrink: 0;
-  gap: 5px;
+  gap: var(--art-sp-1);
   align-items: center;
   height: 28px;
-  padding: 0 10px;
-  font-size: 13px;
+  padding: 0 var(--art-sp-3);
+  font-size: var(--art-fs-dense);
   color: var(--art-sub);
   cursor: pointer;
   background: var(--art-hover-bg);
   border: 1px solid transparent;
   border-radius: calc(var(--art-radius) - 3px);
-  transition: all 0.15s ease;
+  /* 不用 `transition: all`：会让布局属性也进过渡队列，标签栏一多就容易掉帧 */
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
   user-select: none;
 }
 
 .tagbar-item:hover {
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
 }
 
+/* 选中态文字用 -text 变体：主色压在 light-9 底上只有 3.92:1，不够 AA */
 .tagbar-item.is-active {
   font-weight: 500;
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
   background: var(--el-color-primary-light-9);
   border-color: var(--el-color-primary-light-7);
 }
@@ -242,14 +304,34 @@ onBeforeUnmount(() => document.removeEventListener('click', hideContextMenu))
   white-space: nowrap;
 }
 
+/*
+ * 关闭按钮：命中区 22×22，悬停变中性色（不是红色）。
+ * 红色留给「确认后的破坏性操作」；把 × 也做成红底白叉，会让一排标签
+ * 在鼠标划过时不断闪红，既吵又让人不敢点。
+ */
 .tagbar-item-close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin-right: -4px;
+  font-size: 12px;
+  color: var(--art-muted);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
   border-radius: 50%;
-  transition: background 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .tagbar-item-close:hover {
-  color: #fff;
-  background: var(--el-color-danger);
+  color: var(--art-main);
+  background: var(--el-fill-color);
 }
 
 .tagbar-extra {
@@ -262,17 +344,17 @@ onBeforeUnmount(() => document.removeEventListener('click', hideContextMenu))
 
 /* 已收藏：金色实心星 + 悬停底色，与未收藏（灰色轮廓星）一眼可辨 */
 .tagbar-extra .is-favorite {
-  color: var(--art-warning);
+  color: var(--art-favorite);
   background: var(--art-hover-bg);
 }
 
 .tagbar-context {
   position: fixed;
   z-index: 3000;
-  min-width: 130px;
-  padding: 4px;
+  min-width: 132px;
+  padding: var(--art-sp-1);
   margin: 0;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   list-style: none;
   background: var(--art-card-bg);
   border: 1px solid var(--art-card-border);
@@ -281,14 +363,22 @@ onBeforeUnmount(() => document.removeEventListener('click', hideContextMenu))
 }
 
 .tagbar-context li {
-  padding: 7px 12px;
+  padding: var(--art-sp-2) var(--art-sp-3);
   color: var(--art-sub);
   cursor: pointer;
-  border-radius: calc(var(--art-radius) - 4px);
+  border-radius: var(--art-radius-sm);
+}
+
+/* 破坏性操作单独成组：一条分隔线比「换颜色」更稳，不会让菜单看起来在闪 */
+.tagbar-context li.is-divided {
+  padding-top: var(--art-sp-2);
+  margin-top: var(--art-sp-1);
+  border-top: 1px solid var(--art-line-subtle);
+  border-radius: 0 0 var(--art-radius-sm) var(--art-radius-sm);
 }
 
 .tagbar-context li:hover {
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
   background: var(--el-color-primary-light-9);
 }
 </style>

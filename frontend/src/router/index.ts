@@ -44,7 +44,7 @@ const routes: RouteRecordRaw[] = [
         path: 'profile',
         name: 'profile',
         component: () => import('@/pages/cccms/profile/index.vue'),
-        // 个人中心是静态路由（不写进 db/menu.php），所以不会出现在左侧菜单里；
+        // 个人中心是静态路由（不来自菜单表），所以不会出现在左侧菜单里；
         // 入口在右上角用户下拉。
         meta: { title: 'route.profile', icon: 'icon-user' },
       },
@@ -141,30 +141,37 @@ router.beforeEach(async (to) => {
   }
 
   const user = useUserStore()
-  if (!user.profile) {
-    try {
-      await user.fetchProfile()
-    } catch {
+
+  /**
+   * 用户信息与菜单互不依赖 → 必须并行。
+   *
+   * 原先两者串行 `await`，冷启动时白白多花一个完整 RTT；更要命的是页面 chunk
+   * 要等守卫 resolve 之后才开始下载（vue-router 先跑守卫再加载懒组件），
+   * 这个 RTT 会原样叠加到 LCP 上。改成并行后刷新链路缩短约 0.2~0.6s（依 RTT 而定）。
+   */
+  if (!user.profile || !dynamicAdded) {
+    const menuStore = useMenuStore()
+    const [, menus] = await Promise.all([
+      user.profile ? Promise.resolve() : user.fetchProfile().catch(() => null),
+      dynamicAdded ? Promise.resolve<MenuNode[]>([]) : menuStore.load().catch(() => [] as MenuNode[]),
+    ])
+
+    if (!user.profile) {
       return { path: '/login' }
     }
-  }
 
-  if (!dynamicAdded) {
-    const menuStore = useMenuStore()
-    try {
-      addDynamicRoutes(await menuStore.load())
-    } catch {
-      // 菜单拉取失败不阻塞导航：标记为已注册，交给 404 兜底，避免守卫反复重入
-      dynamicAdded = true
+    if (!dynamicAdded) {
+      // 菜单拉取失败时 menus 为空数组：标记为已注册，交给 404 兜底，避免守卫反复重入
+      addDynamicRoutes(menus)
+      // 动态路由注册完成后，按「路径」重新导航一次。
+      //
+      // 注意这里**不能**写成 `{ ...to, replace: true }`：
+      // 刷新时首帧匹配到的是 404 兜底路由，`to.name` 就是 'notFound'，
+      // 而 vue-router 解析 location 时 `name` 优先于 `path`，
+      // 结果会被再解析回兜底路由 —— 表现就是「动态路由明明注册了，刷新还是 404」。
+      // 所以这里只带 path/query/hash，强制按路径重新匹配。
+      return { path: to.path, query: to.query, hash: to.hash, replace: true }
     }
-    // 动态路由注册完成后，按「路径」重新导航一次。
-    //
-    // 注意这里**不能**写成 `{ ...to, replace: true }`：
-    // 刷新时首帧匹配到的是 404 兜底路由，`to.name` 就是 'notFound'，
-    // 而 vue-router 解析 location 时 `name` 优先于 `path`，
-    // 结果会被再解析回兜底路由 —— 表现就是「动态路由明明注册了，刷新还是 404」。
-    // 所以这里只带 path/query/hash，强制按路径重新匹配。
-    return { path: to.path, query: to.query, hash: to.hash, replace: true }
   }
 
   // 动态路由已注册（含上面按 path 重新导航后的那次执行）：做节点级权限校验。

@@ -38,9 +38,11 @@
         </el-button>
       </el-tooltip>
 
-      <!-- 3. 消息 + 导出任务（合并入口，抽屉内用 tabs 区分） -->
+      <!-- 3. 消息 + 导出任务（合并入口，抽屉内用 tabs 区分）
+           角标只统计**未读消息**：原来把「未完成导出任务」也加进来，
+           数字含义模糊（点开才知道 3 代表什么），也让人误以为有 3 条消息。 -->
       <el-tooltip :content="t('layout.notice')" placement="bottom">
-        <el-badge :value="messageBadge" :max="99" :hidden="messageBadge === 0">
+        <el-badge :value="unreadBadge" :max="99" :hidden="unreadBadge === 0">
           <el-button text circle @click="exportTaskStore.open('notice')">
             <el-icon :size="17"><i class="ri-notification-line" /></el-icon>
           </el-button>
@@ -89,7 +91,7 @@
         <el-empty
           v-if="menuStore.favoriteMenus.length === 0"
           :description="t('layout.favoriteEmpty')"
-          :image-size="46"
+          :image-size="60"
         />
         <div
           v-for="(item, index) in menuStore.favoriteMenus"
@@ -324,8 +326,8 @@ onBeforeUnmount(() => {
 
 /* ---- 消息 + 导出任务合并抽屉 ---- */
 
-/** 合并角标：未读消息 + 未完成导出任务，任一有值就提示 */
-const messageBadge = computed(() => noticeStore.unread + exportTaskStore.unfinished)
+/** 顶栏角标：只表示未读消息数（导出任务在抽屉的 tab 上单独计数） */
+const unreadBadge = computed(() => noticeStore.unread)
 </script>
 
 <style scoped>
@@ -349,7 +351,7 @@ const messageBadge = computed(() => noticeStore.unread + exportTaskStore.unfinis
 
 .header-breadcrumb {
   margin-left: 6px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
 }
 
 /* 移动端：隐藏面包屑，把顶栏空间让给右侧按钮 */
@@ -374,12 +376,12 @@ const messageBadge = computed(() => noticeStore.unread + exportTaskStore.unfinis
 }
 
 .header-search-section-count {
-  padding: 0 6px;
-  font-size: 11px;
-  line-height: 16px;
+  padding: 0 var(--art-sp-2);
+  font-size: var(--art-fs-caption);
+  line-height: 18px;
   color: var(--art-sub);
   background: var(--art-hover-bg);
-  border-radius: 8px;
+  border-radius: var(--art-radius-sm);
 }
 
 .header-search-list {
@@ -389,11 +391,11 @@ const messageBadge = computed(() => noticeStore.unread + exportTaskStore.unfinis
 
 .header-search-item {
   display: flex;
-  gap: 8px;
+  gap: var(--art-sp-2);
   align-items: center;
-  padding: 4px 6px 4px 10px;
+  padding: var(--art-sp-1) var(--art-sp-2) var(--art-sp-1) var(--art-sp-3);
   cursor: pointer;
-  border-radius: calc(var(--art-radius) - 4px);
+  border-radius: var(--art-radius-sm);
 }
 
 .header-search-item:hover {
@@ -433,6 +435,6 @@ const messageBadge = computed(() => noticeStore.unread + exportTaskStore.unfinis
 }
 
 .header-search-star {
-  color: var(--art-warning);
+  color: var(--art-favorite);
 }
 </style>

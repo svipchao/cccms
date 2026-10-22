@@ -24,6 +24,18 @@ NProgress.configure({
 /** 正在进行的任务令牌 */
 const pending = new Set<unknown>()
 
+/**
+ * 进度条的「出现延迟」。
+ *
+ * 本地 / 内网接口通常几十毫秒就回来，页面 chunk 也常常已经在缓存里 ——
+ * 这种情况下 start() + done() 落在同两帧内，用户看到的是一道**闪一下的光条**，
+ * 纯属视觉噪音（还伴随一次样式计算与重绘）。
+ * 延迟 120ms 再显示：快任务干脆不显示，慢任务该提示的一点不少。
+ */
+const SHOW_DELAY_MS = 120
+
+let showTimer: number | null = null
+
 /** 路由令牌：同一时刻只会有一次导航在跑，固定复用即可 */
 export const ROUTE_PROGRESS = 'route'
 
@@ -38,7 +50,13 @@ export function progressStart(token: unknown = ROUTE_PROGRESS): void {
   const first = pending.size === 0
   pending.add(token)
   if (first) {
-    NProgress.start()
+    showTimer = window.setTimeout(() => {
+      showTimer = null
+      // 定时器到点时任务可能已经结束了
+      if (pending.size > 0) {
+        NProgress.start()
+      }
+    }, SHOW_DELAY_MS)
   }
 }
 
@@ -48,6 +66,11 @@ export function progressDone(token: unknown = ROUTE_PROGRESS): void {
     return
   }
   if (pending.size === 0) {
+    if (showTimer !== null) {
+      window.clearTimeout(showTimer)
+      showTimer = null
+    }
+    // 未 start 时 done() 是空操作（nprogress 内部会先判 status）
     NProgress.done()
   }
 }

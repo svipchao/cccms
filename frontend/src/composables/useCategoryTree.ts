@@ -1,7 +1,14 @@
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { categoryDelete, categorySave, categoryTree, categoryUpdate, type CategoryModule, type CategoryNode } from '@/api/category'
+import {
+  categoryDelete,
+  categorySave,
+  categoryTree,
+  categoryUpdate,
+  type CategoryModule,
+  type CategoryNode,
+} from '@/api/category'
 import { useRecycle } from '@/composables/useRecycle'
 
 /** 虚拟节点：全部 / 未分类（后端约定 category_id：0=全部，-1=未分类） */
@@ -63,7 +70,11 @@ export function useCategoryTree(module: CategoryModule, options: UseCategoryTree
     // 回收站视图里只列已删分类，不掺「全部 / 未分类」这两个虚拟节点
     categoryRecycle.value
       ? categories.value
-      : [{ id: ALL_ID, name: t(`${prefix}.all`) }, { id: NONE_ID, name: t(`${prefix}.uncategorized`) }, ...categories.value],
+      : [
+          { id: ALL_ID, name: t(`${prefix}.all`) },
+          { id: NONE_ID, name: t(`${prefix}.uncategorized`) },
+          ...categories.value,
+        ],
   )
 
   const currentNodeName = computed(() => {

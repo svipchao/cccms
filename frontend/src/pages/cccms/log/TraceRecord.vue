@@ -100,7 +100,7 @@ function pretty(raw?: string): string {
 
 .trace-request {
   margin-top: 2px;
-  font-size: 11px;
+  font-size: var(--art-fs-caption);
   color: var(--art-muted);
 }
 
@@ -112,7 +112,7 @@ function pretty(raw?: string): string {
 .trace-msg {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--art-danger);
+  color: var(--art-danger-text);
 }
 
 .trace-collapse {

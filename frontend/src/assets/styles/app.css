@@ -36,30 +36,113 @@
 }
 
 .art-card-body {
-  padding: 16px;
+  padding: var(--art-sp-4);
 }
 
-/* ---- 路由过渡 ---- */
+/* ---- 页头（各页面的唯一 H1 位置） ----
+ * 页面的第一屏必须有一个明确的标题，且不要用卡片包住它：
+ * 卡片是「内容容器」，页面标题属于「导航层级」，两者混用会挤压首屏。
+ */
+.art-page-head {
+  display: flex;
+  gap: var(--art-sp-3);
+  align-items: center;
+  margin-bottom: var(--art-sp-4);
+}
+
+.art-page-title {
+  margin: 0;
+  font-size: var(--art-fs-h3);
+  font-weight: 600;
+  line-height: var(--art-lh-h3);
+  color: var(--art-main);
+}
+
+.art-page-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--art-sp-2);
+  align-items: center;
+  margin: var(--art-sp-1) 0 0;
+  font-size: var(--art-fs-caption);
+  line-height: var(--art-lh-caption);
+  color: var(--art-sub);
+}
+
+/* 页头里的竖线分隔符 */
+.art-page-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--art-line-subtle);
+}
+
+/* ---- 仅读屏可见 ----
+ * 用于「视觉上不该出现、但文档结构上必须有」的内容（如文档级 h1）。
+ * 不要用 display:none —— 那样读屏也读不到，等于没写。
+ */
+.art-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- 数字等宽 ----
+ * 表格、统计值、分页总数在数据刷新时不能左右抖动，
+ * 否则并排的卡片看起来像在「跳」。
+ */
+.el-table td,
+.el-pagination,
+.art-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* ---- 路由过渡 ----
+ * mode="out-in"：离开与进入是**串行**的，时长就是两段之和。
+ * 原 0.18s + 0.18s = 360ms，等于每次切页都先故意等三分之一秒（高频操作下非常明显）。
+ * 收到 0.11s + 0.11s ≈ 220ms：既保留「换页了」的空间感，又不至于让人觉得卡。
+ */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+    opacity 0.11s ease,
+    transform 0.11s ease;
 }
 
 .fade-slide-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(6px);
 }
 
 .fade-slide-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-3px);
 }
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
+}
+
+/* 系统设置了「减少动态效果」时直接不要过渡：动画对这类用户是负担，不是体验 */
+@media (prefers-reduced-motion: reduce) {
+  .fade-slide-enter-active,
+  .fade-slide-leave-active,
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: none;
+  }
+
+  .fade-slide-enter-from,
+  .fade-slide-leave-to {
+    transform: none;
+  }
 }
 
 .fade-enter-from,

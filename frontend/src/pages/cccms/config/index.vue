@@ -512,11 +512,14 @@ onUnmounted(() => {
   height: 36px;
   padding: 0 10px;
   margin-bottom: 2px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   color: var(--art-sub);
   cursor: pointer;
   border-radius: calc(var(--art-radius) - 2px);
-  transition: all 0.15s ease;
+  /* 只过渡真正会变的属性，避免 `transition: all` 把布局属性也纳入过渡 */
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .cfg-groups li:hover {
@@ -525,7 +528,7 @@ onUnmounted(() => {
 
 .cfg-groups li.is-active {
   font-weight: 600;
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
   background: var(--el-color-primary-light-9);
 }
 
@@ -550,7 +553,7 @@ onUnmounted(() => {
 .cfg-section-title {
   padding-left: 10px;
   margin: 18px 0 14px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   font-weight: 600;
   color: var(--art-main);
   border-left: 3px solid var(--el-color-primary);
@@ -570,7 +573,8 @@ onUnmounted(() => {
 .cfg-label-key {
   padding: 0;
   font-family: Consolas, Monaco, monospace;
-  font-size: 11px;
+  /* 11px 低于可读下限，配置键名是要逐个核对的内容 */
+  font-size: var(--art-fs-caption);
   color: var(--art-muted);
   cursor: pointer;
   background: transparent;
@@ -578,7 +582,7 @@ onUnmounted(() => {
 }
 
 .cfg-label-key:hover {
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
   text-decoration: underline;
 }
 

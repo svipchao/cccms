@@ -60,7 +60,7 @@
             {{ t('data_rule.bindRole', { name: row.role_name }) }}
           </el-tag>
           <el-tag v-if="row.dept_names" size="small" effect="plain" class="bind-tag">
-            {{ t('data_rule.bindDept', { name: row.dept_names }) }}
+            {{ t('data_rule.bindDept', { name: row.dept_names.join('、') }) }}
           </el-tag>
         </template>
       </template>

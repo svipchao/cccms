@@ -1,92 +1,93 @@
 <template>
   <div class="art-table">
-    <!--
-      搜索区：与表格卡片同级，单独一张卡放在表格上方。
-      搜索项按列的 filter 配置自动生成，和列头筛选共用同一份 query，
-      两边天然联动（列头改了，这里的值跟着变；这里查询了，列头图标也会高亮）。
-      条件多时折叠，只显示前几项，点「展开」看全部。
-    -->
-    <el-card v-if="searchColumns.length || $slots['search-extra']" class="art-table-search" shadow="never">
-      <!-- 搜索区同理：查询 / 重置按钮与 #search-extra 里的页面控件都跟随按钮尺寸偏好 -->
-      <el-config-provider :size="effectiveButtonSize">
-        <!--
+    <el-card class="art-table-main" shadow="never">
+      <!--
+        搜索区：与表格放在**同一张卡**里，用一条分隔线区分。
+        原来是上下两张卡 = 两条边框 + 20px 缝隙，视觉噪音翻倍，还白占垂直空间。
+        搜索项按列的 filter 配置自动生成，和列头筛选共用同一份 query，
+        两边天然联动（列头改了，这里的值跟着变；这里查询了，列头图标也会高亮）。
+        条件多时折叠，只显示前几项，点「展开」看全部。
+      -->
+      <div v-if="searchColumns.length || $slots['search-extra']" class="art-table-search">
+        <!-- 搜索区同理：查询 / 重置按钮与 #search-extra 里的页面控件都跟随按钮尺寸偏好 -->
+        <el-config-provider :size="effectiveButtonSize">
+          <!--
         页面自定义搜索项（如层级切换）通过 #search-extra 注入，排在自动生成的搜索项前面；
         没有 filter 列配置的页面也能用这张搜索卡承载自己的搜索 UI。
       -->
-        <slot name="search-extra" />
-        <el-form v-if="searchColumns.length" class="art-table-search-form" :inline="true" @submit.prevent>
-          <el-form-item
-            v-for="col in visibleSearchColumns"
-            :key="col.prop"
-            :label="col.label"
-            class="art-table-search-item"
-          >
-            <!-- 枚举：多选下拉（与列头弹层同一套取值，多值按逗号拼接） -->
-            <el-select
-              v-if="col.filter?.type === 'enum'"
-              v-model="searchEnum[col.prop]"
-              multiple
-              collapse-tags
-              collapse-tags-tooltip
-              clearable
-              :placeholder="t('table.filterAll')"
+          <slot name="search-extra" />
+          <el-form v-if="searchColumns.length" class="art-table-search-form" :inline="true" @submit.prevent>
+            <el-form-item
+              v-for="col in visibleSearchColumns"
+              :key="col.prop"
+              :label="col.label"
+              class="art-table-search-item"
             >
-              <el-option
-                v-for="opt in col.filter?.options ?? []"
-                :key="opt.value"
-                :label="opt.label"
-                :value="opt.value"
+              <!-- 枚举：多选下拉（与列头弹层同一套取值，多值按逗号拼接） -->
+              <el-select
+                v-if="col.filter?.type === 'enum'"
+                v-model="searchEnum[col.prop]"
+                multiple
+                collapse-tags
+                collapse-tags-tooltip
+                clearable
+                :placeholder="t('table.filterAll')"
+              >
+                <el-option
+                  v-for="opt in col.filter?.options ?? []"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
+              <!-- 日期：范围选择（带时分秒，起止分别写入 startKey / endKey） -->
+              <el-date-picker
+                v-else-if="col.filter?.type === 'date'"
+                v-model="searchDate[col.prop]"
+                v-bind="datePickerProps"
               />
-            </el-select>
-            <!-- 日期：范围选择（带时分秒，起止分别写入 startKey / endKey） -->
-            <el-date-picker
-              v-else-if="col.filter?.type === 'date'"
-              v-model="searchDate[col.prop]"
-              v-bind="datePickerProps"
-            />
-            <!-- 长文本（JSON 片段）：多行输入，Ctrl+Enter 提交，避免换行即搜索 -->
-            <el-input
-              v-else-if="col.filter?.type === 'textarea'"
-              v-model="searchText[col.prop]"
-              type="textarea"
-              :rows="col.filter?.rows ?? 3"
-              class="art-table-search-textarea"
-              :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
-              @keydown.ctrl.enter="submitSearch"
-            />
-            <!-- 文本：模糊查询 -->
-            <el-input
-              v-else
-              v-model="searchText[col.prop]"
-              clearable
-              :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
-              @keyup.enter="submitSearch"
-            />
-          </el-form-item>
-        </el-form>
-        <div v-if="searchColumns.length" class="art-table-search-actions">
-          <el-button type="primary" :icon="Search" @click="submitSearch">
-            {{ t('common.search') }}
-          </el-button>
-          <el-button :icon="RefreshLeft" @click="resetSearch">{{ t('table.reset') }}</el-button>
-          <!-- 搜索条件超过折叠阈值时才给展开入口 -->
-          <el-button
-            v-if="searchColumns.length > SEARCH_COLLAPSE_LIMIT"
-            link
-            type="primary"
-            @click="searchExpanded = !searchExpanded"
-          >
-            {{ searchExpanded ? t('table.searchCollapse') : t('table.searchExpand') }}
-            <el-icon class="art-table-search-arrow">
-              <ArrowUp v-if="searchExpanded" />
-              <ArrowDown v-else />
-            </el-icon>
-          </el-button>
-        </div>
-      </el-config-provider>
-    </el-card>
+              <!-- 长文本（JSON 片段）：多行输入，Ctrl+Enter 提交，避免换行即搜索 -->
+              <el-input
+                v-else-if="col.filter?.type === 'textarea'"
+                v-model="searchText[col.prop]"
+                type="textarea"
+                :rows="col.filter?.rows ?? 3"
+                class="art-table-search-textarea"
+                :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
+                @keydown.ctrl.enter="submitSearch"
+              />
+              <!-- 文本：模糊查询 -->
+              <el-input
+                v-else
+                v-model="searchText[col.prop]"
+                clearable
+                :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
+                @keyup.enter="submitSearch"
+              />
+            </el-form-item>
+          </el-form>
+          <div v-if="searchColumns.length" class="art-table-search-actions">
+            <el-button type="primary" :icon="Search" @click="submitSearch">
+              {{ t('common.search') }}
+            </el-button>
+            <el-button :icon="RefreshLeft" @click="resetSearch">{{ t('table.reset') }}</el-button>
+            <!-- 搜索条件超过折叠阈值时才给展开入口 -->
+            <el-button
+              v-if="searchColumns.length > SEARCH_COLLAPSE_LIMIT"
+              link
+              type="primary"
+              @click="searchExpanded = !searchExpanded"
+            >
+              {{ searchExpanded ? t('table.searchCollapse') : t('table.searchExpand') }}
+              <el-icon class="art-table-search-arrow">
+                <ArrowUp v-if="searchExpanded" />
+                <ArrowDown v-else />
+              </el-icon>
+            </el-button>
+          </div>
+        </el-config-provider>
+      </div>
 
-    <el-card class="art-table-main" shadow="never">
       <!--
         工具栏尺寸：套一层 el-config-provider。
         它是**无渲染组件**（不产生 DOM），所以不会破坏 .art-table-toolbar 的 flex 布局；
@@ -275,88 +276,88 @@
                 <slot v-if="col.headerSlot" :name="col.headerSlot" :column="col" :label="col.label" />
                 <template v-else>
                   <span class="art-table-head-label" :style="{ textAlign: headAlignOf(col) }">{{ col.label }}</span>
-                <!--
+                  <!--
                   日期范围的日历面板是双月并排 + 时间列，弹层要放宽才放得下，
                   其余类型（枚举 / 文本）保持窄面板。
                 -->
-                <el-popover
-                  :width="col.filter?.type === 'date' ? 760 : 230"
-                  trigger="click"
-                  placement="bottom-start"
-                  @show="syncFilterDraft(col)"
-                >
-                  <template #reference>
-                    <el-icon
-                      class="art-table-head-filter"
-                      :class="{ 'is-active': isFilterActive(col) }"
-                      :title="t('table.columnFilter')"
-                      @click.stop
-                    >
-                      <Filter />
-                    </el-icon>
-                  </template>
-                  <template #default="{ hide }">
-                    <div class="art-table-head-panel">
-                      <!--
+                  <el-popover
+                    :width="col.filter?.type === 'date' ? 760 : 230"
+                    trigger="click"
+                    placement="bottom-start"
+                    @show="syncFilterDraft(col)"
+                  >
+                    <template #reference>
+                      <el-icon
+                        class="art-table-head-filter"
+                        :class="{ 'is-active': isFilterActive(col) }"
+                        :title="t('table.columnFilter')"
+                        @click.stop
+                      >
+                        <Filter />
+                      </el-icon>
+                    </template>
+                    <template #default="{ hide }">
+                      <div class="art-table-head-panel">
+                        <!--
                         枚举：复选下拉框。这里必须 teleported=false ——
                         下拉面板默认挂到 body，会被 el-popover 的「点击外部即关闭」判成外部点击，
                         勾第一个选项弹层就没了；留在弹层内部才能连续多选。
                       -->
-                      <el-select
-                        v-if="col.filter?.type === 'enum'"
-                        v-model="enumDraft[col.prop]"
-                        size="small"
-                        multiple
-                        collapse-tags
-                        collapse-tags-tooltip
-                        clearable
-                        :teleported="false"
-                        :placeholder="t('table.filterAll')"
-                      >
-                        <el-option
-                          v-for="opt in col.filter?.options ?? []"
-                          :key="opt.value"
-                          :label="opt.label"
-                          :value="opt.value"
-                        />
-                      </el-select>
-                      <!-- 日期：范围选择（起止写 start/end 两个字段） -->
-                      <div v-else-if="col.filter?.type === 'date'" class="art-table-date-picker">
-                        <!--
+                        <el-select
+                          v-if="col.filter?.type === 'enum'"
+                          v-model="enumDraft[col.prop]"
+                          size="small"
+                          multiple
+                          collapse-tags
+                          collapse-tags-tooltip
+                          clearable
+                          :teleported="false"
+                          :placeholder="t('table.filterAll')"
+                        >
+                          <el-option
+                            v-for="opt in col.filter?.options ?? []"
+                            :key="opt.value"
+                            :label="opt.label"
+                            :value="opt.value"
+                          />
+                        </el-select>
+                        <!-- 日期：范围选择（起止写 start/end 两个字段） -->
+                        <div v-else-if="col.filter?.type === 'date'" class="art-table-date-picker">
+                          <!--
                           同样必须 teleported=false：日历面板默认挂到 body，
                           点面板会被 el-popover 判成「点击外部」而直接关掉弹层。
                         -->
-                        <el-date-picker v-model="dateDraft[col.prop]" v-bind="datePickerProps" :teleported="false" />
+                          <el-date-picker v-model="dateDraft[col.prop]" v-bind="datePickerProps" :teleported="false" />
+                        </div>
+                        <!-- 长文本（JSON 片段）：多行输入，Ctrl+Enter 应用筛选 -->
+                        <el-input
+                          v-else-if="col.filter?.type === 'textarea'"
+                          v-model="textDraft[col.prop]"
+                          type="textarea"
+                          size="small"
+                          :rows="col.filter?.rows ?? 3"
+                          :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
+                          @keydown.ctrl.enter="applyFilter(col, hide)"
+                        />
+                        <!-- 文本：模糊查询输入框 -->
+                        <el-input
+                          v-else
+                          v-model="textDraft[col.prop]"
+                          size="small"
+                          clearable
+                          :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
+                          @keyup.enter="applyFilter(col, hide)"
+                        />
+                        <!-- 规范：重置在左、筛选在右，均为按钮形式（筛选为主题色 primary） -->
+                        <div class="art-table-head-actions">
+                          <el-button size="small" @click="resetFilter(col, hide)">{{ t('table.reset') }}</el-button>
+                          <el-button size="small" type="primary" @click="applyFilter(col, hide)">
+                            {{ t('table.filterConfirm') }}
+                          </el-button>
+                        </div>
                       </div>
-                      <!-- 长文本（JSON 片段）：多行输入，Ctrl+Enter 应用筛选 -->
-                      <el-input
-                        v-else-if="col.filter?.type === 'textarea'"
-                        v-model="textDraft[col.prop]"
-                        type="textarea"
-                        size="small"
-                        :rows="col.filter?.rows ?? 3"
-                        :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
-                        @keydown.ctrl.enter="applyFilter(col, hide)"
-                      />
-                      <!-- 文本：模糊查询输入框 -->
-                      <el-input
-                        v-else
-                        v-model="textDraft[col.prop]"
-                        size="small"
-                        clearable
-                        :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
-                        @keyup.enter="applyFilter(col, hide)"
-                      />
-                      <!-- 规范：重置在左、筛选在右，均为按钮形式（筛选为主题色 primary） -->
-                      <div class="art-table-head-actions">
-                        <el-button size="small" @click="resetFilter(col, hide)">{{ t('table.reset') }}</el-button>
-                        <el-button size="small" type="primary" @click="applyFilter(col, hide)">
-                          {{ t('table.filterConfirm') }}
-                        </el-button>
-                      </div>
-                    </div>
-                  </template>
-                </el-popover>
+                    </template>
+                  </el-popover>
                 </template>
               </template>
 
@@ -1818,16 +1819,16 @@ watch(
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  padding: 12px 16px 14px;
+  padding: var(--art-sp-3) var(--art-sp-4) var(--art-sp-4);
 }
 
 .art-table-toolbar {
   display: flex;
   flex-shrink: 0;
-  gap: 12px;
+  gap: var(--art-sp-3);
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: var(--art-sp-2);
 }
 
 .art-table-toolbar-left {
@@ -1869,18 +1870,19 @@ watch(
   background-color: var(--art-hover-bg);
 }
 
-/* ---- 搜索卡片（表格上方独立一张卡，折叠项用 v-show 隐藏，展开后换行铺开） ---- */
+/* ---- 搜索区（与表格同一张卡，靠一条分隔线与工具栏分开） ----
+ * 折叠项用 v-show 隐藏，展开后换行铺开。
+ */
 .art-table-search {
-  flex-shrink: 0;
-  margin-bottom: 10px;
-}
-
-.art-table-search :deep(.el-card__body) {
   display: flex;
-  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: var(--art-sp-2);
   align-items: flex-start;
   /* 下方留少一点：表单项自身有 margin-bottom，合计约 12px */
-  padding: 14px 16px 6px;
+  padding-bottom: var(--art-sp-3);
+  margin-bottom: var(--art-sp-3);
+  border-bottom: 1px solid var(--art-line-subtle);
 }
 
 .art-table-search-form {
@@ -1890,12 +1892,12 @@ watch(
 
 /* el-form inline 的默认间距偏松，收紧一点 */
 .art-table-search-form :deep(.el-form-item) {
-  margin-right: 12px;
-  margin-bottom: 8px;
+  margin-right: var(--art-sp-3);
+  margin-bottom: var(--art-sp-2);
 }
 
 .art-table-search-form :deep(.el-form-item__label) {
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   color: var(--art-sub);
 }
 
@@ -1918,7 +1920,7 @@ watch(
 .art-table-search-actions {
   display: flex;
   flex-shrink: 0;
-  gap: 8px;
+  gap: var(--art-sp-2);
   align-items: center;
   /* 与第一个搜索项的控制区垂直居中对齐 */
   padding-top: 1px;
@@ -1933,11 +1935,12 @@ watch(
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
-  padding-top: 12px;
+  padding-top: var(--art-sp-3);
 }
 
 .art-table-pager-left {
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
+  font-variant-numeric: tabular-nums;
   color: var(--art-sub);
 }
 
@@ -1960,7 +1963,7 @@ watch(
 
 .art-column-row--head {
   margin-bottom: 4px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   font-weight: 600;
   color: var(--art-main);
   border-bottom: 1px solid var(--art-card-border);
@@ -2010,7 +2013,7 @@ watch(
 
 .art-column-name {
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   color: var(--art-main);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2020,7 +2023,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   line-height: 1.4;
   color: var(--art-sub);
   text-align: center;
@@ -2051,14 +2054,14 @@ watch(
 }
 
 .art-column-clear-all {
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   font-weight: 400;
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
 }
 
 .art-column-clear:hover:not(:disabled),
 .art-column-clear-all:hover:not(:disabled) {
-  color: var(--el-color-danger);
+  color: var(--art-danger-text);
 }
 
 .art-column-clear:disabled,
@@ -2142,7 +2145,7 @@ watch(
 
 /* 密度下拉里当前生效的档位：加粗 + 主题色，一眼看出现在用的是哪档 */
 .art-table-density-on {
-  color: var(--el-color-primary);
+  color: var(--art-primary-text);
   font-weight: 600;
 }
 
@@ -2157,7 +2160,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding-bottom: 6px;
-  font-size: 13px;
+  font-size: var(--art-fs-dense);
   font-weight: 600;
   color: var(--art-main);
   border-bottom: 1px solid var(--art-card-border);

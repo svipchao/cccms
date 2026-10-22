@@ -1,6 +1,14 @@
 <template>
   <div class="layout-content">
     <div class="layout-content-inner">
+      <!--
+        文档级标题（仅给读屏软件）。
+        后台页面靠「面包屑 + 标签栏」表达位置，视觉上不需要再来一行大标题，
+        但文档大纲里不能没有 h1 —— 否则读屏用户拿不到「这是哪一页」。
+        工作台自己渲染了可见的 h1（问候语），这里跳过，避免出现两个 h1。
+      -->
+      <h1 v-if="srTitle" class="art-sr-only">{{ srTitle }}</h1>
+
       <router-view v-slot="{ Component, route }">
         <transition name="fade-slide" mode="out-in" appear>
           <keep-alive :include="worktab.cached" :max="15">
@@ -35,9 +43,21 @@
  *
  * 内容区自身不滚动，滚动交给页面：列表页用 .art-fill，普通页用 .art-scroll。
  */
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { translateTitle } from '@/locales/title'
 import { useWorktabStore } from '@/stores/worktab'
 
 const worktab = useWorktabStore()
+const route = useRoute()
+
+/** 当前页面标题；工作台有自己的可见 h1，不再重复输出 */
+const srTitle = computed(() => {
+  if (route.name === 'dashboard') {
+    return ''
+  }
+  return translateTitle(String(route.meta?.title ?? ''))
+})
 </script>
 
 <style scoped>

@@ -1,0 +1,14 @@
+.venv
+__pycache__
+
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.env
+# Dev-only generated JWT / data-encryption / audit-signing keys. If they ship
+# inside the image, prod silently reuses dev keys and passes the strength check.
+.dev-secrets.env
+.dev-secrets.lock
+.dev-secrets.tmp
+tests
