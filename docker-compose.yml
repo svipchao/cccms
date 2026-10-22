@@ -18,7 +18,9 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     ports:
-      - "3306:3306"
+      # 只绑回环：容器之间走 service 名（mysql:3306），宿主机调试用 127.0.0.1:3306。
+      # 写成 "3306:3306" 会监听 0.0.0.0，等于把数据库端口暴露到公网网卡。
+      - "127.0.0.1:3306:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
@@ -31,7 +33,8 @@ services:
     volumes:
       - redis-data:/data
     ports:
-      - "6379:6379"
+      # 同上：Redis 无鉴权，绝不能监听 0.0.0.0。
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
