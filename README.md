@@ -6,7 +6,7 @@
 
 插件化 · 注解驱动 · fail-closed · 数据权限深入模型层
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](server/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-%3E%3D%208.1-777bb4.svg)](https://www.php.net/)
 [![Webman](https://img.shields.io/badge/Webman-2.x-22c55e.svg)](https://www.workerman.net/)
 [![Vue](https://img.shields.io/badge/Vue-3.5-42b883.svg)](https://vuejs.org/)
@@ -231,7 +231,7 @@ npm run format:check && npm run lint && npm run i18n:check && npm run test:cover
 
 ## 开源协议
 
-本项目基于 [MIT License](server/LICENSE) 开源。
+本项目基于 [MIT License](LICENSE) 开源。
 
 ## 致谢
 
