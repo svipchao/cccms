@@ -8,7 +8,7 @@
  */
 export default {
   login: 'Sign in',
-  dashboard: 'Dashboard',
+  dashboard: 'Console',
   profile: 'Profile',
   forbidden: 'Access denied',
   notFound: 'Page not found',

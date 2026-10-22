@@ -258,6 +258,12 @@ class Settings(BaseSettings):
     def _validate_prod_hardening(self) -> list[str]:
         """生产环境的额外硬门槛：默认凭据、调试开关与 CORS 通配是接管前奏。"""
         problems: list[str] = []
+        if DEV_SECRETS_FILE.is_file():
+            # env_file 里第一位就是它，且不区分环境：镜像/主机上残留就等于用开发密钥跑生产。
+            problems.append(
+                f"生产环境检测到开发密钥文件 {DEV_SECRETS_FILE.name}："
+                "它会被 env_file 自动读入并顶替正式密钥，请先从镜像与主机移除"
+            )
         if self.debug:
             problems.append("CCCMS_DEBUG must be false in production")
         if not self.secret_key or len(self.secret_key.encode()) < 32:

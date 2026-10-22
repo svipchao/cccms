@@ -37,7 +37,7 @@ const routes: RouteRecordRaw[] = [
         path: 'dashboard',
         name: 'dashboard',
         component: () => import('@/pages/cccms/dashboard/index.vue'),
-        // 标题与菜单里的「工作台」保持一致（面包屑 / 标签页 / document.title 都取这里）
+        // 标题与菜单里的「控制台」保持一致（面包屑 / 标签页 / document.title 都取这里）
         meta: { title: 'route.dashboard', icon: 'icon-home' },
       },
       {

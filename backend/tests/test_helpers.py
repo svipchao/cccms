@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 
 import pytest
 from sqlalchemy import select
 from starlette.requests import Request
 
+from cccms import config
 from cccms.config import DEFAULT_ADMIN_PASSWORD, Settings
 from cccms.core import audit, auth_deps
 from cccms.core.audit import LogEvent
@@ -214,7 +216,10 @@ def test_export_csv_line_keeps_columns_and_masking() -> None:
     assert "13800138000" not in masked
 
 
-def test_prod_hardening_rejects_default_credentials() -> None:
+def test_prod_hardening_rejects_default_credentials(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    # 本机 backend/.dev-secrets.env 是真实存在的发展期产物；断言"prod 配置合规"
+    # 前先把它指到不存在的路径，否则测的是这台机器而不是代码。
+    monkeypatch.setattr(config, "DEV_SECRETS_FILE", tmp_path / "absent.env")
     insecure = Settings(
         env="prod",
         jwt_secret="j" * 40,
@@ -241,6 +246,26 @@ def test_prod_hardening_rejects_default_credentials() -> None:
         admin_password="Str0ng-Passw0rd!",
     )
     assert hardened.validate_secrets() == []
+
+
+def test_prod_rejects_leftover_dev_secrets_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    # 镜像里带着 .dev-secrets.env 时，env_file 会静默用开发密钥跑生产 → 必须硬失败。
+    dev_secrets = tmp_path / ".dev-secrets.env"
+    dev_secrets.write_text("CCCMS_JWT_SECRET=dev\n", encoding="utf-8")
+    monkeypatch.setattr(config, "DEV_SECRETS_FILE", dev_secrets)
+
+    settings = Settings(
+        env="prod",
+        jwt_secret="j" * 40,
+        data_encrypt_key="data-key",
+        audit_signing_key="audit-key",
+        cookie_secure=True,
+        secret_key="s" * 40,
+        cors_origins=["https://admin.example.com"],
+        admin_password="Str0ng-Passw0rd!",
+    )
+    problems = settings.validate_secrets()
+    assert any("dev-secrets.env" in item for item in problems)
 
 
 def test_meta_int_tolerates_untrusted_chunk_metadata() -> None:

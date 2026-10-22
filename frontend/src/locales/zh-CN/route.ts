@@ -7,7 +7,7 @@
  */
 export default {
   login: '登录',
-  dashboard: '工作台',
+  dashboard: '控制台',
   profile: '个人中心',
   forbidden: '无权访问',
   notFound: '页面不存在',

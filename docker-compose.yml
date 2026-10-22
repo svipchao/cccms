@@ -1,5 +1,11 @@
-# 本地/单机编排：API + 调度器 + MySQL + Redis
-# 生产请把密钥放进 secret 管理，不要用这里的默认值。
+# 单机编排：API + 调度器 + MySQL + Redis
+#
+# 配置来源是 **backend/.env.prod**（生产语义），不是开发用的 backend/.env：
+# 后者带 CCCMS_DEBUG=true 且只配了本地数据库，混进来会让 prod 硬门槛直接拒绝启动
+# （这是预期行为，别去放宽校验，改配置）。
+#
+#   cp backend/.env.prod.example backend/.env.prod   # 填密钥
+#   docker compose up -d
 services:
   mysql:
     image: mysql:8.4
@@ -35,7 +41,7 @@ services:
   migrate:
     build: ./backend
     command: ["python", "-m", "cccms.cli", "init-db"]
-    env_file: [./backend/.env]
+    env_file: [./backend/.env.prod]
     environment:
       CCCMS_ENV: prod
       CCCMS_DB_HOST: mysql
@@ -54,7 +60,7 @@ services:
       - --port
       - "8000"
       - --proxy-headers
-    env_file: [./backend/.env]
+    env_file: [./backend/.env.prod]
     environment:
       CCCMS_ENV: prod
       CCCMS_DB_HOST: mysql
@@ -72,7 +78,7 @@ services:
   scheduler:
     build: ./backend
     command: ["python", "-m", "cccms.scheduler"]
-    env_file: [./backend/.env]
+    env_file: [./backend/.env.prod]
     environment:
       CCCMS_ENV: prod
       CCCMS_DB_HOST: mysql

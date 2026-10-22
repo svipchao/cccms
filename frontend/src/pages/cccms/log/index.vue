@@ -1,12 +1,10 @@
 <template>
   <div class="art-fill">
     <!-- 标签页：操作日志 / 登录分析（后者需要 cccms:log:analysis，无权限时不渲染入口） -->
-    <div v-if="canAnalyse" class="log-tabs">
-      <el-radio-group v-model="activeTab" size="small">
-        <el-radio-button value="operation">{{ t('log.tabOperation') }}</el-radio-button>
-        <el-radio-button value="login">{{ t('log.tabLogin') }}</el-radio-button>
-      </el-radio-group>
-    </div>
+    <ArtTabs v-if="canAnalyse" v-model="activeTab" bar-only class="log-tabs">
+      <el-tab-pane :label="t('log.tabOperation')" name="operation" />
+      <el-tab-pane :label="t('log.tabLogin')" name="login" />
+    </ArtTabs>
 
     <ArtTable
       v-show="activeTab === 'operation'"
@@ -41,13 +39,10 @@
         </el-button>
       </template>
 
-      <!-- 语义化操作：注解标题 + 权限节点 + 结果说明（登录失败原因等） -->
+      <!-- 语义化操作：注解标题 + 权限节点 -->
       <template #action_name="{ row }">
         <div class="log-title">{{ row.title || '—' }}</div>
         <div v-if="row.node" class="log-node">{{ row.node }}</div>
-        <div v-if="row.message" class="log-msg" :class="row.status === 1 ? 'is-ok' : 'is-danger'">
-          {{ row.message }}
-        </div>
       </template>
 
       <!-- 操作人：用户名 + IP（IP 的模糊搜索在顶部搜索区） -->
@@ -74,7 +69,7 @@
         <div class="log-path" :title="row.path">{{ row.path }}</div>
       </template>
 
-      <!-- 结果：成功/失败一行、HTTP 状态码一行；结果标签可点，按该结果筛选（再点取消） -->
+      <!-- 结果：成功/失败与状态码同一标签一行、结果说明（如「参数校验失败」）另起一行 -->
       <template #result="{ row }">
         <div>
           <el-tag
@@ -92,9 +87,17 @@
             @click.stop="filterByStatus(row.status)"
           >
             {{ row.status === 1 ? t('log.success') : t('log.failed') }}
+            <span class="log-code">{{ row.status_code }}</span>
           </el-tag>
         </div>
-        <div class="log-code" :class="statusTone(row.status_code)">{{ row.status_code }}</div>
+        <div
+          v-if="row.message"
+          class="log-msg"
+          :class="row.status === 1 ? 'is-ok' : 'is-danger'"
+          :title="row.message"
+        >
+          {{ row.message }}
+        </div>
       </template>
 
       <!-- 追踪：操作ID（本次操作链路）+ 会话ID（页面会话轨迹），行首标注字段，无权限时只展示 -->
@@ -411,6 +414,7 @@ import { LineChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import ArtTable from '@/components/core/ArtTable.vue'
+import ArtTabs from '@/components/core/ArtTabs.vue'
 import { useTable } from '@/composables/useTable'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
@@ -496,8 +500,7 @@ const columns = computed<ArtTableColumn[]>(() => [
   {
     prop: 'status',
     label: t('log.result'),
-    width: 120,
-    align: 'center',
+    width: 170,
     slot: 'result',
     filter: {
       type: 'enum',
@@ -1098,12 +1101,6 @@ function statusTag(code?: number): 'success' | 'warning' | 'danger' {
   return code < 400 ? 'warning' : 'danger'
 }
 
-/** 状态码文字色（与标签同色系）：合并列里再套一个标签会显得拥挤 */
-function statusTone(code?: number): string {
-  const tone = statusTag(code)
-  return tone === 'success' ? 'is-ok' : tone === 'warning' ? 'is-warn' : 'is-danger'
-}
-
 /* ---- 删除 ---- */
 async function onBatchDelete(): Promise<void> {
   if (selection.value.length === 0) {
@@ -1136,10 +1133,9 @@ async function onDeleteOne(id: number): Promise<void> {
 </script>
 
 <style scoped>
-/* ---- 标签页 ---- */
+/* ---- 标签页（ArtTabs 自带 header 下边距，这里只固定不参与伸缩） ---- */
 .log-tabs {
   flex: none;
-  margin-bottom: 12px;
 }
 
 /* ---- 登录分析 ---- */
@@ -1276,24 +1272,12 @@ async function onDeleteOne(id: number): Promise<void> {
   white-space: nowrap;
 }
 
-/* 结果列：状态标签一行、状态码一行 */
+/* 结果列：状态码跟在「成功/失败」标签内同一行；结果说明另起一行 */
 .log-code {
-  display: block;
-  margin-top: 2px;
+  margin-left: 4px;
   font-family: Consolas, Monaco, monospace;
-  font-size: 12px;
-}
-
-.log-code.is-ok {
-  color: var(--art-success-text);
-}
-
-.log-code.is-warn {
-  color: var(--art-warning-text);
-}
-
-.log-code.is-danger {
-  color: var(--art-danger-text);
+  font-size: 11px;
+  opacity: 0.9;
 }
 
 .detail-body {
@@ -1308,8 +1292,11 @@ async function onDeleteOne(id: number): Promise<void> {
 }
 
 .log-msg {
-  margin-top: 1px;
+  margin-top: 2px;
+  overflow: hidden;
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 说明跟随记录结果：成功绿、失败红（「登录成功」不应标红） */

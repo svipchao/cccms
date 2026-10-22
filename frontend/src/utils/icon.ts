@@ -113,5 +113,14 @@ export function resolveIcon(name?: string): string {
   if (name.startsWith('ri-')) {
     return name
   }
-  return ICON_MAP[name] ?? ICON_MAP[`icon-${name}`] ?? 'ri-menu-line'
+  const mapped = ICON_MAP[name] ?? ICON_MAP[`icon-${name}`]
+  if (mapped) {
+    return mapped
+  }
+  // 兼容库里直接按 RemixIcon 命名的值（seed 的 `icon-settings-3-line`、
+  // 菜单管理里手填的 `icon-xxx`）：去掉前缀就是字体类名，不必每个都登记到 ICON_MAP。
+  if (name.startsWith('icon-')) {
+    return `ri-${name.slice('icon-'.length)}`
+  }
+  return 'ri-menu-line'
 }

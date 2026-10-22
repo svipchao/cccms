@@ -13,6 +13,8 @@ __pycache__/
 # backend/.dev-secrets.env 是 dev 自动生成的密钥落盘文件，两者都不得入库。
 # （backend/.env.example 是模板，必须入库。）
 backend/.env
+# 生产配置：由 backend/.env.prod.example 复制后填写，含真实密钥，不入库。
+backend/.env.prod
 backend/.dev-secrets.env
 backend/.dev-secrets.lock
 backend/.dev-secrets.tmp

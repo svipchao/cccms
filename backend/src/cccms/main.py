@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 
+from cccms import __version__
 from cccms.api import BUSINESS_ROUTERS, PUBLIC_ROUTERS
 from cccms.config import get_settings
 from cccms.core.audit import start_log_writer, stop_log_writer
@@ -69,7 +70,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title="CCCMS API",
-        version="0.1.0",
+        version=__version__,
         docs_url=None if settings.is_prod else "/docs",
         redoc_url=None if settings.is_prod else "/redoc",
         openapi_url=None if settings.is_prod else "/openapi.json",

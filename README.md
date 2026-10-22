@@ -202,7 +202,20 @@ async def index(...):
 | `CCCMS_EXPORT_LOCAL_ROOT` | 导出文件根目录，默认 `shared/exports`（必须位于静态目录之外） |
 | `CCCMS_UPGRADE_ENABLE` | 在线升级开关，默认 `false`，仅 `dev` 生效 |
 
-生产环境启动时会校验密钥与 `CCCMS_COOKIE_SECURE`，不满足直接拒绝启动。
+生产环境启动时会校验密钥与 `CCCMS_COOKIE_SECURE`，不满足直接拒绝启动；如果镜像或主机上还残留开发期的 `.dev-secrets.env`，同样拒绝启动（它会被 `env_file` 静默读入并顶替正式密钥）。
+
+### 容器部署
+
+`docker-compose.yml` **只**读取 `backend/.env.prod`（生产语义），不会读取开发用的 `backend/.env`：
+
+```bash
+cp backend/.env.prod.example backend/.env.prod   # 填入 4 个密钥、CORS、管理员口令、数据库口令
+docker compose up -d
+```
+
+- `.env.prod` 与 `.dev-secrets.env` 都已在 `.gitignore` / `.dockerignore` 中，不会入库也不会进镜像。
+- 模板里密钥留空是故意的：忘了填，API 与调度器会带明确报错退出，而不是带着一半默认值起来。
+- 本机开发仍然用 `backend/.env` + `uv run python -m cccms.dev`，两者互不影响。
 
 ---
 

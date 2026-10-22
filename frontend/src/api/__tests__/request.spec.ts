@@ -106,6 +106,24 @@ describe('请求拦截器', () => {
     expect(headers.Authorization).toBeUndefined()
   })
 
+  it('剔除空查询参数：空串不会被后端当成非法整数', async () => {
+    const lastConfig = mockAdapter({ data: { code: 0, message: 'ok', data: null } })
+
+    await http.get('/user', {
+      page: 1,
+      limit: 15,
+      status: '',
+      username: '',
+      keyword: undefined,
+      node_id: null,
+      ids: [],
+      trashed: 0,
+    })
+
+    // 0 是有效值（回收站开关），必须保留；其余空值全部不下发
+    expect(lastConfig()?.params).toEqual({ page: 1, limit: 15, trashed: 0 })
+  })
+
   it('带上操作 / 会话 ID：同一页面的并发请求共用一个 action', async () => {
     const seen: Array<Record<string, string>> = []
     instance.defaults.adapter = (async (config: AdapterConfig) => {

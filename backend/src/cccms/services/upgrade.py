@@ -16,6 +16,7 @@ import shutil
 import subprocess
 from datetime import datetime
 
+from cccms import __version__
 from cccms.config import PROJECT_DIR, get_settings
 from cccms.core.context import current_context
 from cccms.core.errors import Forbidden, ServiceUnavailable, ValidationFailed
@@ -108,7 +109,7 @@ async def status() -> UpgradeStatusOut:
     settings = get_settings()
     reason = _disabled_reason()
     out = UpgradeStatusOut(
-        version="0.1.0",
+        version=__version__,
         enabled=not reason,
         reason=reason,
         branch=settings.upgrade_branch,

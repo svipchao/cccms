@@ -6,6 +6,8 @@ __pycache__
 .ruff_cache
 .mypy_cache
 .env
+# Prod secrets file is provided by compose at runtime, never baked into the image.
+.env.prod
 # Dev-only generated JWT / data-encryption / audit-signing keys. If they ship
 # inside the image, prod silently reuses dev keys and passes the strength check.
 .dev-secrets.env

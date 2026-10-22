@@ -482,11 +482,13 @@ async function submitAssign(): Promise<void> {
 const roleOptions = ref<Row[]>([])
 const postOptions = ref<Row[]>([])
 const deptTreeData = ref<Record<string, unknown>[]>([])
+/** 后端列表单页上限（`core/pagination.MAX_PAGE_LIMIT = 200`），超了会直接 422 */
+const OPTION_LIMIT = 200
 
 onMounted(async () => {
   const [roles, posts, depts] = await Promise.all([
-    roleList({ page: 1, limit: 999 }),
-    postList({ page: 1, limit: 999 }),
+    roleList({ page: 1, limit: OPTION_LIMIT }),
+    postList({ page: 1, limit: OPTION_LIMIT }),
     deptTree(),
   ])
   roleOptions.value = roles.list as Row[]

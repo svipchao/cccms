@@ -1,6 +1,7 @@
 [project]
 name = "cccms"
-version = "0.1.0"
+# 版本号只有 src/cccms/__init__.py 一处字面量，见 [tool.hatch.version]。
+dynamic = ["version"]
 description = "CCCMS - Python rewrite (FastAPI + SQLAlchemy 2.0 async + MySQL 8)"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
@@ -52,6 +53,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/cccms/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cccms"]

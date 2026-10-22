@@ -12,6 +12,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cccms.core.time import now
 from cccms.models.dict import Config
 from cccms.models.user import Menu
 
@@ -182,21 +183,32 @@ async def seed_configs(session: AsyncSession) -> int:
     return created
 
 
+# 一级节点有两种形态：带 children 的目录（type=1），以及直接指向页面的单页（type=2，
+# 如「控制台」）。页面节点的 node 即权限 slug，菜单层级调整时靠它把旧行认回来。
 MENU_TREE: list[dict[str, Any]] = [
     {
+        "type": 2,
+        "title": "控制台",
+        "path": "/dashboard",
+        "component": "cccms/dashboard/index",
+        "icon": "icon-dashboard-line",
+        "sort": 0,
+    },
+    {
         "type": 1,
-        "title": "系统管理",
-        "path": "/system",
-        "icon": "icon-settings-3-line",
+        "title": "权限管理",
+        "path": "/permission",
+        "icon": "icon-key-2-line",
         "sort": 10,
         "children": [
             {
                 "type": 2,
-                "title": "工作台",
-                "path": "/dashboard",
-                "component": "cccms/dashboard/index",
-                "icon": "icon-home-line",
-                "sort": 0,
+                "title": "租户管理",
+                "path": "/tenant",
+                "component": "cccms/tenant/index",
+                "icon": "icon-community-line",
+                "sort": 1,
+                "node": "cccms:tenant:index",
             },
             {
                 "type": 2,
@@ -204,7 +216,7 @@ MENU_TREE: list[dict[str, Any]] = [
                 "path": "/user",
                 "component": "cccms/user/index",
                 "icon": "icon-user-line",
-                "sort": 1,
+                "sort": 2,
                 "node": "cccms:user:index",
             },
             {
@@ -213,17 +225,8 @@ MENU_TREE: list[dict[str, Any]] = [
                 "path": "/role",
                 "component": "cccms/role/index",
                 "icon": "icon-shield-user-line",
-                "sort": 2,
-                "node": "cccms:role:index",
-            },
-            {
-                "type": 2,
-                "title": "菜单管理",
-                "path": "/menu",
-                "component": "cccms/menu/index",
-                "icon": "icon-menu-line",
                 "sort": 3,
-                "node": "cccms:menu:tree",
+                "node": "cccms:role:index",
             },
             {
                 "type": 2,
@@ -245,29 +248,38 @@ MENU_TREE: list[dict[str, Any]] = [
             },
             {
                 "type": 2,
-                "title": "字典管理",
-                "path": "/dict",
-                "component": "cccms/dict/index",
-                "icon": "icon-book-2-line",
+                "title": "数据权限",
+                "path": "/data_rule",
+                "component": "cccms/data_rule/index",
+                "icon": "icon-lock-2-line",
                 "sort": 6,
-                "node": "cccms:dict:index",
+                "node": "cccms:data_rule:index",
             },
             {
                 "type": 2,
-                "title": "配置管理",
-                "path": "/config",
-                "component": "cccms/config/index",
-                "icon": "icon-settings-4-line",
+                "title": "菜单管理",
+                "path": "/menu",
+                "component": "cccms/menu/index",
+                "icon": "icon-menu-line",
                 "sort": 7,
-                "node": "cccms:config:index",
+                "node": "cccms:menu:tree",
             },
+        ],
+    },
+    {
+        "type": 1,
+        "title": "系统设置",
+        "path": "/system",
+        "icon": "icon-settings-3-line",
+        "sort": 20,
+        "children": [
             {
                 "type": 2,
                 "title": "通知公告",
                 "path": "/notice",
                 "component": "cccms/notice/index",
                 "icon": "icon-notification-3-line",
-                "sort": 8,
+                "sort": 1,
                 "node": "cccms:notice:index",
             },
             {
@@ -276,44 +288,26 @@ MENU_TREE: list[dict[str, Any]] = [
                 "path": "/file",
                 "component": "cccms/file/index",
                 "icon": "icon-folder-2-line",
-                "sort": 9,
+                "sort": 2,
                 "node": "cccms:file:index",
             },
             {
                 "type": 2,
-                "title": "数据权限",
-                "path": "/data_rule",
-                "component": "cccms/data_rule/index",
-                "icon": "icon-lock-2-line",
-                "sort": 10,
-                "node": "cccms:data_rule:index",
-            },
-        ],
-    },
-    {
-        "type": 1,
-        "title": "运维管理",
-        "path": "/ops",
-        "icon": "icon-tools-line",
-        "sort": 20,
-        "children": [
-            {
-                "type": 2,
-                "title": "定时任务",
-                "path": "/crontab",
-                "component": "cccms/crontab/index",
-                "icon": "icon-timer-line",
-                "sort": 1,
-                "node": "cccms:crontab:index",
+                "title": "字典管理",
+                "path": "/dict",
+                "component": "cccms/dict/index",
+                "icon": "icon-book-2-line",
+                "sort": 3,
+                "node": "cccms:dict:index",
             },
             {
                 "type": 2,
-                "title": "操作日志",
-                "path": "/log",
-                "component": "cccms/log/index",
-                "icon": "icon-file-list-3-line",
-                "sort": 2,
-                "node": "cccms:log:index",
+                "title": "配置管理",
+                "path": "/config",
+                "component": "cccms/config/index",
+                "icon": "icon-settings-4-line",
+                "sort": 4,
+                "node": "cccms:config:index",
             },
             {
                 "type": 2,
@@ -321,8 +315,17 @@ MENU_TREE: list[dict[str, Any]] = [
                 "path": "/online",
                 "component": "cccms/online/index",
                 "icon": "icon-user-voice-line",
-                "sort": 3,
+                "sort": 5,
                 "node": "cccms:online:index",
+            },
+            {
+                "type": 2,
+                "title": "定时任务",
+                "path": "/crontab",
+                "component": "cccms/crontab/index",
+                "icon": "icon-timer-line",
+                "sort": 6,
+                "node": "cccms:crontab:index",
             },
             {
                 "type": 2,
@@ -330,35 +333,26 @@ MENU_TREE: list[dict[str, Any]] = [
                 "path": "/generator",
                 "component": "cccms/generator/index",
                 "icon": "icon-magic-line",
-                "sort": 4,
+                "sort": 7,
                 "node": "cccms:generator:tables",
             },
             {
                 "type": 2,
-                "title": "在线升级",
+                "title": "自动升级",
                 "path": "/upgrade",
                 "component": "cccms/upgrade/index",
                 "icon": "icon-upload-cloud-2-line",
-                "sort": 5,
+                "sort": 8,
                 "node": "cccms:upgrade:index",
             },
-        ],
-    },
-    {
-        "type": 1,
-        "title": "平台管理",
-        "path": "/platform",
-        "icon": "icon-building-4-line",
-        "sort": 30,
-        "children": [
             {
                 "type": 2,
-                "title": "租户管理",
-                "path": "/tenant",
-                "component": "cccms/tenant/index",
-                "icon": "icon-community-line",
-                "sort": 1,
-                "node": "cccms:tenant:index",
+                "title": "操作日志",
+                "path": "/log",
+                "component": "cccms/log/index",
+                "icon": "icon-file-list-3-line",
+                "sort": 9,
+                "node": "cccms:log:index",
             },
         ],
     },
@@ -369,15 +363,16 @@ async def _upsert(session: AsyncSession, parent_id: int | None, data: dict[str, 
     node = data.get("node")
     row: Menu | None = None
     if node:
-        row = await session.scalar(
-            select(Menu).where(Menu.node == node, Menu.delete_time.is_(None))
-        )
+        row = await session.scalar(select(Menu).where(Menu.node == node, Menu.delete_time.is_(None)))
     elif data.get("path"):
-        # 目录没有权限节点，用「父级 + 路径」识别，避免重复 seed 产生重复目录
-        statement = select(Menu).where(
-            Menu.path == data["path"],
-            Menu.delete_time.is_(None),
-            Menu.parent_id.is_(None) if parent_id is None else Menu.parent_id == parent_id,
+        # 目录/根级单页没有权限节点，用路径识别。路径就是路由地址，全表唯一；
+        # 这里**不按 parent_id 限定**，否则调整层级后原来的行认不回来，
+        # 会在新目录下再插一条重复菜单，旧行则留在旧目录里。
+        statement = (
+            select(Menu)
+            .where(Menu.path == data["path"], Menu.delete_time.is_(None))
+            .order_by(Menu.id.asc())
+            .limit(1)
         )
         row = await session.scalar(statement)
     if row is None:
@@ -394,6 +389,31 @@ async def _upsert(session: AsyncSession, parent_id: int | None, data: dict[str, 
     return row
 
 
+async def _prune_empty_dirs(session: AsyncSession, declared: set[str]) -> int:
+    """软删已经没有任何子节点的旧目录。
+
+    菜单层级调整（例如把「运维管理」的页面并进「系统设置」）后，旧目录会变成空壳，
+    点开是一片空白。判据限定为「目录 + 无子节点 + 不在本次声明的路径里」，
+    不会碰到有子菜单的目录，也不会碰页面与按钮节点。
+    """
+    rows = (await session.scalars(select(Menu).where(Menu.type == 1, Menu.delete_time.is_(None)))).all()
+    removed = 0
+    for row in rows:
+        if row.path in declared:
+            continue
+        child = await session.scalar(
+            select(Menu.id).where(Menu.parent_id == row.id, Menu.delete_time.is_(None)).limit(1)
+        )
+        if child is not None:
+            continue
+        row.delete_time = now()
+        row.update_time = now()
+        removed += 1
+    if removed:
+        await session.flush()
+    return removed
+
+
 async def seed_menus(session: AsyncSession) -> tuple[int, int]:
     """Insert / update the menu tree and generate button nodes from routes."""
     from cccms.api import BUSINESS_ROUTERS
@@ -401,13 +421,19 @@ async def seed_menus(session: AsyncSession) -> tuple[int, int]:
 
     page_nodes: set[str] = set()
     module_menu: dict[str, int] = {}
-    dirs = 0
+    dirs: set[str] = set()
     menus = 0
 
     for group in MENU_TREE:
-        parent = await _upsert(session, None, {key: value for key, value in group.items() if key != "children"})
-        dirs += 1
-        for child in group["children"]:
+        children = group.get("children") or []
+        data = {key: value for key, value in group.items() if key != "children"}
+        parent = await _upsert(session, None, data)
+        if children:
+            dirs.add(str(data.get("path") or ""))
+        else:
+            # 一级单页（控制台）没有子节点，parent 只当作自身那一行来用
+            menus += 1
+        for child in children:
             row = await _upsert(session, parent.id, child)
             menus += 1
             if row.node:
@@ -442,4 +468,6 @@ async def seed_menus(session: AsyncSession) -> tuple[int, int]:
         )
         button_count += 1
 
-    return dirs + menus, button_count
+    await _prune_empty_dirs(session, dirs)
+
+    return len(dirs) + menus, button_count

@@ -159,9 +159,33 @@ instance.interceptors.response.use(
   },
 )
 
+/**
+ * 剔除空查询参数（`''` / `null` / `undefined` / 空数组）。
+ *
+ * 列表页的筛选条件初始值普遍是空串，直接下发会变成 `?status=`；后端查询模型里
+ * 的数值字段（如 `status: int | None`）无法把空串解析成整数，直接返回 422
+ * （`int_parsing`）。空串对字符串字段也等价于「不筛选」，统一在出口剔除。
+ */
+function compactParams(params?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!params) {
+    return undefined
+  }
+  const out: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(params)) {
+    if (value === '' || value === null || value === undefined) {
+      continue
+    }
+    if (Array.isArray(value) && value.length === 0) {
+      continue
+    }
+    out[key] = value
+  }
+  return out
+}
+
 export const http = {
   get<T = unknown>(url: string, params?: Record<string, unknown>): Promise<T> {
-    return instance.get(url, { params }) as unknown as Promise<T>
+    return instance.get(url, { params: compactParams(params) }) as unknown as Promise<T>
   },
   post<T = unknown>(url: string, data?: unknown): Promise<T> {
     return instance.post(url, data) as unknown as Promise<T>
@@ -207,7 +231,10 @@ export async function downloadFile(
   params?: Record<string, unknown>,
   fallbackName = 'export.csv',
 ): Promise<void> {
-  const response = (await instance.get(url, { params, responseType: 'blob' })) as unknown as AxiosResponse<Blob>
+  const response = (await instance.get(url, {
+    params: compactParams(params),
+    responseType: 'blob',
+  })) as unknown as AxiosResponse<Blob>
   triggerBlobDownload(response, fallbackName)
 }
 
