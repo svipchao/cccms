@@ -17,7 +17,7 @@ from cccms.core.audit import LogEvent
 from cccms.core.codes import BizCode, default_code
 from cccms.core.context import UserContext
 from cccms.core.envelope import localize
-from cccms.core.errors import Forbidden, Unauthorized, ValidationFailed
+from cccms.core.errors import Forbidden, ServiceUnavailable, Unauthorized, ValidationFailed
 from cccms.core.metrics import REGISTRY
 from cccms.core.middleware import invalidates_auth_cache, invalidates_dict_cache
 from cccms.core.params import as_int
@@ -178,6 +178,15 @@ def test_error_message_is_localized_by_accept_language() -> None:
     # 没有文案键的服务自定义消息原样返回，不会被翻译覆盖。
     assert localize(en, "用户名已存在", None) == "用户名已存在"
     assert localize(en, "用户名已存在", "error.missing_key") == "用户名已存在"
+
+
+def test_service_unavailable_can_bypass_localization() -> None:
+    """需要把具体失败原因带给调用方时（如 git 命令输出），允许显式关掉翻译。"""
+    en = Request({"type": "http", "headers": [(b"accept-language", b"en-US")], "query_string": b""})
+    exc = ServiceUnavailable("git fetch 失败：network unreachable", message_key=None)
+    assert exc.status_code == 503
+    assert exc.code == int(BizCode.UNAVAILABLE)
+    assert localize(en, exc.message, exc.message_key) == "git fetch 失败：network unreachable"
 
 
 def test_auth_and_dict_cache_invalidation_scope() -> None:

@@ -120,6 +120,8 @@ class ServiceUnavailable(ApiError):
         message: str = "服务暂不可用",
         *,
         code: BizCode = BizCode.UNAVAILABLE,
-        message_key: str = "error.unavailable",
+        # 传 None 表示"原样返回 message"（localize 见到空 key 直接回退原文），
+        # 用于需要把具体原因带给调用方的场景（如 git 命令失败详情）。
+        message_key: str | None = "error.unavailable",
     ) -> None:
         super().__init__(message, 503, code=code, message_key=message_key)
