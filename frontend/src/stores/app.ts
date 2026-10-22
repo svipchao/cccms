@@ -76,7 +76,7 @@ export const useAppStore = defineStore('app', () => {
   const pageSize = computed(() => Number(config.value.ui.page_size) || FALLBACK.ui.page_size)
   const tagsView = computed(() => config.value.ui.tags_view !== false)
 
-  /** 可用找回渠道：为空时登录页不展示「忘记密码」入口（后端 security.reset_channel=off） */
+  /** 可用找回渠道：为空时登录页不展示「忘记密码」入口（后端按"开关 + 投递能力"判定，见 core/delivery.py） */
   const resetChannels = computed<string[]>(() => config.value.security?.reset_channels ?? [])
 
   /** 全局水印参数（后台「配置管理 → 水印」） */

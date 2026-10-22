@@ -13,6 +13,7 @@ from cccms.core.cache import get_redis
 from cccms.core.codes import BizCode
 from cccms.core.config_store import get_bool, get_int
 from cccms.core.context import current_context
+from cccms.core.delivery import deliverable_channels
 from cccms.core.errors import ServiceUnavailable, ValidationFailed
 from cccms.core.security import hash_password_async, validate_password, verify_password_async
 from cccms.core.tenant import get_tenant_by_code
@@ -59,11 +60,13 @@ async def _find_user(session: AsyncSession, tenant_id: int, payload: dict[str, A
 
 
 async def _channels(session: AsyncSession, tenant_id: int) -> list[str]:
-    return [
+    configured = [
         item
         for item in ("email", "sms")
         if await get_bool(session, f"security.reset_{item}_enabled", False, tenant_id=tenant_id)
     ]
+    # 开关 ≠ 能发出：prod 没有投递实现时这里返回空，与登录页入口的判定同源。
+    return deliverable_channels(configured)
 
 
 async def request_code(session: AsyncSession, payload: dict[str, Any]) -> dict[str, Any]:

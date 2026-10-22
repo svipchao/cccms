@@ -11,6 +11,7 @@ from cccms.core import session as token_session
 from cccms.core.codes import BizCode
 from cccms.core.config_store import get_bool, get_value
 from cccms.core.context import UserContext, current_context
+from cccms.core.delivery import deliverable_channels
 from cccms.core.errors import Forbidden, NotFound, Unauthorized, ValidationFailed
 from cccms.core.i18n import DEFAULT_LOCALE, SUPPORTED_LOCALES
 from cccms.core.ratelimit import check_login_allowed, clear_login_failures, record_login_failure
@@ -235,13 +236,15 @@ async def login_context(session: AsyncSession) -> LoginContextOut:
     captcha_enabled = await get_bool(
         session, "security.login_captcha", False, tenant_id=tenant.id if tenant else None
     )
-    reset_channels = [
-        item
-        for item in ("email", "sms")
-        if await get_bool(
-            session, f"security.reset_{item}_enabled", False, tenant_id=tenant.id if tenant else None
-        )
-    ]
+    reset_channels = deliverable_channels(
+        [
+            item
+            for item in ("email", "sms")
+            if await get_bool(
+                session, f"security.reset_{item}_enabled", False, tenant_id=tenant.id if tenant else None
+            )
+        ]
+    )
     from cccms.schemas.auth import TenantOption
 
     return LoginContextOut(

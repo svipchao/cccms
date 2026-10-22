@@ -81,7 +81,7 @@
 
           <div class="login-row">
             <el-checkbox v-model="rememberMe">{{ t('login.remember') }}</el-checkbox>
-            <!-- 找回密码：后台未开启任何渠道（security.reset_channel=off）时不展示 -->
+            <!-- 找回密码：后台未开启渠道、或当前环境没有投递实现（prod）时不展示 -->
             <el-button v-if="appStore.resetChannels.length > 0" link type="primary" @click="openReset">
               {{ t('login.forgot') }}
             </el-button>

@@ -6,6 +6,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cccms.core.cache import Keys, delete, get_json, set_json
+from cccms.core.delivery import deliverable_channels
 from cccms.models.dict import Config
 
 _TRUE = {"1", "true", "yes", "on"}
@@ -108,11 +109,13 @@ async def ui_payload(session: AsyncSession, tenant_id: int | None) -> dict[str, 
             "container_width": integer("ui.container_width", 0),
         },
         "security": {
-            "reset_channels": [
-                item
-                for item in ("email", "sms")
-                if text(f"security.reset_{item}_enabled", "0") == "1"
-            ],
+            "reset_channels": deliverable_channels(
+                [
+                    item
+                    for item in ("email", "sms")
+                    if text(f"security.reset_{item}_enabled", "0") == "1"
+                ]
+            ),
         },
         "watermark": {
             "enabled": flag("watermark.enabled"),
