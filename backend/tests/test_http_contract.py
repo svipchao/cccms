@@ -84,6 +84,39 @@ def test_api_v1_alias_behaves_like_api(client: TestClient) -> None:
     assert legacy.json()["code"] == versioned.json()["code"] == 10101
 
 
+def test_tenant_resolution_failure_fails_closed(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """域名→租户解析失败时不能退回"无租户上下文"继续处理。
+
+    退回等于让后续查询失去 tenant_id 约束（跨租户读），所以必须 503。
+    这里覆盖掉 conftest 里"解析恒为 None"的桩。
+    """
+
+    async def _boom(host: str | None) -> None:
+        raise RuntimeError("redis down")
+
+    monkeypatch.setattr("cccms.core.middleware.tenant_from_host", _boom)
+
+    response = client.get("/api/user")
+    assert response.status_code == 503
+    assert response.json()["code"] == 10503
+    assert response.json()["message"]
+
+
+def test_probe_paths_do_not_depend_on_tenant_resolution(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """/ping 不该因为租户解析故障而变红，否则 Redis 抖动会摘掉全部实例。"""
+
+    async def _boom(host: str | None) -> None:
+        raise RuntimeError("redis down")
+
+    monkeypatch.setattr("cccms.core.middleware.tenant_from_host", _boom)
+
+    assert client.get("/ping").status_code == 200
+
+
 def test_storage_is_not_anonymously_readable(client: TestClient) -> None:
     response = client.get("/storage/2026/01/01/anything.png")
     assert response.status_code == 401

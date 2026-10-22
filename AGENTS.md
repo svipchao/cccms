@@ -59,6 +59,7 @@ CLI 只有这几个子命令：`init-db` / `migrate` / `seed` / `audit-verify` /
 - **prod 硬门槛不要放宽**：`debug` 必须 false、4 个密钥非空且够长、`COOKIE_SECURE=true`、`CORS_ORIGINS` 不含 `*`、管理员口令非默认、**检出 `.dev-secrets.env` 即拒绝启动**。报错就去改配置，不要改校验。
 - **附件可见性只由 `apply_scope` 决定**：`/storage/<path>` 与 `GET /api/file/{id}/download` 都是"登录 + 数据范围"，不可见与不存在同码 404，避免用 id 探测别人附件。
 - **代码生成器仅 dev/test**：`api/generator.py` 四个端点都调了 `generator_service.ensure_available()`，新增端点也必须调。
+- **域名→租户解析失败必须 fail-closed**：`RequestContextMiddleware` 在解析异常时返回 503（`BizCode.UNAVAILABLE`），不要退回"无租户上下文"继续处理——那会让后续查询失去 `tenant_id` 约束。`/ping`、`/healthz`、`/metrics` 豁免，避免 Redis 抖动把全部实例摘掉。
 - **不吞异常**：`except` 要么记日志（带可定位的 id）、要么转成 `core/errors` 的业务异常；禁止空 `except` 和 `except: pass`。
 - **不加没有依据的保护**：固定超时、条数上限、重试次数这类参数，要有真实故障或平台限制作依据，否则只是把问题藏起来。
 
@@ -81,7 +82,6 @@ CLI 只有这几个子命令：`init-db` / `migrate` / `seed` / `audit-verify` /
 - **`ruff format` 未启用**：`uv run ruff format --check src` 目前有 25 个文件待格式化。不要为了"过检查"整文件格式化——那是无工单重构，会淹没真实 diff。
 - **数据权限只覆盖 5 个模型**（`user` / `log` / `file` / `dept` / `crontab` 注册了 `__data_scope__`）。新模型要显式注册，否则列表不受数据范围约束。
 - **对象存储未实现**：`CCCMS_STORAGE_DRIVER` 只接受 `local`，其它取值启动即失败。
-- **`is_platform` 租户解析失败时仍 fail-open**（`core/middleware.py`）：Redis/DB 抖动会退化成无租户上下文，改动属行为变更，需先补测试。
 - 其余待办见 `docs/开发计划.md` 与 `docs/修复记录-2026-10-22.md` 的"未执行项"。
 
 ## 8. 工作方式

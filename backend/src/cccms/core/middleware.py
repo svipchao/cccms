@@ -109,7 +109,21 @@ class RequestContextMiddleware:
             try:
                 tenant = await tenant_from_host(host)
             except Exception:
+                # 解析失败不能当成"没有租户"继续往下走：后续查询会失去 tenant_id 约束，
+                # 等于把这次请求降级成跨租户上下文。宁可 503，也不 fail-open。
                 logger.exception("failed to resolve tenant from host")
+                locale = locale_from_request(request)
+                message = (
+                    t("error.unavailable", locale=locale)
+                    if has("error.unavailable", locale)
+                    else "服务暂不可用"
+                )
+                response = ORJSONResponse(
+                    status_code=503,
+                    content=error_body(message, int(BizCode.UNAVAILABLE)),
+                )
+                await response(scope, receive, send)
+                return
 
         ctx = RequestContext(
             trace_id=new_trace_id(),
@@ -437,10 +451,14 @@ class OperationLogMiddleware:
                 ctx.trace_id,
             )
 
+        # 登录是匿名请求：user_id 由登录服务回填，账号从请求体兜底。
+        # 两者都留空会让「登录分析」的 TOP 账号、异地登录永远统计不到人。
+        anonymous_user_id = int(ctx.extra.get("log_user_id") or 0)
+        anonymous_username = str(params.get("username") or "")
         event = LogEvent(
             tenant_id=ctx.tenant.id if ctx.tenant else None,
-            user_id=ctx.user.id if ctx.user else 0,
-            username=ctx.user.username if ctx.user else "",
+            user_id=ctx.user.id if ctx.user else anonymous_user_id,
+            username=ctx.user.username if ctx.user else anonymous_username,
             status=1 if ok else 0,
             message=result_message[:255],
             method=ctx.method,
