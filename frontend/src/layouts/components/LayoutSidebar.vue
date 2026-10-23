@@ -272,6 +272,11 @@ async function onRefreshCommand(command: string | number | object): Promise<void
     if (scope === 'menu' || scope === 'perm' || scope === 'all') {
       await reloadMenus()
     }
+  } catch (error) {
+    // 失败原因由拦截器统一提示；超时时后台可能仍在跑，补一句避免用户重复触发
+    if ((error as { code?: string })?.code === 'ECONNABORTED') {
+      ElMessage.warning(t('layout.refreshTimeout'))
+    }
   } finally {
     refreshing.value = false
   }

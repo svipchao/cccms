@@ -5,6 +5,13 @@
  * Table names / comments come from user data or the database and are not part of the language pack.
  */
 export default {
+  /* ---- Not available (rendered inline, no toast) ---- */
+  disabledEnvTitle: 'Local development only — code generation is disabled',
+  disabledEnvDesc:
+    '{reason}. The generator writes Model / Logic / Controller / route / page files directly; a deployed build has a different layout, so writing by repo-relative paths would corrupt production code. Generation is blocked here as well.',
+  disabledSwitchTitle: 'Code generator is turned off',
+  disabledSwitchDesc:
+    '{reason}. This is the master switch and is off by default: add CCCMS_GENERATOR_ENABLE=true to server/.env (or set enable to true in plugin/cccms/config/generator.php), then reload / restart the backend.',
   alertTitle: 'The code generator writes files to disk and registers a menu automatically',
   alertDesc:
     'Existing files are kept by default (tick "Allow overwrite"). After generating, run {cmd} to sync button nodes.',

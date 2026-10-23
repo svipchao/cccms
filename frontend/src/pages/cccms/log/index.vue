@@ -56,45 +56,34 @@
         <div v-if="row.ip" class="log-sub">{{ row.ip }}</div>
       </template>
 
-      <!-- 请求：方法一行、路径一行；方法标签可点，按该方法筛选（再点取消） -->
+      <!-- 请求：方法（彩色等宽文字，可点按方法筛选）+ 路径（单行省略，悬停看全路径） -->
       <template #request="{ row }">
-        <div>
-          <el-tag
-            effect="plain"
-            size="small"
-            round
-            class="log-click-tag log-method-tag"
-            :class="{ 'is-active': query.method === row.method }"
+        <div class="log-request">
+          <span
+            class="log-method"
+            :class="[methodTone(row.method), { 'is-active': query.method === row.method }]"
             :title="t('log.clickToFilter')"
             @click.stop="filterByMethod(row.method)"
           >
             {{ row.method }}
-          </el-tag>
+          </span>
+          <span class="log-path" :title="row.path">{{ row.path }}</span>
         </div>
-        <div class="log-path" :title="row.path">{{ row.path }}</div>
       </template>
 
-      <!-- 结果：成功/失败一行、HTTP 状态码一行；结果标签可点，按该结果筛选（再点取消） -->
+      <!-- 结果：状态码（彩色，主）+ 成功/失败（默认色，次）；状态文字可点按结果筛选（再点取消） -->
       <template #result="{ row }">
-        <div>
-          <el-tag
-            :type="row.status === 1 ? 'success' : 'danger'"
-            effect="plain"
-            size="small"
-            round
-            class="log-click-tag log-status-tag"
-            :class="{
-              'is-active': String(row.status) === query.status,
-              'is-success': row.status === 1,
-              'is-danger': row.status !== 1,
-            }"
+        <div class="log-result">
+          <span class="log-code" :class="statusTone(row.status_code)">{{ row.status_code }}</span>
+          <span
+            class="log-status"
+            :class="{ 'is-active': String(row.status) === query.status }"
             :title="t('log.clickToFilter')"
             @click.stop="filterByStatus(row.status)"
           >
             {{ row.status === 1 ? t('log.success') : t('log.failed') }}
-          </el-tag>
+          </span>
         </div>
-        <div class="log-code" :class="statusTone(row.status_code)">{{ row.status_code }}</div>
       </template>
 
       <!-- 追踪：操作ID（本次操作链路）+ 会话ID（页面会话轨迹），行首标注字段，无权限时只展示 -->
@@ -115,13 +104,7 @@
         </div>
         <div v-if="row.session_id" class="log-trace-line">
           <span class="log-trace-tag">{{ t('log.sessionId') }}</span>
-          <el-button
-            v-if="canSession"
-            link
-            type="primary"
-            class="log-trace-id"
-            @click="openSession(row.session_id)"
-          >
+          <el-button v-if="canSession" link type="primary" class="log-trace-id" @click="openSession(row.session_id)">
             {{ row.session_id }}
           </el-button>
           <span v-else class="log-trace log-trace-id">{{ row.session_id }}</span>
@@ -200,72 +183,74 @@
 
     <el-drawer v-model="detailVisible" :title="t('log.detailTitle')" size="680px">
       <div v-loading="detailLoading" class="detail-body">
-      <template v-if="current">
-        <el-descriptions :column="2" border size="small">
-          <el-descriptions-item :label="t('log.result')">
-            <el-tag :type="current.status === 1 ? 'success' : 'danger'" effect="light" size="small">
-              {{ current.status === 1 ? t('log.success') : t('log.failed') }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item :label="t('log.actionName')">{{ current.title || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.node')">{{ current.node || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.username')">{{ current.username || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.time')">{{ current.create_time || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.request')">{{ current.method }} {{ current.path }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.statusCode')">
-            <el-tag :type="statusTag(current.status_code)" effect="light" size="small">
-              {{ current.status_code }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="IP">{{ current.ip || '—' }}</el-descriptions-item>
-          <el-descriptions-item :label="t('log.cost')">{{ current.cost ?? 0 }} ms</el-descriptions-item>
-          <el-descriptions-item :label="t('log.requestId')">
-            <span class="log-trace">{{ current.trace_id || '—' }}</span>
-          </el-descriptions-item>
-          <el-descriptions-item :label="t('log.actionId')" :span="2">
-            <span class="log-trace">{{ current.action_id || '—' }}</span>
-            <el-button
-              v-if="current.action_id"
-              v-auth="'cccms:log:action'"
-              link
-              type="primary"
-              class="log-trace-btn"
-              @click="openAction(current.action_id)"
+        <template v-if="current">
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item :label="t('log.result')">
+              <el-tag :type="current.status === 1 ? 'success' : 'danger'" effect="light" size="small">
+                {{ current.status === 1 ? t('log.success') : t('log.failed') }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('log.actionName')">{{ current.title || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.node')">{{ current.node || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.username')">{{ current.username || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.time')">{{ current.create_time || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.request')"
+              >{{ current.method }} {{ current.path }}</el-descriptions-item
             >
-              {{ t('log.viewAction') }}
-            </el-button>
-          </el-descriptions-item>
-          <el-descriptions-item :label="t('log.sessionId')" :span="2">
-            <span class="log-trace">{{ current.session_id || '—' }}</span>
-            <el-button
-              v-if="current.session_id"
-              v-auth="'cccms:log:session'"
-              link
-              type="primary"
-              class="log-trace-btn"
-              @click="openSession(current.session_id)"
-            >
-              {{ t('log.viewSession') }}
-            </el-button>
-          </el-descriptions-item>
-          <el-descriptions-item v-if="current.message" :label="t('log.message')" :span="2">
-            {{ current.message }}
-          </el-descriptions-item>
-          <el-descriptions-item label="User-Agent" :span="2">
-            {{ current.ua || '—' }}
-          </el-descriptions-item>
-        </el-descriptions>
+            <el-descriptions-item :label="t('log.statusCode')">
+              <el-tag :type="statusTag(current.status_code)" effect="light" size="small">
+                {{ current.status_code }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="IP">{{ current.ip || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('log.cost')">{{ current.cost ?? 0 }} ms</el-descriptions-item>
+            <el-descriptions-item :label="t('log.requestId')">
+              <span class="log-trace">{{ current.trace_id || '—' }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('log.actionId')" :span="2">
+              <span class="log-trace">{{ current.action_id || '—' }}</span>
+              <el-button
+                v-if="current.action_id"
+                v-auth="'cccms:log:action'"
+                link
+                type="primary"
+                class="log-trace-btn"
+                @click="openAction(current.action_id)"
+              >
+                {{ t('log.viewAction') }}
+              </el-button>
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('log.sessionId')" :span="2">
+              <span class="log-trace">{{ current.session_id || '—' }}</span>
+              <el-button
+                v-if="current.session_id"
+                v-auth="'cccms:log:session'"
+                link
+                type="primary"
+                class="log-trace-btn"
+                @click="openSession(current.session_id)"
+              >
+                {{ t('log.viewSession') }}
+              </el-button>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="current.message" :label="t('log.message')" :span="2">
+              {{ current.message }}
+            </el-descriptions-item>
+            <el-descriptions-item label="User-Agent" :span="2">
+              {{ current.ua || '—' }}
+            </el-descriptions-item>
+          </el-descriptions>
 
-        <div class="log-block">
-          <div class="log-block-title">{{ t('log.params') }}</div>
-          <pre class="log-pre">{{ pretty(current.params) }}</pre>
-        </div>
+          <div class="log-block">
+            <div class="log-block-title">{{ t('log.params') }}</div>
+            <pre class="log-pre">{{ pretty(current.params) }}</pre>
+          </div>
 
-        <div class="log-block">
-          <div class="log-block-title">{{ t('log.response') }}</div>
-          <pre class="log-pre">{{ pretty(current.result) }}</pre>
-        </div>
-      </template>
+          <div class="log-block">
+            <div class="log-block-title">{{ t('log.response') }}</div>
+            <pre class="log-pre">{{ pretty(current.result) }}</pre>
+          </div>
+        </template>
       </div>
     </el-drawer>
 
@@ -500,8 +485,8 @@ const columns = computed<ArtTableColumn[]>(() => [
   {
     prop: 'status',
     label: t('log.result'),
-    width: 120,
-    align: 'center',
+    // 两行结构：第一行 3 位状态码、第二行「成功/失败」（英文 Success 约 48px）
+    width: 100,
     slot: 'result',
     filter: {
       type: 'enum',
@@ -1090,10 +1075,29 @@ function statusTag(code?: number): 'success' | 'warning' | 'danger' {
   return code < 400 ? 'warning' : 'danger'
 }
 
-/** 状态码文字色（与标签同色系）：合并列里再套一个标签会显得拥挤 */
+/** 状态码文字色（与抽屉里的状态标签同色系）：200 绿、4xx 橙、5xx 红 */
 function statusTone(code?: number): string {
   const tone = statusTag(code)
   return tone === 'success' ? 'is-ok' : tone === 'warning' ? 'is-warn' : 'is-danger'
+}
+
+/** 请求方法的语义色（文字型，不套胶囊）：读 / 写 / 删一眼区分 */
+function methodTone(method: string): string {
+  switch (String(method).toUpperCase()) {
+    case 'GET':
+    case 'HEAD':
+    case 'OPTIONS':
+      return 'is-read'
+    case 'POST':
+      return 'is-create'
+    case 'PUT':
+    case 'PATCH':
+      return 'is-update'
+    case 'DELETE':
+      return 'is-delete'
+    default:
+      return 'is-other'
+  }
 }
 
 /* ---- 删除 ---- */
@@ -1223,55 +1227,98 @@ async function onDeleteOne(id: number): Promise<void> {
 /* 合并列里的次要行（IP / 耗时 / 会话ID） */
 .log-sub {
   margin-top: 2px;
-  font-size: 12px;
+  font-size: var(--el-font-size-extra-small);
   color: var(--art-muted);
 }
 
-/* 可点击的标签（请求方法 / 结果状态）：交互与样式对齐 /oceanengine/account 的账户标签 */
-.log-click-tag {
+/*
+ * 表格字号只有两档，且都跟着表格密度走（14 / 12 / 16 三档 base），不写死 px：
+ *   主 = 单元格基准字号（inherit）—— 方法、状态码、操作名称、时间
+ *   次 = `--el-font-size-extra-small`  —— 路径、成功/失败、节点、说明、IP、追踪 ID
+ *
+ * 重要性靠颜色（`--art-main` / `--art-sub` / `--art-muted` / 语义色）与字重区分，
+ * 不用 11px / 13px 这种和基准打不上的绝对字号 —— 那正是「有的大有的小」的来源。
+ *
+ * 请求列与结果列都是「主行 + 次行」两行结构，与「操作人」「追踪」列等高（2×23px）。
+ */
+.log-request,
+.log-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+/* 方法：与操作名称同字号的等宽彩色文字；路径已另起一行，无需再定宽对齐 */
+.log-method {
+  font-family: Consolas, Monaco, monospace;
+  font-size: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
   user-select: none;
 }
 
-/* 请求方法标签：选中态用主题色高亮，一眼看出列表被谁过滤，再点一次取消 */
-.log-method-tag.is-active {
+.log-method.is-read {
   color: var(--el-color-primary);
-  border-color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
 }
 
-/*
- * 结果标签：选中态保持成功/失败的红绿语义，只加深（加粗 + 同色浅底），
- * 不套主题蓝 —— 否则「成功」和「失败」选中后长得一模一样。
- */
-.log-status-tag.is-active {
-  font-weight: 600;
-  border-width: 1.5px;
+.log-method.is-create {
+  color: var(--el-color-success);
 }
 
-.log-status-tag.is-success.is-active {
-  background: var(--el-color-success-light-9);
+.log-method.is-update {
+  color: var(--el-color-warning);
 }
 
-.log-status-tag.is-danger.is-active {
-  background: var(--el-color-danger-light-9);
+.log-method.is-delete {
+  color: var(--el-color-danger);
 }
 
-/* 请求列：方法标签独占一行，路径另起一行、超宽省略 */
+.log-method.is-other {
+  color: var(--art-muted);
+}
+
+/* 选中态只加下划线：颜色已被语义占用，再铺底色会和四种方法色打架 */
+.log-method.is-active {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* 列方向布局里没有 flex: 1 可用，用 width: 100% 撑满单元格宽度才能触发省略号 */
 .log-path {
-  display: block;
-  margin-top: 2px;
+  width: 100%;
   overflow: hidden;
+  font-size: var(--el-font-size-extra-small);
+  color: var(--art-sub);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 结果列：状态标签一行、状态码一行 */
+/*
+ * 结果文字：不参与红绿语义（颜色交给上面那行的状态码），只作第二行的说明，
+ * 因此用默认的次要色 + 次档字号，和请求列的路径同一层级。
+ */
+.log-status {
+  font-size: var(--el-font-size-extra-small);
+  color: var(--art-sub);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.log-status.is-active {
+  color: var(--el-color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* 状态码：等宽 + 加粗，颜色按 2xx / 4xx / 5xx 分级，是这一行的主标识 */
 .log-code {
-  display: block;
-  margin-top: 2px;
+  flex-shrink: 0;
   font-family: Consolas, Monaco, monospace;
-  font-size: 12px;
+  font-size: inherit;
+  font-weight: 600;
 }
 
 .log-code.is-ok {
@@ -1290,16 +1337,17 @@ async function onDeleteOne(id: number): Promise<void> {
   min-height: 200px;
 }
 
+/* 节点等次要信息统一用次档字号，重要性用更淡的颜色区分而非字号 */
 .log-node {
   margin-top: 1px;
   font-family: Consolas, Monaco, monospace;
-  font-size: 11px;
+  font-size: var(--el-font-size-extra-small);
   color: var(--art-muted);
 }
 
 .log-msg {
   margin-top: 1px;
-  font-size: 12px;
+  font-size: var(--el-font-size-extra-small);
 }
 
 /* 说明跟随记录结果：成功绿、失败红（「登录成功」不应标红） */
@@ -1313,7 +1361,7 @@ async function onDeleteOne(id: number): Promise<void> {
 
 .log-trace {
   font-family: Consolas, Monaco, monospace;
-  font-size: 12px;
+  font-size: var(--el-font-size-extra-small);
   user-select: all;
 }
 
@@ -1327,7 +1375,7 @@ async function onDeleteOne(id: number): Promise<void> {
 
 .log-trace-tag {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: var(--el-font-size-extra-small);
   line-height: 1.4;
   color: var(--art-muted);
 }
@@ -1335,7 +1383,7 @@ async function onDeleteOne(id: number): Promise<void> {
 .log-trace-id {
   min-width: 0;
   font-family: Consolas, Monaco, monospace;
-  font-size: 11px;
+  font-size: var(--el-font-size-extra-small);
   line-height: 1.4;
   text-align: left;
   word-break: break-all;

@@ -218,12 +218,10 @@ final class LogArchiver
                 continue;
             }
 
-            // 按行上记录的版本重算（v2 起是 HMAC，必须传版本，否则归档前的自校验会全部误判）
-            $rowVersion = (int)($row['hash_version'] ?? 0);
-            $expected   = LogChain::hash(
+            // 归档前自校验：与写入侧共用同一份字段集与 HMAC 密钥
+            $expected = LogChain::hash(
                 (string)($row['prev_hash'] ?? ''),
-                LogChain::normalize($row, $rowVersion),
-                $rowVersion
+                LogChain::normalize($row)
             );
             if ($expected !== $stored && $brokenAt === 0) {
                 $brokenAt = (int)($row['id'] ?? 0);

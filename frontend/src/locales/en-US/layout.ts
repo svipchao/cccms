@@ -49,6 +49,7 @@ export default {
   refreshMenu: 'Menus created {created} / updated {updated} / removed {removed}',
   refreshPerm: 'Permissions created {created} / skipped {skipped}',
   refreshCacheDone: 'Cache cleared',
+  refreshTimeout: 'Refresh timed out; it may still be running. Check menus and permissions shortly.',
   tagbar: {
     refresh: 'Refresh',
     favoriteAdd: 'Add to quick nav',

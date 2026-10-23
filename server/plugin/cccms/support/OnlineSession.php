@@ -29,6 +29,9 @@ final class OnlineSession
     /** 活跃时间刷新间隔（秒）：小于该间隔的请求不写 Redis */
     private const TOUCH_INTERVAL = 60;
 
+    /** 续期互斥锁：同一旧 jti 只允许一个请求完成迁移 */
+    private const RENEW_LOCK_PREFIX = 'cccms:online:renew:';
+
     /** 分段扫描批大小：有关键字过滤 / 清理 / 下线时按这个粒度拉取，避免一次性拉全量 */
     private const SCAN_BATCH = 200;
 
@@ -61,6 +64,10 @@ final class OnlineSession
 
     /**
      * 登录成功后登记会话。
+     *
+     * 同一账号在**同一终端**（IP + UA 相同）再次登录时，先退掉该终端上的旧会话：
+     * 浏览器只保存一个令牌，旧令牌从这一刻起再也取不到，留在索引里就会表现为
+     * 「同一设备两条 admin 记录」，管理员踢它也只是踢一个无人持有的令牌。
      */
     public static function register(
         int $userId,
@@ -76,33 +83,53 @@ final class OnlineSession
 
         $now = time();
 
+        self::retireSameDevice($userId, $ip, $ua, $jti);
         self::writeRow($jti, $userId, $username, $nickname, $ip, $ua, $now, $now + TokenService::ttl());
     }
 
     /**
-     * 刷新活跃时间（带 60 秒节流）；会话不存在时**按令牌声明自愈登记**。
+     * 退掉同一用户在同一终端（IP + UA 相同）上的其他会话。
      *
-     * 为什么需要自愈：登记只发生在登录那一刻，令牌一旦在「登记时 Redis 抖动 / 服务重启 /
-     * 本功能上线前签发」的情况下继续被使用，这条会话就永远进不了在线列表，而且
-     * `rotate()` 也刻意不补建（见其注释）—— 用户明明在线，列表却是空的。
-     * 一个通过鉴权的请求本身就证明会话有效，用令牌的 `iat` / `exp` 回填最贴近事实：
-     * 展示的登录时间是真实签发时间，而不是「首次被发现的时刻」。
+     * 判定口径包含 IP：同一台机器上不同浏览器的 UA 不同，不会被误判；而同一个浏览器
+     * （含刷新 / 重新登录 / 多标签）的 UA 与 IP 都一致，正是要清理的对象。
+     * 旧令牌一并写黑名单 —— 否则它只是从列表里消失、实际仍然可用。
      *
-     * 会话已存在时行为不变：只刷新活跃时间与 Hash 存活期，**不**延长令牌过期时间
-     * （`exp` 是签发时固定的）。
-     *
-     * @param UserContext|null $user 当前登录用户；为 null 时不做自愈（保持旧调用方语义）
-     * @param int              $issuedAt  令牌签发时间（`iat`），自愈时作为登录时间
-     * @param int              $expiresAt 令牌过期时间（`exp`），自愈时作为会话过期时间
+     * UA 为空时无法判定终端，直接跳过（宁可不清理，也不要一次清掉该用户的全部会话）。
      */
-    public static function touch(
-        string $jti,
-        ?UserContext $user = null,
-        string $ip = '',
-        string $ua = '',
-        int $issuedAt = 0,
-        int $expiresAt = 0,
-    ): void {
+    private static function retireSameDevice(int $userId, string $ip, string $ua, string $exceptJti): void
+    {
+        $ua = mb_substr($ua, 0, 255);
+        if ($ua === '') {
+            return;
+        }
+
+        // 先收集再删除：遍历过程中删除成员会让 ZSet 的 offset 偏移，导致漏扫
+        $stale = [];
+        self::scanAll(static function (string $jti, array $row) use ($userId, $ip, $ua, $exceptJti, &$stale): void {
+            if ($jti === $exceptJti || (int)($row['user_id'] ?? 0) !== $userId) {
+                return;
+            }
+            if ((string)($row['ip'] ?? '') !== $ip || (string)($row['ua'] ?? '') !== $ua) {
+                return;
+            }
+
+            $stale[] = [$jti, (int)($row['exp'] ?? 0)];
+        });
+
+        foreach ($stale as [$oldJti, $exp]) {
+            TokenBlacklist::revoke($oldJti, $exp);
+            self::remove($oldJti);
+        }
+    }
+
+    /**
+     * 刷新活跃时间（带 60 秒节流）。
+     *
+     * 会话只在登录时登记，这里**不补建**：宁可在列表里少一条，也不要让一个没有
+     * 登录入口的 jti 变成孤儿会话（同一用户同设备出现两条记录，就是这么来的）。
+     */
+    public static function touch(string $jti): void
+    {
         if ($jti === '') {
             return;
         }
@@ -110,23 +137,7 @@ final class OnlineSession
         try {
             $key  = self::SESSION_PREFIX . $jti;
             $last = Redis::hGet($key, 'last_at');
-
             if ($last === false || $last === null) {
-                // 会话缺失：自愈回填（写入是幂等的，并发请求重复写同一行无害）
-                if ($user !== null && $user->id > 0) {
-                    $now = time();
-                    self::writeRow(
-                        $jti,
-                        $user->id,
-                        $user->username,
-                        $user->nickname,
-                        $ip,
-                        $ua,
-                        $issuedAt > 0 ? $issuedAt : $now,
-                        $expiresAt > 0 ? $expiresAt : $now + TokenService::ttl(),
-                    );
-                }
-
                 return;
             }
 
@@ -139,7 +150,7 @@ final class OnlineSession
             Redis::expire($key, TokenService::ttl());
             Redis::zAdd(self::INDEX_KEY, $now, $jti);
         } catch (Throwable) {
-            // 降级
+            // 降级：在线列表属于可观测能力，不该因缓存故障影响业务
         }
     }
 
@@ -164,19 +175,21 @@ final class OnlineSession
      * 续期后令牌的 jti 变了，而在线列表与「强制下线」都以 jti 为准 —— 不迁移的话，
      * 管理员在列表里踢掉的是**已经废弃的旧令牌**，用户手里的新令牌依然有效。
      *
-     * 会话不存在（未登记 / Redis 不可用）时静默跳过，**不新建**：登录时登记是唯一入口。
+     * 返回 false 表示旧会话不存在或迁移失败：调用方**不应下发**这个新令牌。
+     * 否则新 jti 没有对应会话，下次请求会靠 `touch()` 自愈出一条孤儿记录，
+     * 表现为同一用户在同一设备上出现两条在线记录。
      */
-    public static function rotate(string $oldJti, string $newJti, int $exp): void
+    public static function rotate(string $oldJti, string $newJti, int $exp): bool
     {
         if ($oldJti === '' || $newJti === '' || $oldJti === $newJti) {
-            return;
+            return false;
         }
 
         try {
             $key = self::SESSION_PREFIX . $oldJti;
             $row = Redis::hGetAll($key);
             if (!is_array($row) || $row === []) {
-                return;
+                return false;
             }
 
             $now = time();
@@ -191,8 +204,44 @@ final class OnlineSession
 
             Redis::del($key);
             Redis::zRem(self::INDEX_KEY, $oldJti);
+
+            return true;
         } catch (Throwable) {
             // 降级：不迁移。旧会话仍在，最坏是列表里短暂显示旧令牌
+            return false;
+        }
+    }
+
+    /**
+     * 续期互斥：同一旧 jti 只允许一个请求做迁移。
+     *
+     * 并发请求都带着同一个旧令牌，若各自签发并下发新 jti，Redis 里就会留下多条
+     * 该用户的在线记录（浏览器最终只保存其中一个）。Redis 不可用时放行，
+     * 避免缓存故障把续期整体拖死。
+     */
+    public static function lockRenew(string $jti): bool
+    {
+        if ($jti === '') {
+            return true;
+        }
+
+        try {
+            return (bool)Redis::set(self::RENEW_LOCK_PREFIX . $jti, '1', 'EX', 5, 'NX');
+        } catch (Throwable) {
+            return true;
+        }
+    }
+
+    public static function unlockRenew(string $jti): void
+    {
+        if ($jti === '') {
+            return;
+        }
+
+        try {
+            Redis::del(self::RENEW_LOCK_PREFIX . $jti);
+        } catch (Throwable) {
+            // 锁会自然过期
         }
     }
 
@@ -781,7 +830,7 @@ final class OnlineSession
     /**
      * 从 UA 派生终端信息（设备类型 / 操作系统 / 浏览器）。
      *
-     * 只存 UA、展示时再派生：旧会话无需迁移，UA 解析规则调整后历史记录同样生效。
+     * 只存 UA、展示时再派生：UA 解析规则调整后已有记录同样生效。
      *
      * @return array{device:string,os:string,browser:string}
      */

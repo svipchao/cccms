@@ -248,7 +248,8 @@ final class TenantContext
      */
     public static function usable(int $tenantId): bool
     {
-        if ($tenantId === self::PLATFORM_ID) {
+        // 非法 id（负数）按平台处理：调用方传入未初始化的值时不应把整条鉴权链判成不可用
+        if ($tenantId <= self::PLATFORM_ID) {
             return true;
         }
 

@@ -12,6 +12,7 @@ use plugin\cccms\support\PermissionMeta;
 use plugin\cccms\support\PermScanner;
 use plugin\cccms\support\SqlFileRunner;
 use plugin\cccms\support\SysConfig;
+use support\Log;
 
 /**
  * 系统维护：把原先只能在命令行执行的动作搬到后台界面。
@@ -31,17 +32,36 @@ final class MaintenanceLogic
         }
 
         $result = [];
+        $cost   = [];
+        $start  = microtime(true);
+
+        // 每步单独计时：刷新变慢时能直接从日志 / 响应看出卡在哪一步
         if ($scope === 'all' || $scope === 'menu') {
+            $t = microtime(true);
             $result['menu'] = MenuSyncer::syncAll();
+            $cost['menu']   = (int)round((microtime(true) - $t) * 1000);
         }
         if ($scope === 'all' || $scope === 'perm') {
+            $t = microtime(true);
             $result['perm'] = self::syncPermissionNodes();
+            $cost['perm']   = (int)round((microtime(true) - $t) * 1000);
         }
         if ($scope === 'all' || $scope === 'schema') {
+            $t = microtime(true);
             $result['schema'] = self::syncPluginSchemas();
+            $cost['schema']   = (int)round((microtime(true) - $t) * 1000);
         }
         if ($scope === 'all' || $scope === 'cache') {
+            $t = microtime(true);
             $result['cache'] = self::clearCache();
+            $cost['cache']   = (int)round((microtime(true) - $t) * 1000);
+        }
+
+        $cost['total'] = (int)round((microtime(true) - $start) * 1000);
+        $result['cost'] = $cost;
+
+        if ($cost['total'] > 1000) {
+            Log::warning('[maintenance] refresh scope=' . $scope . ' cost=' . json_encode($cost));
         }
 
         return $result;

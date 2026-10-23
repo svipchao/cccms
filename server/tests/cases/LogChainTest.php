@@ -82,11 +82,6 @@ return static function (): void {
                 '字段顺序必须固定'
             );
 
-            // 历史行（hash_version = 0）仍然用最初的 16 个字段校验，新增字段不参与
-            $legacy = LogChain::normalize(['action_id' => 'a', 'session_id' => 's'], 0);
-            same(16, count($legacy), 'v0 字段集必须保持 16 个');
-            ok(!array_key_exists('action_id', $legacy), 'v0 不包含后来新增的字段');
-
             same(7, $normalized['user_id'], '数值列按 int 取值');
             same(0, $normalized['status'], '字符串 "0" 也是 int 0');
             same(12, $normalized['cost'], '浮点截断为 int');

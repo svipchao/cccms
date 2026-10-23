@@ -53,6 +53,9 @@
     }
   },
   "scripts": {
+    "post-autoload-dump": [
+      "@php support/vendor_patch.php"
+    ],
     "post-package-install": [
       "support\\Plugin::install"
     ],

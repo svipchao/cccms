@@ -21,8 +21,8 @@ use Throwable;
  *
  * ## 刻意**不**报为问题的情形
  *
- * - **未纳入链的行**（`row_hash` 为空）：本能力上线前的历史行，以及链表不可用时的
- *   降级写入。它们无法被证明，也不该被当成篡改，只统计条数（`unchained`）。
+ * - **未纳入链的行**（`row_hash` 为空）：链表不可用或未配置签名密钥时的降级写入。
+ *   它们无法被证明，也不该被当成篡改，只统计条数（`unchained`）。
  * - **校验起点那行的 `prev_hash`**：归档 / 清理 / 管理员删除都会合法地拿掉链的头部，
  *   起点的前驱可能已经不存在，因此只从起点往后校验（`anchor_id` 由 `LogChain::reanchor()` 维护）。
  * - **链中间的合法删除**：应用删除操作日志（`/log/delete`）只会 reanchor 头部，
@@ -105,13 +105,10 @@ final class LogVerifier
                     continue;
                 }
 
-                // 按行上记录的版本重算：v0 = 16 字段（sha256）、v1 = 含 action_id / session_id（sha256）、
-                // v2 = 字段集同 v1 但用 HMAC。版本必须传给 `hash()`，否则 v2 行会被判成「内容被改过」。
-                $rowVersion = (int)($row['hash_version'] ?? 0);
-                $expected   = LogChain::hash(
+                // 字段集与算法固定（HMAC-SHA256），与写入侧共用同一套 normalize()
+                $expected = LogChain::hash(
                     (string)($row['prev_hash'] ?? ''),
-                    LogChain::normalize($row, $rowVersion),
-                    $rowVersion
+                    LogChain::normalize($row)
                 );
                 if ($expected !== $hash) {
                     self::addBreak($totals, $id, 'content_modified', '重算哈希与库中 row_hash 不一致（行内容被改过）');
@@ -147,8 +144,7 @@ final class LogVerifier
      * 看起来"正常地变短了"。
      *
      * ⚠️ 比对对象必须是「最后一条**带哈希**的行」，不能用「最后一条被读到的行」：
-     * 本能力上线前的历史行没有哈希、且在 id 上排在后面（比如升级当天新写的日志之后
-     * 还有更早导入的数据），拿它们去比会天天误报。
+     * 降级写入的行没有哈希，拿它们去比会天天误报。
      *
      * @param array<string,mixed> $totals
      * @param array<string,mixed>|null $chain

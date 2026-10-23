@@ -49,6 +49,7 @@ export default {
   refreshMenu: '菜单 新增 {created} / 更新 {updated} / 清理 {removed}',
   refreshPerm: '按钮 新增 {created} / 跳过 {skipped}',
   refreshCacheDone: '缓存已清理',
+  refreshTimeout: '刷新请求超时，后台可能仍在执行，请稍后查看菜单与权限是否已更新',
   tagbar: {
     refresh: '刷新',
     favoriteAdd: '收藏到快捷导航',

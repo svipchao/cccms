@@ -42,6 +42,47 @@ final class GeneratorLogic
         }
     }
 
+    /**
+     * 生成器可用性（页面据此决定渲染表单还是「未启用」提示）。
+     *
+     * 与 `Upgrader::environment()` 同一口径：页面拿到 `allowed = false` 时直接显示
+     * 拦截原因，而不是让用户点进表单、再在调用接口时吃一个 403 弹窗。
+     *
+     * @return array{key:string,allowed:bool,blocked_by:string,reason:string,marker:string}
+     */
+    public static function environment(): array
+    {
+        $blockedBy = Environment::blockedBy('generator');
+
+        if ($blockedBy === 'environment') {
+            return [
+                'key'        => 'production',
+                'allowed'    => false,
+                'blocked_by' => 'environment',
+                'reason'     => I18n::t('generator.disabled_production'),
+                'marker'     => Environment::DEV_MARKER,
+            ];
+        }
+
+        if ($blockedBy === 'switch') {
+            return [
+                'key'        => 'dev',
+                'allowed'    => false,
+                'blocked_by' => 'switch',
+                'reason'     => I18n::t('generator.disabled_switch'),
+                'marker'     => Environment::DEV_MARKER,
+            ];
+        }
+
+        return [
+            'key'        => 'dev',
+            'allowed'    => true,
+            'blocked_by' => '',
+            'reason'     => '',
+            'marker'     => Environment::DEV_MARKER,
+        ];
+    }
+
     public static function tables(): array
     {
         self::ensureAvailable();

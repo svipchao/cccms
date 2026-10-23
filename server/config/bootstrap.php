@@ -12,6 +12,6 @@
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-return [
-    support\bootstrap\Session::class,
-];
+// 本项目用 JWT + support/OnlineSession 维护会话，不使用 PHP Session，
+// 因此不注册 webman 的 Session 引导（注册它会要求 config/session.php 必须存在）。
+return [];

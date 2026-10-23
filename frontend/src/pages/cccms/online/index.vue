@@ -119,7 +119,12 @@ async function onKick(row: OnlineSession): Promise<void> {
   } catch {
     return
   }
-  await onlineKick(row.jti)
+  try {
+    await onlineKick(row.jti)
+  } catch {
+    // 错误提示由 axios 拦截器统一处理，这里只吞掉 rejection 避免冒泡到 Vue
+    return
+  }
   ElMessage.success(t('online.kickSuccess'))
   load()
 }
@@ -132,8 +137,13 @@ async function onKickUser(row: OnlineSession): Promise<void> {
   } catch {
     return
   }
-  const res = await onlineKickUser(row.user_id)
-  ElMessage.success(t('online.kickUserSuccess', { count: res.sessions }))
+  try {
+    const res = await onlineKickUser(row.user_id)
+    ElMessage.success(t('online.kickUserSuccess', { count: res.sessions }))
+  } catch {
+    // 同上：提示已在拦截器里给出
+    return
+  }
   load()
 }
 </script>

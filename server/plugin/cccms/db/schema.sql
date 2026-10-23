@@ -14,7 +14,7 @@ SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 -- 租户：单库共享表 + tenant_id 隔离。只存真实租户（id >= 1），
 -- 平台租户（0）不占行，避免自增列「插入 0 取下一个值」的歧义。
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_tenant` (
+CREATE TABLE IF NOT EXISTS `sys_tenant` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `name`        varchar(64)  NOT NULL COMMENT '租户名称',
   `code`        varchar(64)  NOT NULL COMMENT '租户标识(全局唯一)',
@@ -36,7 +36,7 @@ CREATE TABLE `sys_tenant` (
 -- ---------------------------------------------------------------------
 -- 用户
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_user` (
+CREATE TABLE IF NOT EXISTS `sys_user` (
   `id`           bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`    bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `username`     varchar(64)  NOT NULL COMMENT '登录账号',
@@ -63,7 +63,7 @@ CREATE TABLE `sys_user` (
 -- data_scope 默认 4（仅本人）：档位不继承父角色、取最宽松值，
 -- 漏配时必须落到最窄档位，否则新建角色会静默拿到全库可见范围。
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_role` (
+CREATE TABLE IF NOT EXISTS `sys_role` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `name`        varchar(64)  NOT NULL COMMENT '角色名',
@@ -87,7 +87,7 @@ CREATE TABLE `sys_role` (
 -- ---------------------------------------------------------------------
 -- 用户-角色
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_user_role` (
+CREATE TABLE IF NOT EXISTS `sys_user_role` (
   `id`      bigint unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint unsigned NOT NULL,
   `role_id` bigint unsigned NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE `sys_user_role` (
 -- ---------------------------------------------------------------------
 -- 菜单 + 权限节点树（node = slug，全局唯一）
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_menu` (
+CREATE TABLE IF NOT EXISTS `sys_menu` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `parent_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '父节点',
   `type`        tinyint      NOT NULL DEFAULT 1 COMMENT '1目录 2菜单 3按钮',
@@ -125,7 +125,7 @@ CREATE TABLE `sys_menu` (
 -- ---------------------------------------------------------------------
 -- 角色-节点授权
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_role_node` (
+CREATE TABLE IF NOT EXISTS `sys_role_node` (
   `id`      bigint unsigned NOT NULL AUTO_INCREMENT,
   `role_id` bigint unsigned NOT NULL,
   `node`    varchar(128) NOT NULL COMMENT 'slug',
@@ -136,7 +136,7 @@ CREATE TABLE `sys_role_node` (
 -- ---------------------------------------------------------------------
 -- 部门（无限级）
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_dept` (
+CREATE TABLE IF NOT EXISTS `sys_dept` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `parent_id`   bigint unsigned NOT NULL DEFAULT 0,
@@ -158,7 +158,7 @@ CREATE TABLE `sys_dept` (
 -- ---------------------------------------------------------------------
 -- 用户-部门（多对多）
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_user_dept` (
+CREATE TABLE IF NOT EXISTS `sys_user_dept` (
   `id`      bigint unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint unsigned NOT NULL,
   `dept_id` bigint unsigned NOT NULL,
@@ -169,7 +169,7 @@ CREATE TABLE `sys_user_dept` (
 -- ---------------------------------------------------------------------
 -- 部门-角色
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_dept_role` (
+CREATE TABLE IF NOT EXISTS `sys_dept_role` (
   `id`      bigint unsigned NOT NULL AUTO_INCREMENT,
   `dept_id` bigint unsigned NOT NULL,
   `role_id` bigint unsigned NOT NULL,
@@ -180,7 +180,7 @@ CREATE TABLE `sys_dept_role` (
 -- ---------------------------------------------------------------------
 -- 岗位
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_post` (
+CREATE TABLE IF NOT EXISTS `sys_post` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `code`        varchar(64)  NOT NULL COMMENT '岗位编码',
@@ -199,7 +199,7 @@ CREATE TABLE `sys_post` (
 -- ---------------------------------------------------------------------
 -- 用户-岗位
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_user_post` (
+CREATE TABLE IF NOT EXISTS `sys_user_post` (
   `id`      bigint unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint unsigned NOT NULL,
   `post_id` bigint unsigned NOT NULL,
@@ -210,7 +210,7 @@ CREATE TABLE `sys_user_post` (
 -- ---------------------------------------------------------------------
 -- 数据权限规则（行级 + 字段级）
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_data_rule` (
+CREATE TABLE IF NOT EXISTS `sys_data_rule` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `name`        varchar(64)  NOT NULL DEFAULT '' COMMENT '规则名',
@@ -244,7 +244,7 @@ CREATE TABLE `sys_data_rule` (
 -- 数据权限受控表（哪些表可以配「自定义规则」）
 -- 未登记不代表没有数据权限：预设基线由模型声明决定，与登记无关。
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_data_scope_table` (
+CREATE TABLE IF NOT EXISTS `sys_data_scope_table` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `table_name`  varchar(64)  NOT NULL COMMENT '表名(不含前缀)',
@@ -262,7 +262,7 @@ CREATE TABLE `sys_data_scope_table` (
 -- ---------------------------------------------------------------------
 -- 通用分类（多模块共用，按 module 区分；可层级）
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_category` (
+CREATE TABLE IF NOT EXISTS `sys_category` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `module`      varchar(32)  NOT NULL DEFAULT '' COMMENT '所属模块 dict/file',
@@ -283,7 +283,7 @@ CREATE TABLE `sys_category` (
 -- ---------------------------------------------------------------------
 -- 数据字典
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_dict_type` (
+CREATE TABLE IF NOT EXISTS `sys_dict_type` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `category_id` bigint unsigned NOT NULL DEFAULT 0 COMMENT '分类ID(0=未分类)',
@@ -301,7 +301,7 @@ CREATE TABLE `sys_dict_type` (
   CONSTRAINT `ck_dict_type_status` CHECK (`status` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='字典类型';
 
-CREATE TABLE `sys_dict_data` (
+CREATE TABLE IF NOT EXISTS `sys_dict_data` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `type_id`     bigint unsigned NOT NULL COMMENT '字典类型ID',
@@ -322,7 +322,7 @@ CREATE TABLE `sys_dict_data` (
 -- ---------------------------------------------------------------------
 -- 系统配置
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_config` (
+CREATE TABLE IF NOT EXISTS `sys_config` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `name`        varchar(64)  NOT NULL COMMENT '配置键',
   `title`       varchar(64)  NOT NULL DEFAULT '' COMMENT '配置名',
@@ -345,7 +345,7 @@ CREATE TABLE `sys_config` (
 -- 操作日志（登录记录 path=/auth/login）
 -- 链式哈希：空串 = 未纳入链（降级写入的行）
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_log` (
+CREATE TABLE IF NOT EXISTS `sys_log` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `user_id`     bigint unsigned NOT NULL DEFAULT 0,
   `username`    varchar(64)  NOT NULL DEFAULT '',
@@ -365,8 +365,7 @@ CREATE TABLE `sys_log` (
   `status_code` int          NOT NULL DEFAULT 200,
   `cost`        int          NOT NULL DEFAULT 0 COMMENT '耗时(ms)',
   `prev_hash`    char(64)     NOT NULL DEFAULT '' COMMENT '上一条记录的 row_hash',
-  `row_hash`     char(64)     NOT NULL DEFAULT '' COMMENT '本行内容哈希 sha256(prev_hash + 规范化行内容)',
-  `hash_version` tinyint unsigned NOT NULL DEFAULT 0 COMMENT '哈希字段集版本(0=16 字段；1=含 action_id/session_id)',
+  `row_hash`     char(64)     NOT NULL DEFAULT '' COMMENT '本行哈希 HMAC-SHA256(prev_hash + 规范化行内容)',
   `create_time`  datetime     DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_user` (`user_id`),
@@ -382,7 +381,7 @@ CREATE TABLE `sys_log` (
 -- 审计链状态（单行表）：只查最大 id 无法发现「尾行被删」，
 -- 因此链尾单独落一行；anchor 是校验起点（归档 / 清理会合法移除头部）。
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_log_chain` (
+CREATE TABLE IF NOT EXISTS `sys_log_chain` (
   `id`          tinyint unsigned NOT NULL COMMENT '固定为 1（单行表）',
   `tail_id`     bigint unsigned NOT NULL DEFAULT 0 COMMENT '链尾记录 id',
   `tail_hash`   char(64)  NOT NULL DEFAULT '' COMMENT '链尾行哈希',
@@ -396,7 +395,7 @@ CREATE TABLE `sys_log_chain` (
 -- ---------------------------------------------------------------------
 -- 附件
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_file` (
+CREATE TABLE IF NOT EXISTS `sys_file` (
   `id`            bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`     bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `name`          varchar(255) NOT NULL DEFAULT '' COMMENT '存储文件名',
@@ -424,7 +423,7 @@ CREATE TABLE `sys_file` (
 -- ---------------------------------------------------------------------
 -- 定时任务
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_crontab` (
+CREATE TABLE IF NOT EXISTS `sys_crontab` (
   `id`             bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`      bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `name`           varchar(64)  NOT NULL COMMENT '任务名称',
@@ -453,7 +452,7 @@ CREATE TABLE `sys_crontab` (
   CONSTRAINT `ck_crontab_overlap` CHECK (`overlap` IN ('skip', 'allow'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='定时任务';
 
-CREATE TABLE `sys_crontab_log` (
+CREATE TABLE IF NOT EXISTS `sys_crontab_log` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `crontab_id`  bigint unsigned NOT NULL DEFAULT 0,
   `name`        varchar(64)  NOT NULL DEFAULT '',
@@ -472,7 +471,7 @@ CREATE TABLE `sys_crontab_log` (
 -- ---------------------------------------------------------------------
 -- 定时任务重试队列：与 cron 调度解耦，重试不吃掉正常调度
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_crontab_retry` (
+CREATE TABLE IF NOT EXISTS `sys_crontab_retry` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `crontab_id`  bigint unsigned NOT NULL COMMENT '任务ID',
   `attempt`     tinyint        NOT NULL DEFAULT 1 COMMENT '第几次重试(1..retry_times)',
@@ -487,7 +486,7 @@ CREATE TABLE `sys_crontab_retry` (
 -- ---------------------------------------------------------------------
 -- 异步导出任务（不参与数据权限，按 user_id 归属）
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_export_task` (
+CREATE TABLE IF NOT EXISTS `sys_export_task` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `type`        varchar(32)  NOT NULL DEFAULT '' COMMENT '导出类型 log/user/data_rule',
   `user_id`     bigint unsigned NOT NULL DEFAULT 0 COMMENT '创建人',
@@ -508,7 +507,7 @@ CREATE TABLE `sys_export_task` (
 -- ---------------------------------------------------------------------
 -- 通知公告（已读状态记录在 sys_notice_read）
 -- ---------------------------------------------------------------------
-CREATE TABLE `sys_notice` (
+CREATE TABLE IF NOT EXISTS `sys_notice` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '租户ID(0=平台)',
   `title`       varchar(128) NOT NULL COMMENT '标题',
@@ -535,7 +534,7 @@ CREATE TABLE `sys_notice` (
   CONSTRAINT `ck_notice_scope` CHECK (`scope` IN (0, 1, 2, 3))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='通知公告';
 
-CREATE TABLE `sys_notice_target` (
+CREATE TABLE IF NOT EXISTS `sys_notice_target` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
   `notice_id`   bigint unsigned NOT NULL COMMENT '公告ID',
   `target_type` varchar(16)  NOT NULL DEFAULT 'user' COMMENT '目标类型 dept/role/user',
@@ -546,7 +545,7 @@ CREATE TABLE `sys_notice_target` (
   CONSTRAINT `ck_notice_target_type` CHECK (`target_type` IN ('dept', 'role', 'user'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='通知公告定向投放';
 
-CREATE TABLE `sys_notice_read` (
+CREATE TABLE IF NOT EXISTS `sys_notice_read` (
   `id`        bigint unsigned NOT NULL AUTO_INCREMENT,
   `notice_id` bigint unsigned NOT NULL,
   `user_id`   bigint unsigned NOT NULL,

@@ -17,7 +17,7 @@ use Webman\Http\Response;
  * 直链由静态文件服务吐出，**不进路由表**，因此没有 `CheckLogin` / `CheckAuth`，也不经过
  * `DataScope`。它带来两类问题，本中间件分别处理：
  *
- * 1. **谁能读**：附件默认公开（兼容存量），上传者可在附件列表把单个附件设为**私有**；
+ * 1. **谁能读**：附件默认私有（`is_public = 0`），上传者可在附件列表放开为公开；
  *    后台配置 `upload.anonymous` 是**总开关**，关掉后所有附件都必须登录后经
  *    `GET /file/download` 读取（该接口有登录态 + 数据权限）。
  * 2. **读到什么**：一律 `X-Content-Type-Options: nosniff`；除图片与 PDF 外强制

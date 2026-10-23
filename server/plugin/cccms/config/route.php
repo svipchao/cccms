@@ -226,6 +226,8 @@ Route::post('/crontab/delete', [CrontabController::class, 'delete']);
 Route::post('/crontab/run', [CrontabController::class, 'run']);
 
 // ---- 代码生成器 ----
+// 可用性探针：页面据此渲染「未启用」提示，避免点进去才吃 403 弹窗
+Route::get('/generator/status', [GeneratorController::class, 'status']);
 Route::get('/generator/tables', [GeneratorController::class, 'tables']);
 Route::get('/generator/columns', [GeneratorController::class, 'columns']);
 Route::post('/generator/preview', [GeneratorController::class, 'preview']);

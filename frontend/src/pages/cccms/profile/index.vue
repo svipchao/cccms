@@ -268,6 +268,8 @@ async function loadSessions(): Promise<void> {
   sessionsLoading.value = true
   try {
     sessions.value = await profileSessions()
+  } catch {
+    // 失败提示由请求拦截器统一处理，这里吞掉异常避免 unhandled rejection
   } finally {
     sessionsLoading.value = false
   }
@@ -286,7 +288,12 @@ async function onRevoke(row: MySession): Promise<void> {
   } catch {
     return
   }
-  await profileRevokeSession(row.jti)
+  try {
+    await profileRevokeSession(row.jti)
+  } catch {
+    // 错误提示由 axios 拦截器统一处理，这里只吞掉 rejection 避免冒泡到 Vue
+    return
+  }
   ElMessage.success(t('profile.revoked'))
   await loadSessions()
 }

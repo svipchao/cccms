@@ -6,7 +6,6 @@ namespace plugin\cccms\app\middleware;
 
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\AuthService;
-use plugin\cccms\support\ClientIp;
 use plugin\cccms\support\I18n;
 use plugin\cccms\support\OnlineSession;
 use plugin\cccms\support\PermissionMeta;
@@ -61,17 +60,8 @@ class CheckLogin implements MiddlewareInterface
             // 挂上当前会话 ID：登出（精确作废）与「在线用户」（禁止踢自己）都要用
             $request->jti = (string)($claims['jti'] ?? '');
 
-            // 刷新在线会话的活跃时间（60 秒节流）；会话缺失时按令牌声明自愈登记
-            // （令牌在本功能上线前签发 / 登记时 Redis 抖动 / 服务重启后仍持有效令牌，
-            //   这些会话不会出现在在线列表，也不该因为「登录是唯一登记入口」而永远缺席）
-            OnlineSession::touch(
-                (string)($claims['jti'] ?? ''),
-                $user,
-                ClientIp::resolve($request),
-                (string)$request->header('user-agent', ''),
-                (int)($claims['iat'] ?? 0),
-                (int)($claims['exp'] ?? 0),
-            );
+            // 只刷新登录时已登记会话的活跃时间（60 秒节流）；未登记就跳过，不补建
+            OnlineSession::touch((string)($claims['jti'] ?? ''));
 
             // 维护模式：把「此前签发的令牌全部失效」这条分界线推上去（幂等，只需一次）。
             // 服务端发 401 而不是 503，是为了让前端走既有的 401 逻辑：
@@ -114,13 +104,27 @@ class CheckLogin implements MiddlewareInterface
             return null;
         }
 
-        // 带上当前生效租户：超管切换租户后若漏传 tid，续期会把他悄悄弹回平台租户
-        $token = TokenService::issue($user->id, ['tid' => $user->tenantId]);
+        $oldJti = (string)($claims['jti'] ?? '');
 
-        // 在线列表 / 强制下线都以 jti 为准，必须把会话迁到新 jti
-        OnlineSession::rotate((string)($claims['jti'] ?? ''), (string)$token['jti'], (int)$token['expires_at']);
+        // 同一旧 jti 只允许一个请求续期：并发续期会签发多个新 jti，浏览器最终只保存一个，
+        // 其余会在 Redis 里变成该用户的重复在线记录。
+        if (!OnlineSession::lockRenew($oldJti)) {
+            return null;
+        }
 
-        return (string)$token['token'];
+        try {
+            // 带上当前生效租户：超管切换租户后若漏传 tid，续期会把他悄悄弹回平台租户
+            $token = TokenService::issue($user->id, ['tid' => $user->tenantId]);
+
+            // 迁移失败说明旧会话已被别的请求迁走，不再下发这个没有会话记录的新令牌
+            if (!OnlineSession::rotate($oldJti, (string)$token['jti'], (int)$token['expires_at'])) {
+                return null;
+            }
+
+            return (string)$token['token'];
+        } finally {
+            OnlineSession::unlockRenew($oldJti);
+        }
     }
 
     /** 被闸门作废时给用户的提示：维护期间说维护，平时说会话失效 */

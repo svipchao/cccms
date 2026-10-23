@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance, type AxiosResponse } from 'axios'
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import { currentLocale, t } from '@/locales'
 import { clearToken, getToken, setToken } from '@/utils/auth'
@@ -160,11 +160,11 @@ instance.interceptors.response.use(
 )
 
 export const http = {
-  get<T = unknown>(url: string, params?: Record<string, unknown>): Promise<T> {
-    return instance.get(url, { params }) as unknown as Promise<T>
+  get<T = unknown>(url: string, params?: Record<string, unknown>, config?: AxiosRequestConfig): Promise<T> {
+    return instance.get(url, { ...config, params }) as unknown as Promise<T>
   },
-  post<T = unknown>(url: string, data?: unknown): Promise<T> {
-    return instance.post(url, data) as unknown as Promise<T>
+  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    return instance.post(url, data, config) as unknown as Promise<T>
   },
 }
 
