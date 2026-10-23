@@ -27,7 +27,7 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     name: 'login',
     component: () => import('@/pages/cccms/login/index.vue'),
-    meta: { public: true, title: 'route.login' },
+    meta: { public: true, title: 'core.route.login' },
   },
   {
     path: '/',
@@ -40,7 +40,7 @@ const routes: RouteRecordRaw[] = [
         name: 'dashboard',
         component: () => import('@/pages/cccms/dashboard/index.vue'),
         // 标题与菜单里的「工作台」保持一致（面包屑 / 标签页 / document.title 都取这里）
-        meta: { title: 'route.dashboard', icon: 'icon-home' },
+        meta: { title: 'core.route.dashboard', icon: 'icon-home' },
       },
       {
         path: 'profile',
@@ -48,7 +48,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/cccms/profile/index.vue'),
         // 个人中心是静态路由（不写进 db/menu.php），所以不会出现在左侧菜单里；
         // 入口在右上角用户下拉。
-        meta: { title: 'route.profile', icon: 'icon-user' },
+        meta: { title: 'core.route.profile', icon: 'icon-user' },
       },
     ],
   },
@@ -61,7 +61,7 @@ const routes: RouteRecordRaw[] = [
     // 就会「跳 403 → 403 自己又校验失败 → 再跳 403」形成无限重定向。
     // 不标 public 是为了保持与 404 兜底同样的语义：刷新首帧仍会先落到 404 兜底，
     // 由守卫完成动态路由注册后再按 path 重新导航到 /403。
-    meta: { title: 'route.forbidden' },
+    meta: { title: 'core.route.forbidden' },
   },
   {
     path: '/:pathMatch(.*)*',
@@ -70,7 +70,7 @@ const routes: RouteRecordRaw[] = [
     // 注意：这里**不能**标 public。
     // 刷新页面时首帧一定先落到这个兜底路由（动态路由尚未注册），
     // 若守卫因为它 public 就提前返回，就会跳过动态路由注册，把「刷新」误判成 404。
-    meta: { title: 'route.notFound' },
+    meta: { title: 'core.route.notFound' },
   },
 ]
 
@@ -196,7 +196,7 @@ router.afterEach((to) => {
 /**
  * 刷新浏览器标签标题。
  *
- * `meta.title` 有两种取值：前端静态路由的 i18n key（`route.dashboard`）与后端下发的
+ * `meta.title` 有两种取值：前端静态路由的 i18n key（`core.route.dashboard`）与后端下发的
  * 已翻译菜单标题，交给 `translateTitle()` 统一处理。切换语言后需要再调一次 ——
  * afterEach 只在导航时触发，不会因语言变化重跑。
  */

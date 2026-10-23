@@ -1,8 +1,8 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
-export function dictTypeList(params: Record<string, unknown>) {
-  return http.get<PageResult>('/dict', params)
+export function dictTypeList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult>('/dict', params, config)
 }
 
 export function dictTypeSave(data: Record<string, unknown>) {

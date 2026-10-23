@@ -9,6 +9,7 @@ use plugin\cccms\support\attribute\NoAuth;
 use plugin\cccms\support\attribute\NoLogin;
 use plugin\cccms\support\attribute\Permission;
 use plugin\cccms\support\attribute\Restrict;
+use plugin\cccms\support\Scan\PluginFs;
 use ReflectionClass;
 use ReflectionMethod;
 
@@ -39,10 +40,10 @@ final class PermScanner
     public static function pluginScanners(): array
     {
         $scanners = [];
-        foreach (glob(base_path() . '/plugin/*', GLOB_ONLYDIR) ?: [] as $pluginDir) {
+        // 插件目录口径统一由 PluginFs 提供（与 data-scope-check / write-guard-check 共用）
+        foreach (PluginFs::pluginDirs() as $pluginDir) {
             $controllerDir = $pluginDir . '/app/controller';
-            // 非 CCCMS 业务插件（无 db/menu.php）跳过：其控制器不受权限注解约束
-            if (!is_dir($controllerDir) || !is_file($pluginDir . '/db/menu.php')) {
+            if (!is_dir($controllerDir)) {
                 continue;
             }
             $plugin = basename($pluginDir);
@@ -243,15 +244,8 @@ final class PermScanner
         if ($group !== null && $group !== '' && in_array($group, $menuSlugs, true)) {
             return $group;
         }
-        $best = null;
-        foreach ($menuSlugs as $m) {
-            if ($m !== '' && str_starts_with($slug, $m . ':')) {
-                if ($best === null || strlen($m) > strlen($best)) {
-                    $best = $m;
-                }
-            }
-        }
-        return $best;
+
+        return Slug::longestOwner($slug, $menuSlugs);
     }
 
     /**

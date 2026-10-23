@@ -7,6 +7,7 @@ namespace plugin\cccms\app\logic;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\I18n;
 use plugin\cccms\support\OnlineSession;
+use plugin\cccms\support\Realtime;
 use plugin\cccms\support\TokenBlacklist;
 use plugin\cccms\support\UserContext;
 
@@ -65,8 +66,14 @@ final class OnlineLogic
         }
 
         // 精确作废：用会话里登记的 exp 计算黑名单 TTL，不留多余垃圾
+        $ownerId = OnlineSession::ownerOf($jti);
         TokenBlacklist::revoke($jti, OnlineSession::expiryOf($jti));
         OnlineSession::remove($jti);
+
+        // 实时催一下：不带 jti 的话，同一账号在别的设备上的会话也会被前端误登出
+        if ($ownerId > 0) {
+            Realtime::publish($ownerId, 'logout', ['reason' => 'kicked', 'jti' => $jti]);
+        }
     }
 
     /**
@@ -88,7 +95,12 @@ final class OnlineLogic
         $maxExp = OnlineSession::maxExpiryOfUser($userId);
         TokenBlacklist::revokeUser($userId, 0, $maxExp > 0 ? $maxExp - time() : 0);
 
-        return OnlineSession::removeUser($userId);
+        $removed = OnlineSession::removeUser($userId);
+
+        // 该用户所有设备一起下线，所以不带 jti：前端收到就清本地登录态
+        Realtime::publish($userId, 'logout', ['reason' => 'kicked_all']);
+
+        return $removed;
     }
 
     /** 清理已过期会话的索引残留（可挂到定时任务） */

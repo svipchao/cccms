@@ -1,8 +1,8 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
-export function postList(params: Record<string, unknown>) {
-  return http.get<PageResult>('/post', params)
+export function postList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult>('/post', params, config)
 }
 
 export function postSave(data: Record<string, unknown>) {

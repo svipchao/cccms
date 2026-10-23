@@ -1,12 +1,12 @@
 <template>
-  <el-drawer v-model="visible" :title="t('setting.title')" :size="320" append-to-body>
+  <el-drawer v-model="visible" :title="t('core.setting.title')" :size="320" append-to-body>
     <div class="setting-block">
-      <div class="setting-label">{{ t('setting.mode') }}</div>
+      <div class="setting-label">{{ t('core.setting.mode') }}</div>
       <el-segmented v-model="mode" :options="MODE_OPTIONS" block />
     </div>
 
     <div class="setting-block">
-      <div class="setting-label">{{ t('setting.primary') }}</div>
+      <div class="setting-label">{{ t('core.setting.primary') }}</div>
       <div class="setting-colors">
         <button
           v-for="c in PRESET_COLORS"
@@ -28,7 +28,7 @@
 
     <div class="setting-block">
       <div class="setting-label">
-        {{ t('setting.radius') }}
+        {{ t('core.setting.radius') }}
         <span class="setting-value">{{ setting.theme.radius }}px</span>
       </div>
       <el-slider :model-value="setting.theme.radius" :min="0" :max="20" :step="1" @input="setting.setRadius" />
@@ -36,9 +36,9 @@
 
     <div class="setting-block">
       <div class="setting-label">
-        {{ t('setting.containerWidth') }}
+        {{ t('core.setting.containerWidth') }}
         <span class="setting-value">
-          {{ setting.theme.containerWidth > 0 ? `${setting.theme.containerWidth}px` : t('setting.fullWidth') }}
+          {{ setting.theme.containerWidth > 0 ? `${setting.theme.containerWidth}px` : t('core.setting.fullWidth') }}
         </span>
       </div>
       <el-slider
@@ -51,9 +51,9 @@
     </div>
 
     <p class="setting-hint">
-      {{ setting.hasOwnPref ? t('setting.ownPref') : t('setting.systemPref') }}
+      {{ setting.hasOwnPref ? t('core.setting.ownPref') : t('core.setting.systemPref') }}
     </p>
-    <el-button class="setting-reset" @click="onResetToSystem">{{ t('setting.resetToSystem') }}</el-button>
+    <el-button class="setting-reset" @click="onResetToSystem">{{ t('core.setting.resetToSystem') }}</el-button>
   </el-drawer>
 </template>
 
@@ -77,9 +77,9 @@ function onResetToSystem(): void {
 }
 
 const MODE_OPTIONS = computed(() => [
-  { label: t('setting.light'), value: 'light' },
-  { label: t('setting.dark'), value: 'dark' },
-  { label: t('setting.auto'), value: 'auto' },
+  { label: t('core.setting.light'), value: 'light' },
+  { label: t('core.setting.dark'), value: 'dark' },
+  { label: t('core.setting.auto'), value: 'auto' },
 ])
 
 const mode = computed<ThemeMode>({

@@ -1,8 +1,8 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
-export function userList(params: Record<string, unknown>) {
-  return http.get<PageResult>('/user', params)
+export function userList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult>('/user', params, config)
 }
 
 export function userRead(id: number) {

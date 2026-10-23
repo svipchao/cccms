@@ -4,23 +4,23 @@
       <template #header>
         <div class="cfg-head">
           <div class="cfg-head-left">
-            <span class="cfg-title">{{ t('config.pageTitle') }}</span>
+            <span class="cfg-title">{{ t('cccms.config.pageTitle') }}</span>
             <el-tag v-if="dirtyCount" type="warning" effect="light" size="small">
-              {{ t('config.dirtyCount', { count: dirtyCount }) }}
+              {{ t('cccms.config.dirtyCount', { count: dirtyCount }) }}
             </el-tag>
-            <span v-else class="cfg-count">{{ t('config.totalCount', { count: items.length }) }}</span>
+            <span v-else class="cfg-count">{{ t('cccms.config.totalCount', { count: items.length }) }}</span>
           </div>
 
           <div class="cfg-head-right">
-            <el-input v-model="keyword" :placeholder="t('config.searchPlaceholder')" clearable class="cfg-search"
+            <el-input v-model="keyword" :placeholder="t('cccms.config.searchPlaceholder')" clearable class="cfg-search"
               ><template #prefix><i class="ri-search-line" /></template
             ></el-input>
             <el-button @click="reload"
-              ><template #icon><i class="ri-refresh-line" /></template>{{ t('common.refresh') }}</el-button
+              ><template #icon><i class="ri-refresh-line" /></template>{{ t('core.common.refresh') }}</el-button
             >
             <el-button :disabled="!dirtyCount" @click="discard"
               ><template #icon><i class="ri-restart-line" /></template>
-              {{ t('config.discard') }}
+              {{ t('cccms.config.discard') }}
             </el-button>
             <el-button
               v-auth="'cccms:config:save'"
@@ -29,21 +29,26 @@
               :disabled="!dirtyCount"
               @click="onSave"
               ><template #icon><i class="ri-check-line" /></template>
-              {{ dirtyCount ? t('config.saveCount', { count: dirtyCount }) : t('common.save') }}
+              {{ dirtyCount ? t('cccms.config.saveCount', { count: dirtyCount }) : t('core.common.save') }}
             </el-button>
           </div>
         </div>
       </template>
 
       <div class="cfg-body">
-        <!-- 分组导航 -->
+        <!-- 分组导航：点击滚动到对应分组，滚动时自动高亮当前分组 -->
         <aside class="cfg-aside">
           <ul class="cfg-groups">
-            <li :class="{ 'is-active': group === '' }" @click="group = ''">
-              <span>{{ t('config.all') }}</span>
+            <li :class="{ 'is-active': activeGroup === '' }" @click="scrollToGroup('')">
+              <span>{{ t('cccms.config.all') }}</span>
               <em>{{ filtered.length }}</em>
             </li>
-            <li v-for="g in groups" :key="g.name" :class="{ 'is-active': group === g.name }" @click="group = g.name">
+            <li
+              v-for="g in groups"
+              :key="g.name"
+              :class="{ 'is-active': activeGroup === g.name }"
+              @click="scrollToGroup(g.name)"
+            >
               <span>{{ g.label }}</span>
               <em>{{ g.count }}</em>
             </li>
@@ -51,16 +56,21 @@
         </aside>
 
         <!-- 表单 -->
-        <div class="cfg-main">
+        <div ref="mainRef" class="cfg-main" @scroll.passive="onMainScroll">
           <el-skeleton v-if="loading" :rows="8" animated />
 
           <el-empty
             v-else-if="!visibleGroups.length"
-            :description="keyword ? t('config.noMatch') : t('config.empty')"
+            :description="keyword ? t('cccms.config.noMatch') : t('cccms.config.empty')"
           />
 
           <template v-else>
-            <section v-for="g in visibleGroups" :key="g.name" class="cfg-section">
+            <section
+              v-for="g in visibleGroups"
+              :key="g.name"
+              :ref="(el: unknown) => setSectionRef(g.name, el)"
+              class="cfg-section"
+            >
               <h3 class="cfg-section-title">{{ g.label }}</h3>
 
               <el-form label-width="180px" label-position="right">
@@ -91,7 +101,7 @@
                     <el-select
                       v-else-if="item.type === 'select'"
                       v-model="values[item.name]"
-                      :placeholder="t('config.selectPlaceholder')"
+                      :placeholder="t('cccms.config.selectPlaceholder')"
                       style="width: 260px"
                     >
                       <el-option
@@ -124,14 +134,14 @@
                       v-model="values[item.name]"
                       type="password"
                       show-password
-                      :placeholder="t('config.passwordPlaceholder')"
+                      :placeholder="t('cccms.config.passwordPlaceholder')"
                       style="max-width: 420px"
                     />
 
                     <el-input
                       v-else
                       v-model="values[item.name]"
-                      :placeholder="t('config.inputPlaceholder')"
+                      :placeholder="t('cccms.config.inputPlaceholder')"
                       style="max-width: 420px"
                     />
 
@@ -141,16 +151,16 @@
                       使 `v-else` 对其它类型也命中，多渲染一个默认输入框（两个框绑定同一个值，输入会同步）。
                     -->
                     <div v-if="item.name === 'watermark.content'" class="cfg-vars">
-                      <span class="cfg-vars-label">{{ t('config.wmVarHint') }}</span>
-                      <el-check-tag
+                      <span class="cfg-vars-label">{{ t('cccms.config.wmVarHint') }}</span>
+                      <button
                         v-for="v in WATERMARK_VARS"
                         :key="v.en"
-                        checked
-                        type="info"
-                        @change="insertWatermarkVar(item.name, watermarkVarToken(v, currentLocale))"
+                        type="button"
+                        class="cfg-var"
+                        @click="insertWatermarkVar(item.name, watermarkVarToken(v, currentLocale))"
                       >
-                        {{ watermarkVarToken(v, currentLocale) }}
-                      </el-check-tag>
+                        <code>{{ watermarkVarToken(v, currentLocale) }}</code>
+                      </button>
                     </div>
 
                     <div v-if="item.remark" class="cfg-remark">{{ item.remark }}</div>
@@ -168,12 +178,13 @@
 <script setup lang="ts">
 defineOptions({ name: 'cccms:config' })
 
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { configList, configSave, type ConfigItem, type ConfigOption } from '@/api/config'
 import { currentLocale } from '@/locales'
+import { copyText } from '@/utils/clipboard'
 import { WATERMARK_VARS, watermarkVarToken } from '@/utils/watermark'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -185,7 +196,9 @@ const loading = ref(false)
 const saving = ref(false)
 const items = ref<ConfigItem[]>([])
 const keyword = ref('')
-const group = ref('')
+
+/** 左侧导航当前高亮的分组（'' = 顶部「全部」） */
+const activeGroup = ref('')
 
 /** 表单当前值 */
 const values = reactive<Record<string, any>>({})
@@ -275,7 +288,7 @@ const filtered = computed(() => {
 
 /** 分组展示名：优先后端翻译下发的 group_label，回退原始 group；无分组用「未分组」 */
 function groupLabel(item: ConfigItem): string {
-  return item.group_label || item.group || t('config.ungrouped')
+  return item.group_label || item.group || t('cccms.config.ungrouped')
 }
 
 const groups = computed(() => {
@@ -294,10 +307,8 @@ const groups = computed(() => {
 })
 
 const visibleGroups = computed(() => {
-  const list = group.value ? filtered.value.filter((item) => (item.group || UNGROUPED) === group.value) : filtered.value
-
   const bucket = new Map<string, { label: string; items: ConfigItem[] }>()
-  for (const item of list) {
+  for (const item of filtered.value) {
     const name = item.group || UNGROUPED
     const cur = bucket.get(name)
     if (cur) {
@@ -308,6 +319,103 @@ const visibleGroups = computed(() => {
   }
   return Array.from(bucket, ([name, value]) => ({ name, label: value.label, items: value.items }))
 })
+
+/* ---------- 左侧分组导航：点击跳转 + 滚动联动高亮 ---------- */
+
+/** 右侧滚动容器 */
+const mainRef = ref<HTMLElement | null>(null)
+
+/** 各分组 section 的 DOM（按分组 key 索引） */
+const sectionRefs = new Map<string, HTMLElement>()
+
+/** 点击导航后的短暂锁定：平滑滚动途中的中间位置不应改写目标高亮 */
+let highlightLocked = false
+let unlockTimer: ReturnType<typeof setTimeout> | undefined
+
+function setSectionRef(name: string, el: unknown): void {
+  if (el) {
+    sectionRefs.set(name, el as HTMLElement)
+  } else {
+    sectionRefs.delete(name)
+  }
+}
+
+/** 分组 section 顶部在滚动内容中的位置 */
+function sectionOffset(el: HTMLElement, main: HTMLElement): number {
+  return el.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop
+}
+
+/** 按当前滚动位置算出应高亮的分组：顶部为「全部」，滚到底取最后一组 */
+function syncActiveGroup(): void {
+  const main = mainRef.value
+  const list = visibleGroups.value
+  if (!main || !list.length) {
+    activeGroup.value = ''
+    return
+  }
+
+  // 内容不足一屏：没有可滚动的位置，只清掉已不存在的分组高亮
+  if (main.scrollHeight <= main.clientHeight + 2) {
+    if (!list.some((g) => g.name === activeGroup.value)) {
+      activeGroup.value = ''
+    }
+    return
+  }
+
+  if (main.scrollTop <= 2) {
+    activeGroup.value = ''
+    return
+  }
+
+  // 滚到底：最后一组往往撑不满一屏，直接判定为最后一组
+  if (main.scrollTop + main.clientHeight >= main.scrollHeight - 2) {
+    activeGroup.value = list[list.length - 1].name
+    return
+  }
+
+  // 取「顶部已越过 24px」的最后一个分组
+  const threshold = main.scrollTop + 24
+  let current = list[0].name
+  for (const g of list) {
+    const el = sectionRefs.get(g.name)
+    if (el && sectionOffset(el, main) <= threshold) {
+      current = g.name
+    }
+  }
+  activeGroup.value = current
+}
+
+function scrollToGroup(name: string): void {
+  const main = mainRef.value
+  activeGroup.value = name
+
+  highlightLocked = true
+  clearTimeout(unlockTimer)
+  unlockTimer = setTimeout(() => {
+    highlightLocked = false
+    syncActiveGroup()
+  }, 420)
+
+  if (!main) {
+    return
+  }
+  if (!name) {
+    main.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+  const el = sectionRefs.get(name)
+  if (el) {
+    main.scrollTo({ top: Math.max(sectionOffset(el, main) - 12, 0), behavior: 'smooth' })
+  }
+}
+
+/** 滚动时同步高亮（模板上以 passive 方式绑定） */
+function onMainScroll(): void {
+  if (highlightLocked) {
+    return
+  }
+  syncActiveGroup()
+}
 
 /* ---------- 加载与保存 ---------- */
 
@@ -332,12 +440,22 @@ async function reload(): Promise<void> {
     original.value = JSON.parse(JSON.stringify(next))
   } finally {
     loading.value = false
+    // 列表重绘后重算高亮（分组可能增减）
+    void nextTick(syncActiveGroup)
   }
 }
 
+// 搜索会改变可见分组：回到顶部并重置高亮
+watch(keyword, () => {
+  void nextTick(() => {
+    mainRef.value?.scrollTo({ top: 0 })
+    syncActiveGroup()
+  })
+})
+
 function discard(): void {
   Object.assign(values, JSON.parse(JSON.stringify(original.value)))
-  ElMessage.info(t('config.discarded'))
+  ElMessage.info(t('cccms.config.discarded'))
 }
 
 async function onSave(): Promise<void> {
@@ -353,7 +471,7 @@ async function onSave(): Promise<void> {
   saving.value = true
   try {
     const res = await configSave(payload)
-    ElMessage.success(t('config.savedCount', { count: res?.updated ?? dirtyCount.value }))
+    ElMessage.success(t('cccms.config.savedCount', { count: res?.updated ?? dirtyCount.value }))
     await reload()
   } finally {
     saving.value = false
@@ -361,11 +479,10 @@ async function onSave(): Promise<void> {
 }
 
 async function copyKey(name: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(name)
-    ElMessage.success(t('config.copied', { name }))
-  } catch {
-    ElMessage.warning(t('config.copyFailed'))
+  if (await copyText(name)) {
+    ElMessage.success(t('cccms.config.copied', { name }))
+  } else {
+    ElMessage.warning(t('cccms.config.copyFailed'))
   }
 }
 
@@ -407,10 +524,10 @@ onBeforeRouteLeave(async () => {
     return true
   }
   try {
-    await ElMessageBox.confirm(t('config.leaveConfirm'), t('config.leaveTitle'), {
+    await ElMessageBox.confirm(t('cccms.config.leaveConfirm'), t('cccms.config.leaveTitle'), {
       type: 'warning',
-      confirmButtonText: t('config.leaveConfirmButton'),
-      cancelButtonText: t('config.stayButton'),
+      confirmButtonText: t('cccms.config.leaveConfirmButton'),
+      cancelButtonText: t('cccms.config.stayButton'),
     })
     return true
   } catch {
@@ -431,6 +548,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  clearTimeout(unlockTimer)
 })
 </script>
 
@@ -613,11 +731,11 @@ onUnmounted(() => {
   margin-bottom: 20px;
 }
 
-/* ---- 水印内容的常用变量标签 ---- */
+/* ---- 水印内容的常用变量标签（胶囊标签，点一下插入到光标处） ---- */
 .cfg-vars {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   margin-top: 8px;
 }
@@ -625,5 +743,38 @@ onUnmounted(() => {
 .cfg-vars-label {
   font-size: 12px;
   color: var(--art-muted);
+}
+
+.cfg-var {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--el-color-primary);
+  cursor: pointer;
+  user-select: none;
+  background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
+  border-radius: 999px;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.cfg-var code {
+  font-family: inherit;
+}
+
+.cfg-var:hover {
+  background: var(--el-color-primary-light-8);
+  border-color: var(--el-color-primary-light-5);
+}
+
+.cfg-var:active {
+  transform: scale(0.97);
 }
 </style>

@@ -1,7 +1,14 @@
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { categoryDelete, categorySave, categoryTree, categoryUpdate, type CategoryModule, type CategoryNode } from '@/api/category'
+import {
+  categoryDelete,
+  categorySave,
+  categoryTree,
+  categoryUpdate,
+  type CategoryModule,
+  type CategoryNode,
+} from '@/api/category'
 import { useRecycle } from '@/composables/useRecycle'
 
 /** 虚拟节点：全部 / 未分类（后端约定 category_id：0=全部，-1=未分类） */
@@ -9,8 +16,8 @@ const ALL_ID = 0
 const NONE_ID = -1
 
 export interface UseCategoryTreeOptions {
-  /** i18n key 前缀：dict / file */
-  prefix: 'dict' | 'file'
+  /** i18n key 前缀 = 语言包命名空间：cccms.dict / cccms.file */
+  prefix: 'cccms.dict' | 'cccms.file'
   /** 分类变化后重新加载列表（页面的 search，回到第 1 页） */
   onListReload: () => void
 }
@@ -18,7 +25,7 @@ export interface UseCategoryTreeOptions {
 /**
  * 通用分类树（sys_category，按 module 隔离）。
  *
- * `dict`（字典分类）与 `file`（附件分类）两页的分类树几乎逐行相同，仅 module 与
+ * `cccms.dict`（字典分类）与 `cccms.file`（附件分类）两页的分类树几乎逐行相同，仅 module 与
  * i18n 前缀不同 —— 收敛到这里，后续改一处即可。
  */
 export function useCategoryTree(module: CategoryModule, options: UseCategoryTreeOptions) {
@@ -63,7 +70,11 @@ export function useCategoryTree(module: CategoryModule, options: UseCategoryTree
     // 回收站视图里只列已删分类，不掺「全部 / 未分类」这两个虚拟节点
     categoryRecycle.value
       ? categories.value
-      : [{ id: ALL_ID, name: t(`${prefix}.all`) }, { id: NONE_ID, name: t(`${prefix}.uncategorized`) }, ...categories.value],
+      : [
+          { id: ALL_ID, name: t(`${prefix}.all`) },
+          { id: NONE_ID, name: t(`${prefix}.uncategorized`) },
+          ...categories.value,
+        ],
   )
 
   const currentNodeName = computed(() => {

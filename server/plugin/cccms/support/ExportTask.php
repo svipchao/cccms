@@ -96,6 +96,35 @@ final class ExportTask
     }
 
     /**
+     * 执行指定的导出任务（供作业处理器 `ExportJob` 调用）。
+     *
+     * 返回 false 表示**没有被本消费者处理**（已被别人认领 / 状态不是待处理），
+     * 这不算失败，调用方不应据此重试。
+     *
+     * 生成失败时**抛异常**，而不是像 `runOne()` 那样就地定死成「失败」：作业框架要能
+     * 按退避重试，一次磁盘/数据库抖动不该让这份导出永久拿不到。抛之前先把状态放回
+     * 待处理，否则下一次重试会因「状态不是待处理」直接返回 false；若次数用尽仍是失败，
+     * cron 与「下载时补生成」两条兜底路径照样能接手。
+     */
+    public static function run(int $id): bool
+    {
+        if (!self::claim($id)) {
+            return false;
+        }
+
+        try {
+            self::execute($id);
+        } catch (Throwable $e) {
+            self::abort($id, $e->getMessage(), self::STATUS_PENDING);
+            Log::error('export task ' . $id . ' failed, requeued: ' . $e->getMessage());
+
+            throw $e;
+        }
+
+        return true;
+    }
+
+    /**
      * 消费一批待处理任务（供定时任务调用），返回处理数。
      */
     public static function consume(): int
@@ -217,16 +246,44 @@ final class ExportTask
     /** 执行一个任务（返回是否真的处理了它：抢占失败时不算） */
     private static function runOne(int $id): bool
     {
-        // 先「认领」：把 pending 改成 running。并发下多个消费者只会有一个成功（update 命中 1 行）
+        if (!self::claim($id)) {
+            return false;
+        }
+
+        try {
+            self::execute($id);
+        } catch (Throwable $e) {
+            // cron 消费路径没有重试语义：就地定格为「失败」，错误留在任务表里给人看
+            self::abort($id, $e->getMessage(), self::STATUS_FAILED);
+            Log::error('export task ' . $id . ' failed: ' . $e->getMessage());
+        }
+
+        return true;
+    }
+
+    /**
+     * 认领任务：把 pending 改成 running。
+     *
+     * 并发下多个消费者只会有一个成功（update 只命中 1 行），其余拿到 false 直接跳过。
+     */
+    private static function claim(int $id): bool
+    {
         $claimed = Db::name(self::TABLE)
             ->where('id', $id)
             ->where('status', self::STATUS_PENDING)
             ->update(['status' => self::STATUS_RUNNING, 'update_time' => date('Y-m-d H:i:s')]);
 
-        if ($claimed === 0) {
-            return false;
-        }
+        return $claimed === 1;
+    }
 
+    /**
+     * 执行**已完成认领**的任务：生成文件并把状态置为「完成」。
+     *
+     * 任何异常都原样抛出，由调用方决定是「定格失败」还是「放回待处理重试」——
+     * 两种落账策略只有调用方知道，这里不替它做决定。
+     */
+    private static function execute(int $id): void
+    {
         $task   = Db::name(self::TABLE)->where('id', $id)->find();
         $params = json_decode((string)($task['params'] ?? '{}'), true);
         $params = is_array($params) ? $params : [];
@@ -234,26 +291,31 @@ final class ExportTask
 
         try {
             $rows = self::generate((string)$task['type'], $params, $target);
-
-            Db::name(self::TABLE)->where('id', $id)->update([
-                'status'      => self::STATUS_DONE,
-                'total_rows'  => $rows,
-                'file_path'   => self::DIR . '/' . $id . '.csv',
-                'file_name'   => self::fileName((string)$task['type']),
-                'error'       => '',
-                'update_time' => date('Y-m-d H:i:s'),
-            ]);
         } catch (Throwable $e) {
+            // 半成品文件必须删掉：留着会让「下载」拿到一个内容残缺却状态未知的文件
             @unlink($target);
-            Db::name(self::TABLE)->where('id', $id)->update([
-                'status'      => self::STATUS_FAILED,
-                'error'       => mb_substr($e->getMessage(), 0, 255),
-                'update_time' => date('Y-m-d H:i:s'),
-            ]);
-            Log::error('export task ' . $id . ' failed: ' . $e->getMessage());
+
+            throw $e;
         }
 
-        return true;
+        Db::name(self::TABLE)->where('id', $id)->update([
+            'status'      => self::STATUS_DONE,
+            'total_rows'  => $rows,
+            'file_path'   => self::DIR . '/' . $id . '.csv',
+            'file_name'   => self::fileName((string)$task['type']),
+            'error'       => '',
+            'update_time' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /** 失败落账：把错误写进任务表并置为指定状态（`失败` 或 回退 `待处理`） */
+    private static function abort(int $id, string $error, int $status): void
+    {
+        Db::name(self::TABLE)->where('id', $id)->update([
+            'status'      => $status,
+            'error'       => mb_substr($error, 0, 255),
+            'update_time' => date('Y-m-d H:i:s'),
+        ]);
     }
 
     /** 按类型分发到具体生成器，返回行数 */

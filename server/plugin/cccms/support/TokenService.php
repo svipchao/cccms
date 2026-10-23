@@ -80,15 +80,18 @@ final class TokenService
      * @param array<string,mixed>   $claims
      * @return array{token:string,jti:string,expires_in:int,expires_at:int}
      */
-    public static function issue(int $userId, array $claims = []): array
+    public static function issue(int $userId, array $claims = [], ?int $ttl = null): array
     {
+        // 有效期可由调用方覆盖：不同入口可以有各自的会话时长，
+        // 但共用同一套密钥与校验逻辑，只是 exp 不同
+        $ttl = $ttl !== null && $ttl > 0 ? $ttl : self::ttl();
         $now = time();
         $payload = array_merge($claims, [
             'iss' => 'cccms',
             'sub' => (string)$userId,
             'iat' => $now,
             'nbf' => $now,
-            'exp' => $now + self::ttl(),
+            'exp' => $now + $ttl,
             'jti' => bin2hex(random_bytes(16)),
         ]);
 
@@ -96,8 +99,8 @@ final class TokenService
             'token'      => JWT::encode($payload, self::secret(), self::ALG),
             // 回传 jti：在线会话登记与登出黑名单都要用它（JWT 解出来也一样，这里省一次解码）
             'jti'        => (string)$payload['jti'],
-            'expires_in' => self::ttl(),
-            'expires_at' => $now + self::ttl(),
+            'expires_in' => $ttl,
+            'expires_at' => $now + $ttl,
         ];
     }
 

@@ -58,4 +58,8 @@ export default {
   summary: '汇总',
   savedScheme: '已保存筛选方案「{name}」',
   clearedMemory: '已清除本页筛选记忆',
+  restoreConfirm: '确定还原选中的 {count} 条数据？',
+  restoreDone: '已还原 {count} 条',
+  forceDeleteConfirm: '彻底删除后不可恢复（附件会连物理文件一起删除），确定删除选中的 {count} 条？',
+  forceDeleteDone: '已彻底删除 {count} 条',
 }

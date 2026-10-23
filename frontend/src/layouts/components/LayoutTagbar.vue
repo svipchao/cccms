@@ -14,7 +14,7 @@
             <ArtIcon :name="tab.icon" />
           </el-icon>
           <span class="tagbar-item-text">{{
-            tab.path === HOME_PATH ? t('layout.home') : translateTitle(tab.title)
+            tab.path === HOME_PATH ? t('core.layout.home') : translateTitle(tab.title)
           }}</span>
           <el-icon v-if="!tab.pinned" class="tagbar-item-close" :size="12" @click.stop="close(tab.path)">
             <i class="ri-close-line" />
@@ -27,7 +27,7 @@
       <!-- 收藏当前标签页：与顶栏快捷导航共用同一份收藏（store 层同步） -->
       <el-tooltip
         v-if="canFavorite"
-        :content="activeFavorite ? t('layout.tagbar.favoriteRemove') : t('layout.tagbar.favoriteAdd')"
+        :content="activeFavorite ? t('core.layout.tagbar.favoriteRemove') : t('core.layout.tagbar.favoriteAdd')"
         placement="bottom"
       >
         <el-button text circle size="small" :class="{ 'is-favorite': activeFavorite }" @click="toggleFavoriteActive">
@@ -38,7 +38,7 @@
         </el-button>
       </el-tooltip>
 
-      <el-tooltip :content="t('layout.refreshPage')" placement="bottom">
+      <el-tooltip :content="t('core.layout.refreshPage')" placement="bottom">
         <el-button text circle size="small" @click="refreshActive">
           <el-icon :size="15"><i class="ri-refresh-line" /></el-icon>
         </el-button>
@@ -50,10 +50,10 @@
         </el-button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="closeOthers">{{ t('layout.tagbar.closeOthers') }}</el-dropdown-item>
-            <el-dropdown-item command="closeLeft">{{ t('layout.tagbar.closeLeft') }}</el-dropdown-item>
-            <el-dropdown-item command="closeRight">{{ t('layout.tagbar.closeRight') }}</el-dropdown-item>
-            <el-dropdown-item command="closeAll" divided>{{ t('layout.tagbar.closeAll') }}</el-dropdown-item>
+            <el-dropdown-item command="closeOthers">{{ t('core.layout.tagbar.closeOthers') }}</el-dropdown-item>
+            <el-dropdown-item command="closeLeft">{{ t('core.layout.tagbar.closeLeft') }}</el-dropdown-item>
+            <el-dropdown-item command="closeRight">{{ t('core.layout.tagbar.closeRight') }}</el-dropdown-item>
+            <el-dropdown-item command="closeAll" divided>{{ t('core.layout.tagbar.closeAll') }}</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -61,15 +61,15 @@
 
     <teleport to="body">
       <ul v-if="contextVisible" class="tagbar-context" :style="{ left: `${contextPos.x}px`, top: `${contextPos.y}px` }">
-        <li @click="runContext('refresh')">{{ t('layout.tagbar.refresh') }}</li>
+        <li @click="runContext('refresh')">{{ t('core.layout.tagbar.refresh') }}</li>
         <li v-if="contextPinnable" @click="runContext('pin')">
-          {{ contextPinned ? t('layout.tagbar.unpin') : t('layout.tagbar.pin') }}
+          {{ contextPinned ? t('core.layout.tagbar.unpin') : t('core.layout.tagbar.pin') }}
         </li>
-        <li @click="runContext('close')">{{ t('layout.tagbar.close') }}</li>
-        <li @click="runContext('closeOthers')">{{ t('layout.tagbar.closeOthers') }}</li>
-        <li @click="runContext('closeLeft')">{{ t('layout.tagbar.closeLeft') }}</li>
-        <li @click="runContext('closeRight')">{{ t('layout.tagbar.closeRight') }}</li>
-        <li @click="runContext('closeAll')">{{ t('layout.tagbar.closeAll') }}</li>
+        <li @click="runContext('close')">{{ t('core.layout.tagbar.close') }}</li>
+        <li @click="runContext('closeOthers')">{{ t('core.layout.tagbar.closeOthers') }}</li>
+        <li @click="runContext('closeLeft')">{{ t('core.layout.tagbar.closeLeft') }}</li>
+        <li @click="runContext('closeRight')">{{ t('core.layout.tagbar.closeRight') }}</li>
+        <li @click="runContext('closeAll')">{{ t('core.layout.tagbar.closeAll') }}</li>
       </ul>
     </teleport>
   </div>

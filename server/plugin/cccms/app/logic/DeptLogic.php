@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace plugin\cccms\app\logic;
 
 use plugin\cccms\app\model\Dept;
+use plugin\cccms\app\model\User;
 use plugin\cccms\app\model\UserDept;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\FilterInput;
@@ -99,7 +100,14 @@ final class DeptLogic
         if (Dept::withoutGlobalScope()->where('parent_id', $id)->count() > 0) {
             throw new ApiException(I18n::t('dept.has_children'), 422);
         }
-        if (UserDept::where('dept_id', $id)->count() > 0) {
+
+        // 只统计**未软删**的用户：用户进回收站后 `sys_user_dept` 会刻意保留（便于恢复），
+        // 若连回收站用户也算占用，管理员在界面上看不到任何人却永远删不掉这个部门。
+        $memberIds = array_map('intval', UserDept::where('dept_id', $id)->column('user_id'));
+        if ($memberIds !== [] && User::withoutAllScopes('部门占用判定必须跨租户统计全部在位用户')
+            ->whereIn('id', $memberIds)
+            ->whereNull('delete_time')
+            ->count() > 0) {
             throw new ApiException(I18n::t('dept.has_users'), 422);
         }
 

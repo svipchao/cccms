@@ -19,6 +19,7 @@ export default {
   normalUser: 'User',
   profile: 'Profile',
   logout: 'Sign out',
+  kickedOffline: 'You have been signed out by an administrator',
   logoutConfirm: 'Are you sure you want to sign out?',
   logoutConfirmBtn: 'Sign out',
   searchPlaceholder: 'Enter a menu name or path, press Enter to go',

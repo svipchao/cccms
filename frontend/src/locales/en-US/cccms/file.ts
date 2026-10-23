@@ -27,7 +27,8 @@ export default {
   view: 'View',
   download: 'Download',
   publicLabel: 'Public',
-  publicTip: 'Public: anyone with the link can read it. Private: the link stops working; only signed-in users with permission can download',
+  publicTip:
+    'Public: anyone with the link can read it. Private: the link stops working; only signed-in users with permission can download',
 
   /* ---- Toolbar ---- */
   recycleLabel: 'Attachment',

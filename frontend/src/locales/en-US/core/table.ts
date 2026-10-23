@@ -58,4 +58,9 @@ export default {
   summary: 'Summary',
   savedScheme: 'Filter scheme "{name}" saved',
   clearedMemory: 'Filter memory for this page cleared',
+  restoreConfirm: 'Restore {count} selected row(s)?',
+  restoreDone: '{count} row(s) restored',
+  forceDeleteConfirm:
+    'Permanent deletion cannot be undone (attachments are removed with their files). Delete {count} selected row(s)?',
+  forceDeleteDone: '{count} row(s) permanently deleted',
 }

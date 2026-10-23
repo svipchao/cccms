@@ -42,7 +42,8 @@ class ProfileController extends BaseController
         ProfileLogic::changePassword(
             $request->user,
             (string)$request->post('old_password', ''),
-            (string)$request->post('new_password', '')
+            (string)$request->post('new_password', ''),
+            (string)($request->jti ?? '')
         );
 
         return $this->ok(null, I18n::t('common.password_changed'));

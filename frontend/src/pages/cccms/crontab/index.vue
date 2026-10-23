@@ -1,6 +1,17 @@
 <template>
   <div class="art-fill">
+    <!--
+      标签页：定时任务 / 作业队列（后者需要 cccms:job:index，无权限时不渲染入口）。
+      bar-only：只渲染切换条，内容由下面的 ArtTable / JobsPanel 各自跟随 activeTab 显示，
+      表格的高度链与滚动仍归页面自己管，不会被 el-tabs 的内容区包一层。
+    -->
+    <ArtTabs v-if="canJobs" v-model="activeTab" class="crontab-tabs" bar-only>
+      <el-tab-pane :label="t('cccms.job.tabTasks')" name="tasks" />
+      <el-tab-pane :label="t('cccms.job.tabJobs')" name="jobs" />
+    </ArtTabs>
+
     <ArtTable
+      v-show="activeTab === 'tasks'"
       :columns="columns"
       :data="list"
       :loading="loading"
@@ -17,13 +28,13 @@
       <template #toolbar>
         <el-button v-auth="'cccms:crontab:save'" type="primary" @click="openCreate"
           ><template #icon><i class="ri-add-line" /></template>
-          {{ t('crontab.create') }}
+          {{ t('cccms.crontab.create') }}
         </el-button>
-        <span class="toolbar-tip">{{ t('crontab.toolbarTip') }}</span>
+        <span class="toolbar-tip">{{ t('cccms.crontab.toolbarTip') }}</span>
       </template>
 
       <template #toolbar-right>
-        <RecycleToggle :active="recycle" :label="t('crontab.recycleLabel')" @toggle="toggle" />
+        <RecycleToggle :active="recycle" :label="t('cccms.crontab.recycleLabel')" @toggle="toggle" />
       </template>
 
       <template #group_name="{ row }">
@@ -51,11 +62,11 @@
         <span class="status-cell">
           <!-- 运行中优先：正在跑时只显示「运行中」，不再叠加「启用/停用」 -->
           <el-tag v-if="row.running === 1" type="warning" effect="dark" size="small">
-            {{ t('crontab.running') }}
+            {{ t('cccms.crontab.running') }}
           </el-tag>
           <template v-else>
             <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="light" round>
-              {{ row.status === 1 ? t('crontab.enabled') : t('crontab.disabled') }}
+              {{ row.status === 1 ? t('cccms.crontab.enabled') : t('cccms.crontab.disabled') }}
             </el-tag>
           </template>
         </span>
@@ -63,88 +74,91 @@
 
       <template #action="{ row }">
         <el-button v-auth="'cccms:crontab:run'" link type="primary" :loading="running === row.id" @click="onRun(row)">
-          {{ t('crontab.runNow') }}
+          {{ t('cccms.crontab.runNow') }}
         </el-button>
         <el-button v-auth="'cccms:crontab:logs'" link type="primary" @click="openLogs(row)">
-          {{ t('crontab.logs') }}
+          {{ t('cccms.crontab.logs') }}
         </el-button>
         <el-button v-auth="'cccms:crontab:update'" link type="primary" @click="openEdit(row)">
-          {{ t('common.edit') }}
+          {{ t('core.common.edit') }}
         </el-button>
-        <el-popconfirm :title="t('crontab.deleteConfirm')" @confirm="onDelete(row.id)">
+        <el-popconfirm :title="t('cccms.crontab.deleteConfirm')" @confirm="onDelete(row.id)">
           <template #reference>
-            <el-button v-auth="'cccms:crontab:delete'" link type="danger">{{ t('common.delete') }}</el-button>
+            <el-button v-auth="'cccms:crontab:delete'" link type="danger">{{ t('core.common.delete') }}</el-button>
           </template>
         </el-popconfirm>
       </template>
     </ArtTable>
 
+    <!-- 作业队列：与「定时任务」同一页面切换，队列不可用时导出仍会回落到下载时补生成 -->
+    <JobsPanel v-if="canJobs && activeTab === 'jobs'" />
+
     <!-- 表单 -->
     <el-dialog
       v-model="formVisible"
-      :title="form.id ? t('crontab.editTitle') : t('crontab.createTitle')"
+      :title="form.id ? t('cccms.crontab.editTitle') : t('cccms.crontab.createTitle')"
       width="850px"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-        <el-form-item :label="t('crontab.nameLabel')" prop="name">
-          <el-input v-model="form.name" :placeholder="t('crontab.namePlaceholder')" />
+        <el-form-item :label="t('cccms.crontab.nameLabel')" prop="name">
+          <el-input v-model="form.name" :placeholder="t('cccms.crontab.namePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('crontab.targetLabel')" prop="target">
-          <el-select v-model="form.target" :placeholder="t('crontab.targetPlaceholder')" style="width: 100%">
+        <el-form-item :label="t('cccms.crontab.targetLabel')" prop="target">
+          <el-select v-model="form.target" :placeholder="t('cccms.crontab.targetPlaceholder')" style="width: 100%">
             <el-option v-for="item in targets" :key="item.class" :label="item.label" :value="item.class" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('crontab.expressionLabel')" prop="expression">
+        <el-form-item :label="t('cccms.crontab.expressionLabel')" prop="expression">
           <CronEditor v-model="form.expression" />
         </el-form-item>
-        <el-form-item :label="t('crontab.paramsLabel')" prop="params">
+        <el-form-item :label="t('cccms.crontab.paramsLabel')" prop="params">
           <el-input
             v-model="form.params"
             type="textarea"
             :autosize="{ minRows: 2, maxRows: 5 }"
-            :placeholder="t('crontab.paramsPlaceholder')"
+            :placeholder="t('cccms.crontab.paramsPlaceholder')"
           />
         </el-form-item>
-        <el-form-item :label="t('crontab.groupFormLabel')" prop="group_name">
-          <el-input v-model="form.group_name" :placeholder="t('crontab.groupFormPlaceholder')" />
+        <el-form-item :label="t('cccms.crontab.groupFormLabel')" prop="group_name">
+          <el-input v-model="form.group_name" :placeholder="t('cccms.crontab.groupFormPlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('crontab.statusLabel')" prop="status">
+        <el-form-item :label="t('cccms.crontab.statusLabel')" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio :value="1">{{ t('crontab.enabled') }}</el-radio>
-            <el-radio :value="0">{{ t('crontab.disabled') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.crontab.enabled') }}</el-radio>
+            <el-radio :value="0">{{ t('cccms.crontab.disabled') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item :label="t('crontab.overlapLabel')" prop="overlap">
+        <el-form-item :label="t('cccms.crontab.overlapLabel')" prop="overlap">
           <el-radio-group v-model="form.overlap">
-            <el-radio value="skip">{{ t('crontab.overlapSkip') }}</el-radio>
-            <el-radio value="allow">{{ t('crontab.overlapAllow') }}</el-radio>
+            <el-radio value="skip">{{ t('cccms.crontab.overlapSkip') }}</el-radio>
+            <el-radio value="allow">{{ t('cccms.crontab.overlapAllow') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item :label="t('crontab.timeoutLabel')" prop="timeout">
+        <el-form-item :label="t('cccms.crontab.timeoutLabel')" prop="timeout">
           <el-input-number v-model="form.timeout" :min="0" :max="86400" />
-          <span class="form-tip">{{ t('crontab.timeoutTip') }}</span>
+          <span class="form-tip">{{ t('cccms.crontab.timeoutTip') }}</span>
         </el-form-item>
-        <el-form-item :label="t('crontab.retryLabel')" prop="retry_times">
+        <el-form-item :label="t('cccms.crontab.retryLabel')" prop="retry_times">
           <el-input-number v-model="form.retry_times" :min="0" :max="10" />
-          <span class="form-tip">{{ t('crontab.retryTimesSuffix') }}</span>
+          <span class="form-tip">{{ t('cccms.crontab.retryTimesSuffix') }}</span>
           <el-input-number v-model="form.retry_interval" :min="1" :max="86400" />
-          <span class="form-tip">{{ t('crontab.retrySecondsSuffix') }}</span>
+          <span class="form-tip">{{ t('cccms.crontab.retrySecondsSuffix') }}</span>
         </el-form-item>
-        <el-form-item :label="t('crontab.remarkLabel')" prop="remark">
-          <el-input v-model="form.remark" :placeholder="t('crontab.remarkPlaceholder')" />
+        <el-form-item :label="t('cccms.crontab.remarkLabel')" prop="remark">
+          <el-input v-model="form.remark" :placeholder="t('cccms.crontab.remarkPlaceholder')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="formVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('common.confirm') }}</el-button>
+        <el-button @click="formVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 执行日志 + 运行详情：宽屏左右分栏，窄屏自动上下排列 -->
     <el-drawer
       v-model="logVisible"
-      :title="t('crontab.logsTitle', { name: currentTask?.name ?? '' })"
+      :title="t('cccms.crontab.logsTitle', { name: currentTask?.name ?? '' })"
       :size="logDrawerSize"
       class="crontab-log-drawer"
     >
@@ -155,19 +169,19 @@
             <el-select
               v-model="logStatus"
               clearable
-              :placeholder="t('crontab.allPlaceholder')"
+              :placeholder="t('cccms.crontab.allPlaceholder')"
               style="width: 140px"
               @change="onLogFilterChange"
             >
-              <el-option :label="t('crontab.logSuccess')" :value="1" />
-              <el-option :label="t('crontab.logFailed')" :value="0" />
-              <el-option :label="t('crontab.logSkipped')" :value="2" />
-              <el-option :label="t('crontab.logTimeout')" :value="3" />
+              <el-option :label="t('cccms.crontab.logSuccess')" :value="1" />
+              <el-option :label="t('cccms.crontab.logFailed')" :value="0" />
+              <el-option :label="t('cccms.crontab.logSkipped')" :value="2" />
+              <el-option :label="t('cccms.crontab.logTimeout')" :value="3" />
             </el-select>
-            <span class="log-tip">{{ t('crontab.logDetailTip') }}</span>
+            <span class="log-tip">{{ t('cccms.crontab.logDetailTip') }}</span>
           </div>
 
-          <el-button text circle :title="t('table.refresh')" @click="loadLogs">
+          <el-button text circle :title="t('core.table.refresh')" @click="loadLogs">
             <i class="ri-refresh-line" />
           </el-button>
         </div>
@@ -186,83 +200,90 @@
               class="log-table"
               @row-click="onLogRowClick"
             >
-              <el-table-column prop="run_time" :label="t('crontab.logTime')" width="170" />
-              <el-table-column :label="t('crontab.logResult')" width="100" align="center">
+              <el-table-column prop="run_time" :label="t('cccms.crontab.logTime')" width="170" />
+              <el-table-column :label="t('cccms.crontab.logResult')" width="100" align="center">
                 <template #default="{ row }">
                   <el-tag :type="logStatusMeta(row.status).type" effect="light" size="small">
                     {{ t(logStatusMeta(row.status).labelKey) }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column :label="t('crontab.logSource')" width="90" align="center">
+              <el-table-column :label="t('cccms.crontab.logSource')" width="90" align="center">
                 <template #default="{ row }">
                   {{ sourceLabel(row.source) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="cost" :label="t('crontab.logCost')" width="100" align="right" />
-              <el-table-column prop="output" :label="t('crontab.logOutput')" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="cost" :label="t('cccms.crontab.logCost')" width="100" align="right" />
+              <el-table-column
+                prop="output"
+                :label="t('cccms.crontab.logOutput')"
+                min-width="200"
+                show-overflow-tooltip
+              />
             </el-table>
           </div>
 
           <div v-if="!isStacked || selectedLog" class="log-detail">
             <template v-if="selectedLog">
               <div class="log-detail-head">
-                <span class="log-detail-title">{{ t('crontab.logDetailTitle') }}</span>
+                <span class="log-detail-title">{{ t('cccms.crontab.logDetailTitle') }}</span>
                 <el-button link type="primary" @click="closeLogDetail">
-                  {{ t('crontab.logDetailClose') }}
+                  {{ t('cccms.crontab.logDetailClose') }}
                 </el-button>
               </div>
 
               <el-descriptions :column="1" size="small" border>
-                <el-descriptions-item :label="t('crontab.logResult')">
+                <el-descriptions-item :label="t('cccms.crontab.logResult')">
                   <el-tag :type="logStatusMeta(selectedLog.status).type" effect="light" size="small">
                     {{ t(logStatusMeta(selectedLog.status).labelKey) }}
                   </el-tag>
                 </el-descriptions-item>
-                <el-descriptions-item :label="t('crontab.logTime')">
+                <el-descriptions-item :label="t('cccms.crontab.logTime')">
                   {{ selectedLog.run_time || '—' }}
                 </el-descriptions-item>
-                <el-descriptions-item :label="t('crontab.logSource')">
+                <el-descriptions-item :label="t('cccms.crontab.logSource')">
                   {{ sourceLabel(selectedLog.source) }}
                 </el-descriptions-item>
-                <el-descriptions-item :label="t('crontab.logCost')">{{ selectedLog.cost }} ms</el-descriptions-item>
-                <el-descriptions-item :label="t('crontab.logId')">#{{ selectedLog.id }}</el-descriptions-item>
-                <el-descriptions-item :label="t('crontab.logTask')">
+                <el-descriptions-item :label="t('cccms.crontab.logCost')"
+                  >{{ selectedLog.cost }} ms</el-descriptions-item
+                >
+                <el-descriptions-item :label="t('cccms.crontab.logId')">#{{ selectedLog.id }}</el-descriptions-item>
+                <el-descriptions-item :label="t('cccms.crontab.logTask')">
                   {{ currentTask?.name || '—' }}
                 </el-descriptions-item>
-                <el-descriptions-item :label="t('crontab.expressionLabel')">
+                <el-descriptions-item :label="t('cccms.crontab.expressionLabel')">
                   <code class="log-code">{{ currentTask?.expression || '—' }}</code>
                   <span v-if="currentTask?.expression" class="log-desc-text">
                     {{ describe(currentTask.expression) }}
                   </span>
                 </el-descriptions-item>
-                <el-descriptions-item :label="t('crontab.targetLabel')">
+                <el-descriptions-item :label="t('cccms.crontab.targetLabel')">
                   <span class="log-break">{{ currentTask?.target || '—' }}</span>
                 </el-descriptions-item>
-                <el-descriptions-item :label="t('crontab.timeoutLabel')">
-                  {{ currentTask?.timeout ? `${currentTask.timeout}s` : t('crontab.logUnlimited') }}
+                <el-descriptions-item :label="t('cccms.crontab.timeoutLabel')">
+                  {{ currentTask?.timeout ? `${currentTask.timeout}s` : t('cccms.crontab.logUnlimited') }}
                 </el-descriptions-item>
-                <el-descriptions-item :label="t('crontab.retryLabel')">
+                <el-descriptions-item :label="t('cccms.crontab.retryLabel')">
                   {{
                     currentTask?.retry_times
                       ? `${currentTask.retry_times} × / ${currentTask.retry_interval}s`
-                      : t('crontab.logNone')
+                      : t('cccms.crontab.logNone')
                   }}
                 </el-descriptions-item>
               </el-descriptions>
 
               <div class="log-detail-section">
-                <div class="log-detail-label">{{ t('crontab.paramsLabel') }}</div>
+                <div class="log-detail-label">{{ t('cccms.crontab.paramsLabel') }}</div>
                 <pre class="log-pre">{{ logParamsText }}</pre>
               </div>
 
               <div class="log-detail-section">
-                <div class="log-detail-label">{{ t('crontab.logOutput') }}</div>
-                <pre class="log-pre log-pre--output">{{ selectedLog.output || t('crontab.logOutputEmpty') }}</pre>
+                <div class="log-detail-label">{{ t('cccms.crontab.logOutput') }}</div>
+                <pre class="log-pre log-pre--output">{{ selectedLog.output || t('cccms.crontab.logOutputEmpty') }}</pre>
               </div>
             </template>
 
-            <el-empty v-else :description="t('crontab.logDetailEmpty')" :image-size="70" />
+            <el-empty v-else :description="t('cccms.crontab.logDetailEmpty')" :image-size="70" />
           </div>
         </div>
 
@@ -291,11 +312,14 @@ import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import ArtTable from '@/components/core/ArtTable.vue'
+import ArtTabs from '@/components/core/ArtTabs.vue'
 import CronEditor from '@/components/core/CronEditor.vue'
 import RecycleToggle from '@/components/core/RecycleToggle.vue'
+import JobsPanel from './JobsPanel.vue'
 import { useCronDescription } from '@/composables/useCronDescription'
 import { useRecycle } from '@/composables/useRecycle'
 import { useTable } from '@/composables/useTable'
+import { useUserStore } from '@/stores/user'
 import {
   crontabDelete,
   crontabList,
@@ -325,51 +349,62 @@ interface Query {
 
 const { t } = useI18n({ useScope: 'global' })
 
+const userStore = useUserStore()
+/** 没有作业查看权限时不渲染 tab 入口，避免「点进去 403」 */
+const canJobs = computed(() => userStore.hasAuth('cccms:job:index'))
+const activeTab = ref<'tasks' | 'jobs'>('tasks')
+
 // 表格列文案跟随语言切换，用 computed 包裹
 const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 70 },
-  { prop: 'name', label: t('crontab.nameLabel'), minWidth: 170, filter: { type: 'text' } },
+  { prop: 'name', label: t('cccms.crontab.nameLabel'), minWidth: 170, filter: { type: 'text' } },
   // 分组列的自定义插槽：分组名可点击，点一下筛选该分组，再点取消筛选
   {
     prop: 'group_name',
-    label: t('crontab.groupLabel'),
+    label: t('cccms.crontab.groupLabel'),
     width: 130,
     slot: 'group_name',
     filter: { type: 'text' },
   },
   {
     prop: 'expression',
-    label: t('crontab.expressionColumnLabel'),
+    label: t('cccms.crontab.expressionColumnLabel'),
     width: 160,
     align: 'center',
     slot: 'expression',
   },
   // 表达式说明（与 CronEditor 共用 describeCron，避免两处口径漂移）
-  { prop: 'desc', label: t('crontab.descColumnLabel'), minWidth: 180, slot: 'desc' },
-  { prop: 'target', label: t('crontab.targetColumnLabel'), minWidth: 210 },
+  { prop: 'desc', label: t('cccms.crontab.descColumnLabel'), minWidth: 180, slot: 'desc' },
+  { prop: 'target', label: t('cccms.crontab.targetColumnLabel'), minWidth: 210 },
   {
     prop: 'status',
-    label: t('crontab.statusLabel'),
+    label: t('cccms.crontab.statusLabel'),
     width: 150,
     align: 'center',
     slot: 'status',
     filter: {
       type: 'enum',
       options: [
-        { label: t('crontab.enabled'), value: 1 },
-        { label: t('crontab.disabled'), value: 0 },
+        { label: t('cccms.crontab.enabled'), value: 1 },
+        { label: t('cccms.crontab.disabled'), value: 0 },
       ],
     },
   },
-  { prop: 'last_run_time', label: t('crontab.lastRunLabel'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
+  {
+    prop: 'last_run_time',
+    label: t('cccms.crontab.lastRunLabel'),
+    width: 170,
+    filter: { type: 'date' },
+    sortable: 'custom',
+  },
   {
     prop: 'next_run_time',
-    label: t('crontab.nextRunLabel'),
+    label: t('cccms.crontab.nextRunLabel'),
     width: 170,
     // next_run_time 由后端用当前时间重算，按库里的值排序会和展示值对不上
     filter: { type: 'date', startKey: 'next_start', endKey: 'next_end' },
   },
-  { prop: 'action', label: t('table.action'), width: 190, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'action', label: t('core.table.action'), width: 190, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 // 回收站开关：必须在 useTable 之前（列表闭包在 setup 阶段就会执行一次）
@@ -396,7 +431,7 @@ function onGroupClick(group: string): void {
 
 /** 分组名悬浮提示：按当前是否已筛选该分组给出不同文案 */
 function groupTip(group: string): string {
-  return query.group_name === group ? t('crontab.groupFilterClearTip') : t('crontab.groupFilterTip')
+  return query.group_name === group ? t('cccms.crontab.groupFilterClearTip') : t('cccms.crontab.groupFilterTip')
 }
 
 /* ---- 表达式说明 ---- */
@@ -430,9 +465,9 @@ const form = reactive({ ...emptyForm })
 
 // 校验提示同样走 i18n：用 computed 保证切换语言后规则文案立即更新
 const rules = computed<FormRules>(() => ({
-  name: [{ required: true, message: t('crontab.nameRequired'), trigger: 'blur' }],
-  target: [{ required: true, message: t('crontab.targetRequired'), trigger: 'change' }],
-  expression: [{ required: true, message: t('crontab.expressionRequired'), trigger: 'change' }],
+  name: [{ required: true, message: t('cccms.crontab.nameRequired'), trigger: 'blur' }],
+  target: [{ required: true, message: t('cccms.crontab.targetRequired'), trigger: 'change' }],
+  expression: [{ required: true, message: t('cccms.crontab.expressionRequired'), trigger: 'change' }],
 }))
 
 function openCreate(): void {
@@ -458,7 +493,7 @@ async function submitForm(): Promise<void> {
     try {
       params = JSON.parse(form.params)
     } catch {
-      ElMessage.error(t('crontab.invalidParams'))
+      ElMessage.error(t('cccms.crontab.invalidParams'))
       return
     }
   }
@@ -471,7 +506,7 @@ async function submitForm(): Promise<void> {
     } else {
       await crontabSave(payload)
     }
-    ElMessage.success(t('crontab.saveSuccess'))
+    ElMessage.success(t('cccms.crontab.saveSuccess'))
     formVisible.value = false
     load()
   } finally {
@@ -481,7 +516,7 @@ async function submitForm(): Promise<void> {
 
 async function onDelete(id: number): Promise<void> {
   await crontabDelete(id)
-  ElMessage.success(t('crontab.deleteSuccess'))
+  ElMessage.success(t('cccms.crontab.deleteSuccess'))
   load()
 }
 
@@ -490,9 +525,9 @@ async function onRun(record: CrontabRow): Promise<void> {
   try {
     const res = await crontabRun(record.id)
     if (res.status === 1) {
-      ElMessage.success(t('crontab.runSuccess', { cost: res.cost, output: res.output }))
+      ElMessage.success(t('cccms.crontab.runSuccess', { cost: res.cost, output: res.output }))
     } else {
-      ElMessage.error(t('crontab.runFailed', { output: res.output }))
+      ElMessage.error(t('cccms.crontab.runFailed', { output: res.output }))
     }
     load()
   } finally {
@@ -533,10 +568,10 @@ const logDrawerSize = computed(() => (isNarrow.value ? '100%' : 'min(1280px, 94v
 const logParamsText = computed(() => {
   const params = currentTask.value?.params
   if (params === undefined || params === null || params === '') {
-    return t('crontab.logParamsEmpty')
+    return t('cccms.crontab.logParamsEmpty')
   }
   if (typeof params === 'object' && Object.keys(params as Record<string, unknown>).length === 0) {
-    return t('crontab.logParamsEmpty')
+    return t('cccms.crontab.logParamsEmpty')
   }
   try {
     return typeof params === 'string' ? params : JSON.stringify(params, null, 2)
@@ -606,21 +641,21 @@ function onLogFilterChange(): void {
 function logStatusMeta(status: number): { labelKey: string; type: 'success' | 'danger' | 'info' | 'warning' } {
   switch (status) {
     case 1:
-      return { labelKey: 'crontab.logSuccess', type: 'success' }
+      return { labelKey: 'cccms.crontab.logSuccess', type: 'success' }
     case 2:
-      return { labelKey: 'crontab.logSkipped', type: 'info' }
+      return { labelKey: 'cccms.crontab.logSkipped', type: 'info' }
     case 3:
-      return { labelKey: 'crontab.logTimeout', type: 'warning' }
+      return { labelKey: 'cccms.crontab.logTimeout', type: 'warning' }
     default:
-      return { labelKey: 'crontab.logFailed', type: 'danger' }
+      return { labelKey: 'cccms.crontab.logFailed', type: 'danger' }
   }
 }
 
 const SOURCE_LABEL_KEYS: Record<string, string> = {
-  cron: 'crontab.sourceCron',
-  retry: 'crontab.sourceRetry',
-  manual: 'crontab.sourceManual',
-  timeout: 'crontab.sourceTimeout',
+  cron: 'cccms.crontab.sourceCron',
+  retry: 'cccms.crontab.sourceRetry',
+  manual: 'cccms.crontab.sourceManual',
+  timeout: 'cccms.crontab.sourceTimeout',
 }
 
 function sourceLabel(source?: string): string {
@@ -634,6 +669,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 切换条不参与高度分配：剩下的高度全给表格 / 作业面板 */
+.crontab-tabs {
+  flex: none;
+  margin-bottom: 10px;
+}
+
 .toolbar-tip {
   font-size: 12px;
   color: var(--art-muted);

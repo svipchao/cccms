@@ -1,70 +1,26 @@
-<div style="padding:18px;max-width: 1024px;margin:0 auto;background-color:#fff;color:#333">
-<h1>webman</h1>
+# CCCMS 后端（Webman）
 
-基于<a href="https://www.workerman.net" target="__blank">workerman</a>开发的超高性能PHP框架
+后台服务的代码主体：Webman 进程 + `plugin/cccms` 插件（框架级基础功能）+ `plugin/index`（前台公开站点）。
+完整的环境要求、安装与部署步骤见 [02-安装部署](../docs/02-安装部署.md)，目录职责见 [03-目录结构](../docs/03-目录结构.md)。
 
+## 常用命令
 
-<h1>学习</h1>
+在 `server/` 目录下执行：
 
-<ul>
-  <li>
-    <a href="https://www.workerman.net/webman" target="__blank">主页 / Home page</a>
-  </li>
-  <li>
-    <a href="https://webman.workerman.net" target="__blank">文档 / Document</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/doc/webman/install.html" target="__blank">安装 / Install</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/questions" target="__blank">问答 / Questions</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/apps" target="__blank">市场 / Apps</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/sponsor" target="__blank">赞助 / Sponsors</a>
-  </li>
-  <li>
-    <a href="https://www.workerman.net/doc/webman/thanks.html" target="__blank">致谢 / Thanks</a>
-  </li>
-</ul>
+| 目的 | 命令 |
+|------|------|
+| 静态分析 | `composer analyse` |
+| 代码风格检查 / 修复 | `composer cs:check` / `composer cs:fix` |
+| 单元与集成测试 | `composer test`（库不可用时相关用例自动跳过） |
+| 启动开发服务 | `php webman start`（Linux/macOS）或 `windows.bat` |
+| 初始化数据库 | `php webman cccms:db-upgrade` |
+| 同步菜单 / 权限节点 | `php webman cccms:menu-sync` + `php webman cccms:perm-scan` |
 
-<div style="float:left;padding-bottom:30px;">
+命令全量与说明见 [11-常用命令与运维](../docs/11-常用命令与运维.md)。
 
-  <h1>赞助商</h1>
+## 关键约定
 
-  <h4>特别赞助</h4>
-  <a href="https://www.crmeb.com/?form=workerman" target="__blank">
-    <img src="https://www.workerman.net/img/sponsors/6429/20230719111500.svg" width="200">
-  </a>
-
-  <h4>铂金赞助</h4>
-  <a href="https://www.fadetask.com/?from=workerman" target="__blank"><img src="https://www.workerman.net/img/sponsors/1/20230719084316.png" width="200"></a>
-  <a href="https://www.yilianyun.net/?from=workerman" target="__blank" style="margin-left:20px;"><img src="https://www.workerman.net/img/sponsors/6218/20230720114049.png" width="200"></a>
-
-
-</div>
-
-
-<div style="float:left;padding-bottom:30px;clear:both">
-
-  <h1>请作者喝咖啡</h1>
-
-<img src="https://www.workerman.net/img/wx_donate.png" width="200">
-<img src="https://www.workerman.net/img/ali_donate.png" width="200">
-<br>
-<b>如果您觉得webman对您有所帮助，欢迎捐赠。</b>
-
-
-</div>
-
-
-<div style="clear: both">
-<h1>LICENSE</h1>
-The webman is open-sourced software licensed under the MIT.
-</div>
-
-</div>
-
-
+- 业务代码一律放 `plugin/<插件>/`，`app/` 只保留框架骨架。
+- 控制器只做参数校验与响应组装，DB 操作收口在 `logic/`。
+- 新增接口必须声明鉴权注解；新增写接口必须在 `FilterInput` 声明字段白名单。
+- 数据权限读取由模型层注入，写侧越权判定显式写在 Logic 里（见 `docs/08`）。

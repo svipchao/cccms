@@ -1,4 +1,4 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
 export interface NoticeRow {
@@ -64,8 +64,8 @@ export interface NoticeReport {
 
 // ---- 管理侧 ----
 
-export function noticeList(params: Record<string, unknown>) {
-  return http.get<PageResult<NoticeRow>>('/notice', params)
+export function noticeList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult<NoticeRow>>('/notice', params, config)
 }
 
 export function noticeRead(id: number) {
@@ -101,8 +101,8 @@ export function noticeReport(params: { id: number; view?: 'read' | 'unread'; pag
 
 // ---- 阅读侧（登录即可，只看自己的） ----
 
-export function myNoticeList(params: Record<string, unknown>) {
-  return http.get<PageResult<NoticeRow>>('/notice/my', params)
+export function myNoticeList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult<NoticeRow>>('/notice/my', params, config)
 }
 
 export function noticeUnreadCount() {

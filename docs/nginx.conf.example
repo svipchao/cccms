@@ -60,6 +60,46 @@ server {
         }
     }
 
+    # 实时推送（SSE，F9）：独立的推送进程，端口是 config/process.php 里的 realtime_sse（默认 8788）
+    #
+    # 三条都不能省：
+    #   - proxy_buffering off：否则事件会攒在 Nginx 里直到连接结束，页面看着像「没反应」；
+    #   - access_log off：令牌在 query 里（EventSource 不能带自定义头），别把它写进访问日志；
+    #   - proxy_read_timeout 1h：SSE 是长连接，默认 60s 会被掐断并反复重连。
+    #
+    # 前端构建时把 VITE_SSE_URL 设为 /sse/stream 即可走这里（https 页面直连 8788 会被当混合内容拦掉）。
+    location = /sse/stream {
+        access_log off;
+        proxy_pass http://127.0.0.1:8788/stream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 1h;
+        chunked_transfer_encoding off;
+    }
+
+    # 实时推送（WebSocket，F9 可选通道）：端口是 config/process.php 里的 realtime_ws（默认 8789）
+    #
+    # 与 SSE 的差别只有握手三件套：proxy_http_version 1.1 + Upgrade + Connection。
+    # 缺任何一个浏览器侧都只看到 400，且 nginx 不会给出更具体的提示。
+    #
+    # 前端构建时 VITE_REALTIME_DRIVER=ws + VITE_WS_URL=/ws/stream 即可走这里。
+    location = /ws/stream {
+        access_log off;
+        proxy_pass http://127.0.0.1:8789/ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 1h;
+    }
+
     # SPA 路由回退
     location / {
         try_files $uri $uri/ /index.html;

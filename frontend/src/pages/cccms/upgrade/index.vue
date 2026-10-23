@@ -7,8 +7,8 @@
         type="error"
         :closable="false"
         show-icon
-        :title="t('upgrade.blockedTitle')"
-        :description="t('upgrade.blockedDesc', { reason: overview?.environment.reason })"
+        :title="t('cccms.upgrade.blockedTitle')"
+        :description="t('cccms.upgrade.blockedDesc', { reason: overview?.environment.reason })"
       />
       <!-- 本地开发环境但总开关关着：告诉怎么打开，不要吓人 -->
       <el-alert
@@ -16,16 +16,16 @@
         type="warning"
         :closable="false"
         show-icon
-        :title="t('upgrade.switchOffTitle')"
-        :description="t('upgrade.switchOffDesc', { reason: overview?.environment.reason })"
+        :title="t('cccms.upgrade.switchOffTitle')"
+        :description="t('cccms.upgrade.switchOffDesc', { reason: overview?.environment.reason })"
       />
       <el-alert
         v-else-if="overview && !overview.git_available"
         type="error"
         :closable="false"
         show-icon
-        :title="t('upgrade.noGitTitle')"
-        :description="t('upgrade.noGitDesc')"
+        :title="t('cccms.upgrade.noGitTitle')"
+        :description="t('cccms.upgrade.noGitDesc')"
       />
 
       <template v-else-if="overview">
@@ -33,16 +33,16 @@
         <el-card shadow="never" class="block version-card">
           <div class="version">
             <div class="version-side">
-              <div class="version-badge current">{{ t('upgrade.current') }}</div>
+              <div class="version-badge current">{{ t('cccms.upgrade.current') }}</div>
               <div class="version-body">
-                <div class="version-name">{{ overview.current.base || t('upgrade.noBaseline') }}</div>
+                <div class="version-name">{{ overview.current.base || t('cccms.upgrade.noBaseline') }}</div>
                 <div class="version-meta">
                   <span v-if="overview.current.commit" class="mono">
                     {{ short(overview.current.commit) }}
                   </span>
                   <span v-if="overview.current.synced_at">{{ overview.current.synced_at }}</span>
                   <span v-if="overview.current.files">
-                    {{ t('upgrade.upstreamFiles', { count: overview.current.files }) }}
+                    {{ t('cccms.upgrade.upstreamFiles', { count: overview.current.files }) }}
                   </span>
                 </div>
               </div>
@@ -54,7 +54,7 @@
 
             <div class="version-side">
               <div class="version-badge" :class="plan?.has_update ? 'target' : 'idle'">
-                {{ t('upgrade.target') }}
+                {{ t('cccms.upgrade.target') }}
               </div>
               <div class="version-body">
                 <div class="version-name">
@@ -63,10 +63,10 @@
                 <div class="version-meta">
                   <span v-if="plan?.commit" class="mono">{{ short(plan.commit) }}</span>
                   <template v-if="plan">
-                    <span v-if="!plan.has_update">{{ t('upgrade.upToDate') }}</span>
-                    <span v-else>{{ t('upgrade.commitCount', { count: plan.commits.length }) }}</span>
+                    <span v-if="!plan.has_update">{{ t('cccms.upgrade.upToDate') }}</span>
+                    <span v-else>{{ t('cccms.upgrade.commitCount', { count: plan.commits.length }) }}</span>
                   </template>
-                  <span v-else>{{ t('upgrade.notChecked') }}</span>
+                  <span v-else>{{ t('cccms.upgrade.notChecked') }}</span>
                 </div>
               </div>
             </div>
@@ -75,29 +75,29 @@
           <div v-if="plan" class="stats">
             <div class="stat">
               <div class="stat-value success">{{ plan.summary.safe || 0 }}</div>
-              <div class="stat-label">{{ t('upgrade.statSafe') }}</div>
+              <div class="stat-label">{{ t('cccms.upgrade.statSafe') }}</div>
             </div>
             <div class="stat">
               <div class="stat-value primary">{{ plan.summary.new || 0 }}</div>
-              <div class="stat-label">{{ t('upgrade.statNew') }}</div>
+              <div class="stat-label">{{ t('cccms.upgrade.statNew') }}</div>
             </div>
             <div class="stat">
               <div class="stat-value" :class="plan.pending ? 'danger' : 'muted'">{{ plan.pending }}</div>
-              <div class="stat-label">{{ t('upgrade.statPending') }}</div>
+              <div class="stat-label">{{ t('cccms.upgrade.statPending') }}</div>
             </div>
             <div class="stat">
               <div class="stat-value">
                 <span class="added">+{{ plan.lines.added }}</span>
                 <span class="deleted">-{{ plan.lines.deleted }}</span>
               </div>
-              <div class="stat-label">{{ t('upgrade.statLines') }}</div>
+              <div class="stat-label">{{ t('cccms.upgrade.statLines') }}</div>
             </div>
           </div>
         </el-card>
 
         <!-- 未建立基线：引导 -->
         <el-card v-if="!overview.initialized" shadow="never" class="block">
-          <el-empty :description="t('upgrade.emptyBaseline')">
+          <el-empty :description="t('cccms.upgrade.emptyBaseline')">
             <el-button
               v-auth="'cccms:upgrade:init'"
               type="primary"
@@ -105,11 +105,11 @@
               :disabled="blocked"
               @click="onInit"
             >
-              {{ t('upgrade.initNow') }}
+              {{ t('cccms.upgrade.initNow') }}
             </el-button>
           </el-empty>
           <p class="tip">
-            {{ t('upgrade.initTip') }}
+            {{ t('cccms.upgrade.initTip') }}
           </p>
         </el-card>
 
@@ -118,21 +118,21 @@
           <el-card shadow="never" class="block">
             <div class="toolbar">
               <div class="filters">
-                <span class="filter-label">{{ t('upgrade.sourceLabel') }}</span>
+                <span class="filter-label">{{ t('cccms.upgrade.sourceLabel') }}</span>
                 <el-select v-model="source" style="width: 190px" :disabled="blocked" @change="onSourceChange">
                   <el-option v-for="s in overview.sources" :key="s.key" :label="s.label" :value="s.key" />
                 </el-select>
 
-                <span class="filter-label">{{ t('upgrade.targetRefLabel') }}</span>
+                <span class="filter-label">{{ t('cccms.upgrade.targetRefLabel') }}</span>
                 <el-select v-model="targetRef" style="width: 190px" :disabled="blocked" @change="onCheck">
-                  <el-option :label="t('upgrade.trackBranch', { name: overview.track })" :value="TRACK_VALUE" />
+                  <el-option :label="t('cccms.upgrade.trackBranch', { name: overview.track })" :value="TRACK_VALUE" />
                   <el-option v-for="tag in tags" :key="tag" :label="tag" :value="tag" />
                 </el-select>
               </div>
 
               <div class="actions">
                 <el-button :loading="checking" :disabled="blocked" @click="onCheck"
-                  ><template #icon><i class="ri-search-line" /></template> {{ t('upgrade.check') }}
+                  ><template #icon><i class="ri-search-line" /></template> {{ t('cccms.upgrade.check') }}
                 </el-button>
                 <el-button
                   v-auth="'cccms:upgrade:run'"
@@ -141,29 +141,29 @@
                   :disabled="blocked || !plan"
                   @click="onRun"
                   ><template #icon><i class="ri-refresh-line" /></template>
-                  {{ t('upgrade.run') }}
+                  {{ t('cccms.upgrade.run') }}
                 </el-button>
               </div>
             </div>
 
             <div v-if="plan && plan.pending > 0" class="force-row">
               <el-checkbox v-model="force">
-                {{ t('upgrade.forceLabel', { count: plan.pending }) }}
+                {{ t('cccms.upgrade.forceLabel', { count: plan.pending }) }}
               </el-checkbox>
-              <span class="force-hint">{{ t('upgrade.forceHint') }}</span>
+              <span class="force-hint">{{ t('cccms.upgrade.forceHint') }}</span>
             </div>
 
             <div v-if="plan && (plan.summary.local || plan.summary.deleted || plan.summary.removed)" class="force-row">
               <el-checkbox v-model="forceAll">
                 {{
-                  t('upgrade.forceAllLabel', {
+                  t('cccms.upgrade.forceAllLabel', {
                     local: plan.summary.local || 0,
                     deleted: plan.summary.deleted || 0,
                     removed: plan.summary.removed || 0,
                   })
                 }}
               </el-checkbox>
-              <span class="force-hint">{{ t('upgrade.forceAllHint') }}</span>
+              <span class="force-hint">{{ t('cccms.upgrade.forceAllHint') }}</span>
             </div>
 
             <el-alert
@@ -175,7 +175,7 @@
             >
               <template #title>
                 {{
-                  t('upgrade.lastRun', {
+                  t('cccms.upgrade.lastRun', {
                     written: runResult.written,
                     removed: runResult.removed,
                     backed: runResult.backed,
@@ -184,16 +184,16 @@
               </template>
               <template #default>
                 <div v-if="runResult.backup_dir" class="mono">
-                  {{ t('upgrade.backupDir', { path: runResult.backup_dir }) }}
+                  {{ t('cccms.upgrade.backupDir', { path: runResult.backup_dir }) }}
                 </div>
                 <div v-if="runResult.skipped.length">
-                  {{ t('upgrade.skipped', { count: runResult.skipped.length }) }}
+                  {{ t('cccms.upgrade.skipped', { count: runResult.skipped.length }) }}
                 </div>
                 <div v-if="runResult.maintenance_error" class="danger-text">
-                  {{ t('upgrade.maintenanceError', { error: runResult.maintenance_error }) }}
+                  {{ t('cccms.upgrade.maintenanceError', { error: runResult.maintenance_error }) }}
                 </div>
                 <div v-if="runResult.need_reload" class="danger-text">
-                  {{ t('upgrade.needReload') }}
+                  {{ t('cccms.upgrade.needReload') }}
                 </div>
               </template>
             </el-alert>
@@ -202,36 +202,36 @@
           <!-- 变更明细 -->
           <el-card shadow="never" class="block">
             <el-tabs v-model="tab">
-              <el-tab-pane :label="t('upgrade.filesTab', { count: plan ? plan.files.length : 0 })" name="files">
+              <el-tab-pane :label="t('cccms.upgrade.filesTab', { count: plan ? plan.files.length : 0 })" name="files">
                 <div class="table-tools">
                   <el-radio-group v-model="kindFilter" size="small">
-                    <el-radio-button value="changed">{{ t('upgrade.filterChanged') }}</el-radio-button>
-                    <el-radio-button value="all">{{ t('upgrade.filterAll') }}</el-radio-button>
-                    <el-radio-button value="kept">{{ t('upgrade.filterKept') }}</el-radio-button>
+                    <el-radio-button value="changed">{{ t('cccms.upgrade.filterChanged') }}</el-radio-button>
+                    <el-radio-button value="all">{{ t('cccms.upgrade.filterAll') }}</el-radio-button>
+                    <el-radio-button value="kept">{{ t('cccms.upgrade.filterKept') }}</el-radio-button>
                   </el-radio-group>
                   <span class="tip-inline">
-                    {{ t('upgrade.localOnlyTip', { count: plan?.local_only || 0 }) }}
+                    {{ t('cccms.upgrade.localOnlyTip', { count: plan?.local_only || 0 }) }}
                   </span>
                 </div>
 
-                <el-table :data="visibleFiles" size="small" max-height="480" :empty-text="t('upgrade.noFiles')">
-                  <el-table-column prop="path" :label="t('upgrade.colFile')" min-width="360">
+                <el-table :data="visibleFiles" size="small" max-height="480" :empty-text="t('cccms.upgrade.noFiles')">
+                  <el-table-column prop="path" :label="t('cccms.upgrade.colFile')" min-width="360">
                     <template #default="{ row }">
                       <span class="mono path">{{ row.path }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column :label="t('upgrade.colKind')" width="150">
+                  <el-table-column :label="t('cccms.upgrade.colKind')" width="150">
                     <template #default="{ row }">
                       <el-tag :type="tagType(row.kind)" size="small" effect="light">{{ row.kind_label }}</el-tag>
                     </template>
                   </el-table-column>
-                  <el-table-column :label="t('upgrade.colAdded')" width="90" align="right">
+                  <el-table-column :label="t('cccms.upgrade.colAdded')" width="90" align="right">
                     <template #default="{ row }">
                       <span v-if="row.added" class="added">+{{ row.added }}</span>
                       <span v-else class="muted">—</span>
                     </template>
                   </el-table-column>
-                  <el-table-column :label="t('upgrade.colDeleted')" width="90" align="right">
+                  <el-table-column :label="t('cccms.upgrade.colDeleted')" width="90" align="right">
                     <template #default="{ row }">
                       <span v-if="row.deleted" class="deleted">-{{ row.deleted }}</span>
                       <span v-else class="muted">—</span>
@@ -240,7 +240,10 @@
                 </el-table>
               </el-tab-pane>
 
-              <el-tab-pane :label="t('upgrade.commitsTab', { count: plan ? plan.commits.length : 0 })" name="commits">
+              <el-tab-pane
+                :label="t('cccms.upgrade.commitsTab', { count: plan ? plan.commits.length : 0 })"
+                name="commits"
+              >
                 <el-timeline v-if="plan && plan.commits.length" class="timeline">
                   <el-timeline-item
                     v-for="c in plan.commits"
@@ -257,7 +260,7 @@
                     </div>
                   </el-timeline-item>
                 </el-timeline>
-                <el-empty v-else :description="t('upgrade.noCommits')" />
+                <el-empty v-else :description="t('cccms.upgrade.noCommits')" />
               </el-tab-pane>
             </el-tabs>
           </el-card>
@@ -416,11 +419,11 @@ async function onInit(): Promise<void> {
 
   try {
     await ElMessageBox.confirm(
-      t('upgrade.initConfirm', {
+      t('cccms.upgrade.initConfirm', {
         source: sourceLabel.value,
-        base: overview.value?.default_base || t('upgrade.defaultVersion'),
+        base: overview.value?.default_base || t('cccms.upgrade.defaultVersion'),
       }),
-      t('upgrade.initTitle'),
+      t('cccms.upgrade.initTitle'),
       { type: 'info' },
     )
   } catch {
@@ -431,7 +434,7 @@ async function onInit(): Promise<void> {
   try {
     const result = await upgradeInit(source.value)
     ElMessage.success(
-      t(result.fallback ? 'upgrade.initSuccessFallback' : 'upgrade.initSuccess', {
+      t(result.fallback ? 'cccms.upgrade.initSuccessFallback' : 'cccms.upgrade.initSuccess', {
         ref: result.ref,
         fallback: result.fallback ?? '',
         modified: result.modified,
@@ -462,17 +465,17 @@ async function onRun(): Promise<void> {
   try {
     await ElMessageBox.confirm(
       [
-        t('upgrade.runConfirmRef', { ref: current.ref, commit: short(current.commit) }),
+        t('cccms.upgrade.runConfirmRef', { ref: current.ref, commit: short(current.commit) }),
         willRemove
-          ? t('upgrade.runConfirmWriteRemove', { write: willWrite, remove: willRemove })
-          : t('upgrade.runConfirmWrite', { count: willWrite }),
-        force.value && current.pending ? t('upgrade.runConfirmConflict', { count: current.pending }) : '',
-        forceAll.value ? t('upgrade.runConfirmForceAll') : '',
-        t('upgrade.runConfirmBackup'),
+          ? t('cccms.upgrade.runConfirmWriteRemove', { write: willWrite, remove: willRemove })
+          : t('cccms.upgrade.runConfirmWrite', { count: willWrite }),
+        force.value && current.pending ? t('cccms.upgrade.runConfirmConflict', { count: current.pending }) : '',
+        forceAll.value ? t('cccms.upgrade.runConfirmForceAll') : '',
+        t('cccms.upgrade.runConfirmBackup'),
       ]
         .filter(Boolean)
         .join('\n'),
-      t('upgrade.runTitle'),
+      t('cccms.upgrade.runTitle'),
       { type: 'warning' },
     )
   } catch {
@@ -488,7 +491,7 @@ async function onRun(): Promise<void> {
       prune: false,
       force_all: forceAll.value,
     })
-    ElMessage.success(t('upgrade.runSuccess'))
+    ElMessage.success(t('cccms.upgrade.runSuccess'))
     await loadOverview()
     await onCheck()
   } finally {

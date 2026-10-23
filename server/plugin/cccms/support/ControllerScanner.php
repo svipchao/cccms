@@ -36,8 +36,9 @@ final class ControllerScanner
 
     private static function pathToClass(string $baseDir, string $file, string $baseNamespace): ?string
     {
+        // PHP 8 起三参 substr 只会返回 string（不足长度时为空串），无需再判 false
         $rel = substr($file, strlen(rtrim($baseDir, DIRECTORY_SEPARATOR)) + 1, -4);
-        if ($rel === false || $rel === '') {
+        if ($rel === '') {
             return null;
         }
         $rel = str_replace(DIRECTORY_SEPARATOR, '\\', $rel);

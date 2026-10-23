@@ -305,7 +305,7 @@ final class GeneratorLogic
                 '',
                 '    /**',
                 '     * 数据权限：表里没有 create_by（无法判定归属），已跳过预设基线。',
-                '     * TODO 需要按人 / 部门隔离时：补一个归属字段并改成对应声明，或登记为受控表后用自定义规则。',
+                '     * 需要按人 / 部门隔离时：补一个归属字段并改成对应声明，或登记为受控表后用自定义规则。',
                 '     */',
                 "    protected \$dataScope = ['no_baseline' => true];",
             ],
@@ -430,6 +430,7 @@ final class GeneratorLogic
         use plugin\\{$f}\\app\\model\\{$M};
         {$softUse}use plugin\\cccms\\support\\ApiException;
         use plugin\\cccms\\support\\FilterInput;
+        use plugin\\cccms\\support\\PageInput;
 
         /**
          * {$c['title']}逻辑（代码生成器生成，请按需补充业务规则）。
@@ -452,9 +453,9 @@ final class GeneratorLogic
             public static function paginate(array \$params): array
             {
                 \$query = {$listQuery};
-                // TODO: 按需补充筛选条件
-                \$page  = max(1, (int)(\$params['page'] ?? 1));
-                \$limit = max(1, (int)(\$params['limit'] ?? 15));
+                // 按需补充筛选条件，例如：\$query->where('status', (int)(\$params['status'] ?? 1));
+                // 分页统一走 PageInput：它会兜住 limit 上限，手写 max(1, ...) 会让「每页 10000 条」生效
+                ['page' => \$page, 'limit' => \$limit] = PageInput::of(\$params);
                 \$total = \$query->count();
                 \$list  = \$query->page(\$page, \$limit)->order('{$c['pk']}', 'desc')->select()->toArray();
 

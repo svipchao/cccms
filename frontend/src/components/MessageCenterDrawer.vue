@@ -1,7 +1,7 @@
 <template>
   <el-drawer
     :model-value="exportStore.visible"
-    :title="t('layout.messageCenter')"
+    :title="t('core.layout.messageCenter')"
     :with-header="false"
     size="560px"
     append-to-body
@@ -9,15 +9,19 @@
   >
     <el-tabs v-model="exportStore.activeTab" class="msg-tabs">
       <!-- 我的消息 -->
-      <el-tab-pane :label="t('layout.notice')" name="notice">
+      <el-tab-pane :label="t('core.layout.notice')" name="notice">
         <div class="notice-head">
           <el-button v-if="noticeStore.unread > 0" link type="primary" size="small" @click="markAllRead">
-            {{ t('layout.noticeAllRead') }}
+            {{ t('core.layout.noticeAllRead') }}
           </el-button>
         </div>
 
         <div v-loading="noticeStore.loading" class="notice-list">
-          <el-empty v-if="noticeStore.items.length === 0" :description="t('layout.noticeEmpty')" :image-size="70" />
+          <el-empty
+            v-if="noticeStore.items.length === 0"
+            :description="t('core.layout.noticeEmpty')"
+            :image-size="70"
+          />
           <div
             v-for="item in noticeStore.items"
             :key="item.id"
@@ -29,16 +33,16 @@
               <span class="notice-dot" :class="{ 'is-hidden': item.is_read }" />
               <span class="notice-text">{{ item.title }}</span>
               <el-tag :type="item.level === 2 ? 'danger' : 'info'" size="small" effect="plain">
-                {{ item.level === 2 ? t('layout.noticeImportant') : t('layout.noticeNormal') }}
+                {{ item.level === 2 ? t('core.layout.noticeImportant') : t('core.layout.noticeNormal') }}
               </el-tag>
             </div>
             <div class="notice-item-meta">
               <el-tag :type="item.type === 2 ? 'primary' : 'success'" size="small" effect="plain">
-                {{ item.type === 2 ? t('layout.noticeAnnouncement') : t('layout.noticeNotification') }}
+                {{ item.type === 2 ? t('core.layout.noticeAnnouncement') : t('core.layout.noticeNotification') }}
               </el-tag>
               <span class="notice-item-time">{{ item.publish_at || item.create_time }}</span>
               <span class="notice-item-status" :class="{ 'is-read': item.is_read }">
-                {{ item.is_read ? t('layout.noticeRead') : t('layout.noticeUnread') }}
+                {{ item.is_read ? t('core.layout.noticeRead') : t('core.layout.noticeUnread') }}
               </span>
             </div>
           </div>
@@ -46,41 +50,41 @@
       </el-tab-pane>
 
       <!-- 导出任务 -->
-      <el-tab-pane :label="t('export.title')" name="export">
+      <el-tab-pane :label="t('cccms.export.title')" name="export">
         <div class="export-toolbar">
           <el-button size="small" :loading="exportStore.loading" @click="exportStore.load()">
             <template #icon><i class="ri-refresh-line" /></template>
-            {{ t('export.refresh') }}
+            {{ t('cccms.export.refresh') }}
           </el-button>
-          <span class="export-hint">{{ t('export.hint') }}</span>
+          <span class="export-hint">{{ t('cccms.export.hint') }}</span>
         </div>
 
         <el-empty
           v-if="exportStore.items.length === 0 && !exportStore.loading"
-          :description="t('export.empty')"
+          :description="t('cccms.export.empty')"
           :image-size="80"
         />
         <el-table v-else v-loading="exportStore.loading" :data="exportStore.items" size="small" class="export-table">
-          <el-table-column :label="t('export.type')" width="120">
+          <el-table-column :label="t('cccms.export.type')" width="120">
             <template #default="{ row }">{{ typeLabel(row.type) }}</template>
           </el-table-column>
-          <el-table-column :label="t('export.rows')" width="80" align="right">
+          <el-table-column :label="t('cccms.export.rows')" width="80" align="right">
             <template #default="{ row }">{{ row.total_rows }}</template>
           </el-table-column>
-          <el-table-column :label="t('export.createdAt')" min-width="150">
+          <el-table-column :label="t('cccms.export.createdAt')" min-width="150">
             <template #default="{ row }">{{ row.create_time }}</template>
           </el-table-column>
-          <el-table-column :label="t('export.status')" width="90" align="center">
+          <el-table-column :label="t('cccms.export.status')" width="90" align="center">
             <template #default="{ row }">
               <el-tag :type="statusTag(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column :label="t('table.action')" width="110" align="center">
+          <el-table-column :label="t('core.table.action')" width="110" align="center">
             <template #default="{ row }">
               <!-- 完成直接下载；待处理时点击会触发后端同步生成并下载（Windows 无定时进程的兜底） -->
               <el-button v-if="row.status === 0 || row.status === 2" link type="primary" @click="download(row)">
                 <template #icon><i class="ri-download-2-line" /></template>
-                {{ row.status === 2 ? t('export.download') : t('export.generateDownload') }}
+                {{ row.status === 2 ? t('cccms.export.download') : t('cccms.export.generateDownload') }}
               </el-button>
               <span v-else-if="row.status === 3" class="export-error" :title="row.error">{{ row.error }}</span>
             </template>
@@ -92,13 +96,13 @@
     <!-- 消息详情 -->
     <el-dialog
       v-model="noticeDetailVisible"
-      :title="currentNotice?.title || t('layout.noticeDetail')"
+      :title="currentNotice?.title || t('core.layout.noticeDetail')"
       width="640px"
       append-to-body
     >
       <div class="notice-detail-meta">
         <el-tag size="small" effect="plain">
-          {{ currentNotice?.type === 2 ? t('layout.noticeAnnouncement') : t('layout.noticeNotification') }}
+          {{ currentNotice?.type === 2 ? t('core.layout.noticeAnnouncement') : t('core.layout.noticeNotification') }}
         </el-tag>
         <span>{{ currentNotice?.publish_at || currentNotice?.create_time }}</span>
       </div>
@@ -152,7 +156,7 @@ async function openNotice(item: NoticeRow): Promise<void> {
 async function markAllRead(): Promise<void> {
   try {
     await noticeStore.markAllRead()
-    ElMessage.success(t('layout.noticeAllReadSuccess'))
+    ElMessage.success(t('core.layout.noticeAllReadSuccess'))
   } catch {
     // 拦截器已提示
   }
@@ -161,18 +165,18 @@ async function markAllRead(): Promise<void> {
 /* ---- 导出任务 ---- */
 function typeLabel(type: string): string {
   const map: Record<string, string> = {
-    log: t('export.type_log'),
+    log: t('cccms.export.type_log'),
   }
   return map[type] ?? type
 }
 
 function statusText(status: number): string {
   const map: Record<number, string> = {
-    0: t('export.statusPending'),
-    1: t('export.statusRunning'),
-    2: t('export.statusDone'),
-    3: t('export.statusFailed'),
-    4: t('export.statusExpired'),
+    0: t('cccms.export.statusPending'),
+    1: t('cccms.export.statusRunning'),
+    2: t('cccms.export.statusDone'),
+    3: t('cccms.export.statusFailed'),
+    4: t('cccms.export.statusExpired'),
   }
   return map[status] ?? String(status)
 }

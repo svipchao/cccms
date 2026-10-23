@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
-use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\DictType;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\DictCache;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\PageInput;
 use plugin\cccms\support\SoftDelete;
 use plugin\cccms\support\TenantContext;
-use think\facade\Db;
 use plugin\cccms\support\Tree;
+use think\facade\Db;
 
 /** 数据字典逻辑。 */
 final class DictLogic
@@ -147,6 +147,7 @@ final class DictLogic
             throw new ApiException(I18n::t('dict.type_not_found'), 422);
         }
         self::assertTypeInTenant($typeId);
+        self::assertValueFree($typeId, (string)($data['value'] ?? ''));
 
         $id = (int)TenantContext::table('dict_data')->insertGetId(TenantContext::stamp('dict_data', $data));
         DictCache::bump();
@@ -167,7 +168,16 @@ final class DictLogic
             self::assertTypeInTenant($typeId);
         }
 
-        self::assertDataInTenant($id);
+        $current = self::assertDataInTenant($id);
+
+        // 局部更新：任一关联键变化都要按「更新后的值」重新查重
+        if (array_key_exists('type_id', $data) || array_key_exists('value', $data)) {
+            self::assertValueFree(
+                (int)($data['type_id'] ?? $current['type_id']),
+                (string)($data['value'] ?? $current['value']),
+                $id
+            );
+        }
 
         $data = TenantContext::stamp('dict_data', $data);
         TenantContext::table('dict_data')->where('id', $id)->update($data);
@@ -197,11 +207,43 @@ final class DictLogic
         }
     }
 
-    /** 字典数据必须属于当前租户（不存在或越权统一 404，不泄露「存在但看不见」） */
-    private static function assertDataInTenant(int $id): void
+    /**
+     * 字典数据必须属于当前租户（不存在或越权统一 404，不泄露「存在但看不见」）。
+     *
+     * @return array<string,mixed> 当前行（局部更新时用于补全查重所需字段）
+     */
+    private static function assertDataInTenant(int $id): array
     {
-        if (SoftDelete::apply(TenantContext::table('dict_data'))->where('id', $id)->count() === 0) {
+        $row = SoftDelete::apply(TenantContext::table('dict_data'))->where('id', $id)->find();
+        if (!$row) {
             throw new ApiException(I18n::t('dict.data_not_found'), 404);
+        }
+
+        return $row;
+    }
+
+    /**
+     * 同一字典类型下「值」不允许重复（只看未删除的行）。
+     *
+     * 为什么不在库上加唯一索引：字典值支持软删与回收站恢复，
+     * 唯一索引会把「删掉再建一个同值项」也挡住（`uk_type` 就是这个坑），
+     * 而恢复时还会因为历史重复值直接失败。写入前查重 + 恢复前校验更可控。
+     */
+    private static function assertValueFree(int $typeId, string $value, int $exceptId = 0): void
+    {
+        if ($value === '') {
+            return; // 空值不参与唯一性（历史数据里存在空值行）
+        }
+
+        $query = SoftDelete::apply(TenantContext::table('dict_data'))
+            ->where('type_id', $typeId)
+            ->where('value', $value);
+        if ($exceptId > 0) {
+            $query->where('id', '<>', $exceptId);
+        }
+
+        if ($query->count() > 0) {
+            throw new ApiException(I18n::t('dict.data_value_exists', ['value' => $value]), 422);
         }
     }
 
@@ -216,7 +258,7 @@ final class DictLogic
      */
     public static function typeBatchStatus(array $ids, int $status): array
     {
-        $ids      = self::batchIds($ids);
+        $ids      = Tree::batchIds($ids);
         $existing = array_map('intval', SoftDelete::apply(TenantContext::table('dict_type'))->whereIn('id', $ids)->column('id'));
         $affected = $existing === []
             ? 0
@@ -236,16 +278,25 @@ final class DictLogic
      */
     public static function typeBatchDelete(array $ids): array
     {
-        $ids      = self::batchIds($ids);
+        $ids      = Tree::batchIds($ids);
         $existing = array_map('intval', SoftDelete::apply(TenantContext::table('dict_type'))->whereIn('id', $ids)->column('id'));
 
-        $affected = 0;
-        foreach ($existing as $id) {
-            self::typeDelete($id);
-            $affected++;
+        if ($existing !== []) {
+            // 整批一个事务：逐个 `typeDelete()` 会开 N 个事务、触发 N 次 `DictCache::bump()`，
+            // 中途异常还会留下「删了一半」的中间态
+            Db::transaction(static function () use ($existing): void {
+                $dataIds = SoftDelete::apply(TenantContext::table('dict_data'))
+                    ->whereIn('type_id', $existing)
+                    ->column('id');
+                if ($dataIds !== []) {
+                    SoftDelete::remove(TenantContext::table('dict_data'), $dataIds);
+                }
+                SoftDelete::remove(TenantContext::table('dict_type'), $existing);
+            });
+            DictCache::bump();
         }
 
-        return ['affected' => $affected, 'skipped' => array_values(array_diff($ids, $existing))];
+        return ['affected' => count($existing), 'skipped' => array_values(array_diff($ids, $existing))];
     }
 
     /**
@@ -255,7 +306,7 @@ final class DictLogic
      */
     public static function dataBatchStatus(array $ids, int $status): array
     {
-        $ids      = self::batchIds($ids);
+        $ids      = Tree::batchIds($ids);
         $existing = array_map('intval', SoftDelete::apply(TenantContext::table('dict_data'))->whereIn('id', $ids)->column('id'));
         $affected = $existing === []
             ? 0
@@ -275,22 +326,12 @@ final class DictLogic
      */
     public static function dataBatchDelete(array $ids): array
     {
-        $ids      = self::batchIds($ids);
+        $ids      = Tree::batchIds($ids);
         $existing = array_map('intval', SoftDelete::apply(TenantContext::table('dict_data'))->whereIn('id', $ids)->column('id'));
 
         $affected = $existing === [] ? 0 : SoftDelete::remove(TenantContext::table('dict_data'), $existing);
         DictCache::bump();
 
         return ['affected' => $affected, 'skipped' => array_values(array_diff($ids, $existing))];
-    }
-
-    /**
-     * 规范化批量 id：去重、去非正整数。
-     *
-     * @return int[]
-     */
-    private static function batchIds(array $ids): array
-    {
-        return Tree::batchIds($ids);
     }
 }

@@ -12,13 +12,13 @@ import { describeCron } from '@/utils/cron'
 
 /** 周几文案键（0 = 周日）：写成静态键，便于 i18n 静态检查 */
 const WEEK_KEYS: Record<number, string> = {
-  0: 'crontab.editor.weekSunday',
-  1: 'crontab.editor.weekMonday',
-  2: 'crontab.editor.weekTuesday',
-  3: 'crontab.editor.weekWednesday',
-  4: 'crontab.editor.weekThursday',
-  5: 'crontab.editor.weekFriday',
-  6: 'crontab.editor.weekSaturday',
+  0: 'cccms.crontab.editor.weekSunday',
+  1: 'cccms.crontab.editor.weekMonday',
+  2: 'cccms.crontab.editor.weekTuesday',
+  3: 'cccms.crontab.editor.weekWednesday',
+  4: 'cccms.crontab.editor.weekThursday',
+  5: 'cccms.crontab.editor.weekFriday',
+  6: 'cccms.crontab.editor.weekSaturday',
 }
 
 /** 返回 `describe(表达式)`：认不出来的写法回退成「自定义表达式」 */
@@ -30,28 +30,28 @@ export function useCronDescription(): { describe: (expression: string) => string
 
     switch (desc.key) {
       case 'every_second':
-        return t('crontab.editor.descEverySecond')
+        return t('cccms.crontab.editor.descEverySecond')
       case 'every_n_seconds':
-        return t('crontab.editor.descEveryNSeconds', { n: desc.n })
+        return t('cccms.crontab.editor.descEveryNSeconds', { n: desc.n })
       case 'every_n_minutes':
-        return t('crontab.editor.descEveryNMinutes', { n: desc.n })
+        return t('cccms.crontab.editor.descEveryNMinutes', { n: desc.n })
       case 'every_n_hours':
-        return t('crontab.editor.descEveryNHours', { n: desc.n })
+        return t('cccms.crontab.editor.descEveryNHours', { n: desc.n })
       case 'hourly':
-        return t('crontab.editor.descHourly', { minute: desc.minute })
+        return t('cccms.crontab.editor.descHourly', { minute: desc.minute })
       case 'daily':
-        return t('crontab.editor.descDaily', { time: desc.time })
+        return t('cccms.crontab.editor.descDaily', { time: desc.time })
       case 'weekly':
-        return t('crontab.editor.descWeekly', {
-          week: t(WEEK_KEYS[desc.week] ?? 'crontab.editor.weekSunday'),
+        return t('cccms.crontab.editor.descWeekly', {
+          week: t(WEEK_KEYS[desc.week] ?? 'cccms.crontab.editor.weekSunday'),
           time: desc.time,
         })
       case 'workday':
-        return t('crontab.editor.descWorkday', { time: desc.time })
+        return t('cccms.crontab.editor.descWorkday', { time: desc.time })
       case 'monthly':
-        return t('crontab.editor.descMonthly', { day: desc.day, time: desc.time })
+        return t('cccms.crontab.editor.descMonthly', { day: desc.day, time: desc.time })
       default:
-        return t('crontab.editor.descCustom')
+        return t('cccms.crontab.editor.descCustom')
     }
   }
 

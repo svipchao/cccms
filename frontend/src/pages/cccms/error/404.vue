@@ -1,5 +1,5 @@
 <template>
-  <ErrorPage :code="404" title-key="error.notFoundTitle" desc-key="error.notFoundDesc" />
+  <ErrorPage :code="404" title-key="core.error.notFoundTitle" desc-key="core.error.notFoundDesc" />
 </template>
 
 <script setup lang="ts">

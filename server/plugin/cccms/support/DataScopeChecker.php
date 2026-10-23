@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\support;
 
-use FilesystemIterator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
+use plugin\cccms\support\Scan\PluginFs;
 use think\facade\Db;
 use Throwable;
 
@@ -16,7 +14,7 @@ use Throwable;
  * 解决的问题：数据权限由**模型的全局作用域**提供，一旦「表登记了受控、查询却没走模型」，
  * 界面照常可用、规则照常保存，但实际一个条件都不会加 —— 属于静默失效，只能靠机器查。
  *
- * 四条规则：
+ * 五条规则：
  *   R1 控制器不得直连数据库（`Db::name` / `Db::table` / `Db::query`）：
  *      查询下沉到 Logic，控制器直连等于把数据权限关掉；
  *   R2 登记在 `sys_data_scope_table` 的表：
@@ -27,6 +25,9 @@ use Throwable;
  *      - 都没有 = 租户不隔离、规则不生效，界面上却看不出异常。
  *   R4 租户口径不能有两套（P2-6）：模型声明 `$tenantScope = true`，其表必须在
  *      `TenantContext::TABLES` 里，否则模型查询与直查路径结果不一致。
+ *   R5 隔离表的直查必须收敛租户（P2-6 的另一半）：`support/` 里 `Db::name('隔离表')`
+ *      要么带 `tenant_id` / 走 `TenantContext::table()`，要么按主键定位 ——
+ *      否则就是「模型一套、直查另一套」，R4 那类问题会从这条缝里再长出来。
  *
  * 主代码里找不到模型的受控表只提示不报错：本仓库是**基础系统**，
  * 其它插件系统在自己部署里登记的业务表（如 `ks_*`）不归 R2 管 —— 它们由 R3 强制「登记或豁免」。
@@ -50,6 +51,7 @@ final class DataScopeChecker
         $models = self::models();
         self::checkGuardedTables($models, $findings);
         self::checkTenantTables($models, $findings);
+        self::checkTenantDirectQueries($findings);
         self::checkPluginTables($findings);
 
         return $findings;
@@ -286,6 +288,65 @@ final class DataScopeChecker
         }
     }
 
+    // ------------------------------------------------------------------
+    // R5：隔离表的直查必须收敛租户
+    // ------------------------------------------------------------------
+
+    /**
+     * `support/` 里对**参与租户隔离的表**的 `Db::name()` 直查，必须满足其一：
+     *   1. 收敛到租户：窗口内出现 `tenant_id` 或 `TenantContext::table(`；
+     *   2. 按主键定位：`where('id'` / `whereIn('id'` —— 已收敛到具体行，读不到别人的数据。
+     *
+     * 为什么只扫 `support/`：业务层已尽量模型化，模型查询由 `BaseModel` 的全局作用域兜住；
+     * 基础设施层（`AuthService` / `DataScope` / `CrontabRunner`）才是直查的集中地，
+     * 也是「模型一套、直查另一套」最容易发生的地方 —— R4 那个坑就是从这儿漏出来的。
+     *
+     * 只看**同一条语句的链式调用窗口**（匹配行 + 后续 3 行），不做跨函数数据流推断：
+     * 静态扫描宁可放过，也不要制造大量误报把 `--check` 变成「狼来了」。
+     *
+     * @param array<int,array{level:string,file:string,line:int,msg:string}> $findings
+     */
+    private static function checkTenantDirectQueries(array &$findings): void
+    {
+        $tables = array_values(array_filter(
+            TenantContext::TABLES,
+            static fn (string $table): bool => TenantContext::participates($table)
+        ));
+
+        // 视为「已收敛」的三种写法：租户条件、租户直查入口、主键定位
+        $safe = '/tenant_id|TenantContext::table\(|where(?:In)?\(\s*\'id\'/';
+
+        foreach (self::pluginDirs() as $dir) {
+            foreach (self::phpFiles($dir . '/support') as $file) {
+                $content = (string)file_get_contents($file);
+
+                foreach ($tables as $table) {
+                    $pattern = '/Db::name\(\s*\'' . preg_quote($table, '/') . '\'\s*\)/';
+                    if (!preg_match_all($pattern, $content, $matches, PREG_OFFSET_CAPTURE)) {
+                        continue;
+                    }
+
+                    foreach ($matches[0] as $match) {
+                        // 从匹配点往后取 400 字符：足够覆盖同一条链式调用的其余部分，
+                        // 又不至于跨到下一个语句（跨了只会漏报，不会误报）
+                        $offset = (int)$match[1];
+                        if (preg_match($safe, substr($content, $offset, 400))) {
+                            continue;
+                        }
+
+                        $findings[] = [
+                            'level' => 'error',
+                            'file'  => self::rel($file),
+                            'line'  => substr_count($content, "\n", 0, $offset) + 1,
+                            'msg'   => "隔离表 {$table} 的直查既没有收敛到租户（tenant_id / TenantContext::table），"
+                                . '也没有按主键定位：这条查询会看到全部租户的数据，与模型查询的全局作用域形成两套口径',
+                        ];
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * 扫描所有模型的表名与数据权限声明。
      *
@@ -300,7 +361,9 @@ final class DataScopeChecker
                 if (str_contains($content, 'abstract class')) {
                     continue; // BaseModel 这类基类
                 }
-                if (!preg_match('/protected\s+\$name\s*=\s*\'([^\']+)\'/', $content, $m)) {
+                // `$name` 会拼连接前缀；插件表（cms_* / member_*）必须用 `$table` 写完整表名，
+                // 两种声明都要认得，否则插件模型在 R2 / R4 里等于隐形
+                if (!preg_match('/protected\s+\$(?:name|table)\s*=\s*\'([^\']+)\'/', $content, $m)) {
                     continue;
                 }
                 $out[$m[1]] = [
@@ -325,36 +388,13 @@ final class DataScopeChecker
      */
     private static function pluginDirs(): array
     {
-        $out = [];
-        foreach (glob(base_path() . '/plugin/*', GLOB_ONLYDIR) ?: [] as $dir) {
-            if (!is_dir($dir . '/app') || !is_file($dir . '/db/menu.php')) {
-                continue;
-            }
-            $out[] = $dir;
-        }
-        sort($out);
-
-        return $out;
+        return PluginFs::pluginDirs();
     }
 
     /** @return array<int,string> */
     private static function phpFiles(string $dir): array
     {
-        if (!is_dir($dir)) {
-            return [];
-        }
-        $files = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
-        );
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                $files[] = $file->getPathname();
-            }
-        }
-        sort($files);
-
-        return $files;
+        return PluginFs::phpFiles($dir);
     }
 
     /**
@@ -390,9 +430,6 @@ final class DataScopeChecker
     /** 转成相对项目根的路径，输出更短 */
     private static function rel(string $path): string
     {
-        $root = str_replace('\\', '/', dirname(rtrim(base_path(), '/\\'))) . '/';
-        $path = str_replace('\\', '/', $path);
-
-        return str_starts_with($path, $root) ? substr($path, strlen($root)) : $path;
+        return PluginFs::rel($path);
     }
 }

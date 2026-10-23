@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace plugin\cccms\support;
 
 use InvalidArgumentException;
+use plugin\cccms\support\DataScope\FieldRules;
 use think\facade\Db;
 use Throwable;
 use WeakMap;
@@ -47,10 +48,13 @@ final class DataScope
      * 字段级动作白名单。
      *
      * 保存时 `DataRuleLogic::prepare()` 已按此校验；**执行期还要再校验一次**
-     * （见 `compileFieldRules()`）：手改 SQL、旧版本数据、迁移异常都可能留下非法动作，
+     * （见 `FieldRules::compile()`）：手改 SQL、旧版本数据、迁移异常都可能留下非法动作，
      * 而「遇到未知动作就跳过」等于把本该隐藏 / 掩码的字段原样返回 —— 静默泄漏。
+     *
+     * 白名单本体放在 `DataScope\FieldRules`（纯函数，可脱离数据库单测），这里保留同名常量
+     * 是因为 `DataRuleLogic` 与用例按 `DataScope::FIELD_ACTIONS` 引用。
      */
-    public const FIELD_ACTIONS = ['hidden', 'readonly', 'mask', 'encrypt'];
+    public const FIELD_ACTIONS = FieldRules::ACTIONS;
 
     /**
      * 绑定维度的组合方式（`sys_data_rule.bind_mode`）。
@@ -271,7 +275,9 @@ final class DataScope
             // 有效角色 = 直连 + 祖先（与鉴权 AuthService::effectiveRoleIds 同口径）。
             // 规则的「绑定角色」与动态变量 {role.ids} 都用它，避免出现
             // 「按权限能进这个菜单、数据规则却匹配不上父角色」的割裂。
-            'effectiveRoleIds' => AuthService::effectiveRoleIds($user->id),
+            // 角色归属账号，故用 homeTenantId（超管切换租户后角色仍属归属租户）；
+            // effectiveRoleIds 是直查路径，必须显式传，见该方法注释
+            'effectiveRoleIds' => AuthService::effectiveRoleIds($user->id, true, $user->homeTenantId),
             'postIds'     => array_map('intval', Db::name('user_post')->where('user_id', $user->id)->column('post_id')),
             'deptIds'     => array_map('intval', Db::name('user_dept')->where('user_id', $user->id)->column('dept_id')),
             // 部门父子映射只取本租户：子树计算不能顺着 parent_id 走进别的租户
@@ -519,7 +525,7 @@ final class DataScope
         }
 
         try {
-            $compiled = self::compileFieldRules(self::rules($user, 'field', $table));
+            $compiled = FieldRules::compile(self::rules($user, 'field', $table));
         } catch (InvalidArgumentException $e) {
             // 编译失败 → 整行拒绝：无法确定损坏的规则原本要保护哪个字段，
             // 就不能挑「看起来没问题」的部分返回。
@@ -539,7 +545,7 @@ final class DataScope
                     unset($row[$field]);
                     break;
                 case 'mask':
-                    $row[$field] = self::mask((string)$row[$field], $field);
+                    $row[$field] = FieldRules::mask((string)$row[$field], $field);
                     break;
                 case 'encrypt':
                     // 未配置密钥时保持原样，避免用公开默认密钥「假装加密」
@@ -553,15 +559,10 @@ final class DataScope
     }
 
     /**
-     * 把字段级规则编译成有序的「字段 + 动作」列表。
+     * 把字段级规则编译成有序的「字段 + 动作」列表（实现见 `DataScope\FieldRules::compile()`）。
      *
-     * 顺序必须保留：同一字段被多条规则命中时，`hidden` 会让字段从行里消失，
-     * 后续规则自然不再处理它；折叠成 `field => action` 映射会改变这个语义。
-     *
-     * 编译失败（动作不在白名单、字段名为空或不是合法列名）直接抛异常，由调用方
-     * **整条拒绝**：规则损坏时不能「跳过这条、其余照旧」—— 那等于把本该隐藏 /
-     * 掩码的字段原样返回。保存侧（`DataRuleLogic::prepare()`）已做同样的校验，
-     * 这里兜的是手改 SQL、旧版本数据、迁移异常。
+     * 保留这个入口是因为 `DataRuleLogic` / 用例按 `DataScope::compileFieldRules()` 调用；
+     * 编译语义（顺序保留、非法即整条拒绝）写在 `FieldRules` 里，那里是纯函数，可单测。
      *
      * @param array<int,array<string,mixed>> $rules 已按目标表过滤后的字段级规则
      * @return list<array{field:string,action:string}>
@@ -569,29 +570,7 @@ final class DataScope
      */
     public static function compileFieldRules(array $rules): array
     {
-        $compiled = [];
-
-        foreach ($rules as $rule) {
-            $field  = trim((string)($rule['field'] ?? ''));
-            $action = strtolower(trim((string)($rule['action'] ?? '')));
-            $id     = (int)($rule['id'] ?? 0);
-
-            if ($field === '' || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $field) !== 1) {
-                throw new InvalidArgumentException(
-                    "字段规则 #{$id} 的字段名非法（" . ($field === '' ? '空' : $field) . '），已按 fail-closed 拒绝'
-                );
-            }
-
-            if (!in_array($action, self::FIELD_ACTIONS, true)) {
-                throw new InvalidArgumentException(
-                    "字段规则 #{$id} 的动作非法（" . ($action === '' ? '空' : $action) . '），已按 fail-closed 拒绝'
-                );
-            }
-
-            $compiled[] = ['field' => $field, 'action' => $action];
-        }
-
-        return $compiled;
+        return FieldRules::compile($rules);
     }
 
     /**
@@ -800,22 +779,4 @@ final class DataScope
         return Tree::subtreeIds($parents, $ids);
     }
 
-    private static function mask(string $value, string $field): string
-    {
-        if ($value === '') {
-            return '';
-        }
-        if (str_contains($field, 'phone') || str_contains($field, 'mobile')) {
-            return substr($value, 0, 3) . '****' . substr($value, -4);
-        }
-        if (str_contains($field, 'id_card') || str_contains($field, 'idcard')) {
-            return substr($value, 0, 4) . '**********' . substr($value, -4);
-        }
-        $len = strlen($value);
-        if ($len <= 2) {
-            return $value;
-        }
-        $show = (int)floor($len / 3);
-        return substr($value, 0, $show) . str_repeat('*', $len - 2 * $show) . substr($value, -$show);
-    }
 }

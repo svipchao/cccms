@@ -1,7 +1,7 @@
 <template>
   <div class="login">
     <div class="login-theme">
-      <el-tooltip :content="setting.isDark ? t('login.toLight') : t('login.toDark')" placement="bottom">
+      <el-tooltip :content="setting.isDark ? t('core.login.toLight') : t('core.login.toDark')" placement="bottom">
         <el-button text circle @click="setting.toggleDark()">
           <el-icon :size="18">
             <i class="ri-sun-line" v-if="setting.isDark" />
@@ -18,13 +18,13 @@
         <div class="login-brand-blob is-b" />
 
         <div class="login-brand-head">
-          <img v-if="appStore.logo" class="login-brand-img" :src="appStore.logo" :alt="t('login.brandTitle')" />
+          <img v-if="appStore.logo" class="login-brand-img" :src="appStore.logo" :alt="t('core.login.brandTitle')" />
           <div v-else class="login-brand-logo">{{ brandInitial }}</div>
           <span class="login-brand-name">{{ appStore.systemName }}</span>
         </div>
 
-        <h1 class="login-brand-title">{{ t('login.brandTitle') }}</h1>
-        <p class="login-brand-desc">{{ t('login.brandDesc') }}</p>
+        <h1 class="login-brand-title">{{ t('core.login.brandTitle') }}</h1>
+        <p class="login-brand-desc">{{ t('core.login.brandDesc') }}</p>
 
         <ul class="login-brand-list">
           <li v-for="item in features" :key="item">
@@ -37,8 +37,8 @@
       <!-- 右侧表单 -->
       <div class="login-form">
         <div class="login-form-head">
-          <h2 class="login-form-title">{{ t('login.welcome') }}</h2>
-          <p class="login-form-desc">{{ t('login.welcomeDesc') }}</p>
+          <h2 class="login-form-title">{{ t('core.login.welcome') }}</h2>
+          <p class="login-form-desc">{{ t('core.login.welcomeDesc') }}</p>
         </div>
 
         <!-- 维护模式（system.maintenance）开启时，仅超管可登录 -->
@@ -53,7 +53,7 @@
 
         <el-form ref="formRef" :model="form" :rules="rules" size="large" @keyup.enter="onSubmit">
           <el-form-item prop="username">
-            <el-input v-model="form.username" :placeholder="t('login.username')" clearable>
+            <el-input v-model="form.username" :placeholder="t('core.login.username')" clearable>
               <template #prefix
                 ><el-icon><i class="ri-user-line" /></el-icon
               ></template>
@@ -61,7 +61,7 @@
           </el-form-item>
 
           <el-form-item prop="password">
-            <el-input v-model="form.password" type="password" show-password :placeholder="t('login.password')">
+            <el-input v-model="form.password" type="password" show-password :placeholder="t('core.login.password')">
               <template #prefix
                 ><el-icon><i class="ri-lock-line" /></el-icon
               ></template>
@@ -70,25 +70,25 @@
 
           <el-form-item v-if="captchaImage" prop="captcha">
             <div class="login-captcha">
-              <el-input v-model="form.captcha" :placeholder="t('login.captcha')">
+              <el-input v-model="form.captcha" :placeholder="t('core.login.captcha')">
                 <template #prefix
                   ><el-icon><i class="ri-key-2-line" /></el-icon
                 ></template>
               </el-input>
-              <img class="login-captcha-img" :src="captchaImage" :alt="t('login.captcha')" @click="loadCaptcha" />
+              <img class="login-captcha-img" :src="captchaImage" :alt="t('core.login.captcha')" @click="loadCaptcha" />
             </div>
           </el-form-item>
 
           <div class="login-row">
-            <el-checkbox v-model="rememberMe">{{ t('login.remember') }}</el-checkbox>
+            <el-checkbox v-model="rememberMe">{{ t('core.login.remember') }}</el-checkbox>
             <!-- 找回密码：后台未开启任何渠道（security.reset_channel=off）时不展示 -->
             <el-button v-if="appStore.resetChannels.length > 0" link type="primary" @click="openReset">
-              {{ t('login.forgot') }}
+              {{ t('core.login.forgot') }}
             </el-button>
           </div>
 
           <el-button type="primary" size="large" class="login-submit" :loading="loading" @click="onSubmit">
-            {{ t('login.submit') }}
+            {{ t('core.login.submit') }}
           </el-button>
         </el-form>
 
@@ -102,19 +102,19 @@
     <!-- 找回密码弹窗：账号 → 渠道 → 验证码 → 新口令 -->
     <el-dialog
       v-model="resetVisible"
-      :title="t('login.resetTitle')"
+      :title="t('core.login.resetTitle')"
       width="420px"
       append-to-body
       @closed="onResetClosed"
     >
-      <p class="login-reset-desc">{{ t('login.resetDesc') }}</p>
+      <p class="login-reset-desc">{{ t('core.login.resetDesc') }}</p>
 
       <el-form ref="resetFormRef" :model="resetForm" :rules="resetRules" label-position="top">
-        <el-form-item prop="account" :label="t('login.resetAccount')">
-          <el-input v-model="resetForm.account" clearable :placeholder="t('login.resetAccountPlaceholder')" />
+        <el-form-item prop="account" :label="t('core.login.resetAccount')">
+          <el-input v-model="resetForm.account" clearable :placeholder="t('core.login.resetAccountPlaceholder')" />
         </el-form-item>
 
-        <el-form-item prop="channel" :label="t('login.resetChannel')">
+        <el-form-item prop="channel" :label="t('core.login.resetChannel')">
           <el-radio-group v-model="resetForm.channel">
             <el-radio-button v-for="item in appStore.resetChannels" :key="item" :value="item">
               {{ channelLabel(item) }}
@@ -122,27 +122,27 @@
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item prop="code" :label="t('login.resetCode')">
+        <el-form-item prop="code" :label="t('core.login.resetCode')">
           <div class="login-reset-code">
-            <el-input v-model="resetForm.code" :maxlength="6" :placeholder="t('login.resetCodePlaceholder')" />
+            <el-input v-model="resetForm.code" :maxlength="6" :placeholder="t('core.login.resetCodePlaceholder')" />
             <el-button :disabled="countdown > 0" :loading="sending" @click="onSendCode">
-              {{ countdown > 0 ? t('login.resetResend', { seconds: countdown }) : t('login.resetSend') }}
+              {{ countdown > 0 ? t('core.login.resetResend', { seconds: countdown }) : t('core.login.resetSend') }}
             </el-button>
           </div>
         </el-form-item>
 
-        <el-form-item prop="password" :label="t('login.resetNewPassword')">
+        <el-form-item prop="password" :label="t('core.login.resetNewPassword')">
           <el-input v-model="resetForm.password" type="password" show-password />
         </el-form-item>
 
-        <el-form-item prop="confirm" :label="t('login.resetConfirmPassword')">
+        <el-form-item prop="confirm" :label="t('core.login.resetConfirmPassword')">
           <el-input v-model="resetForm.confirm" type="password" show-password @keyup.enter="onReset" />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="resetVisible = false">{{ t('login.resetCancel') }}</el-button>
-        <el-button type="primary" :loading="resetting" @click="onReset">{{ t('login.resetSubmit') }}</el-button>
+        <el-button @click="resetVisible = false">{{ t('core.login.resetCancel') }}</el-button>
+        <el-button type="primary" :loading="resetting" @click="onReset">{{ t('core.login.resetSubmit') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -164,7 +164,7 @@ const { t } = useI18n({ useScope: 'global' })
 const REMEMBER_KEY = 'cccms_remember_username'
 
 /** 品牌区卖点：用 computed 包住，切换语言时能实时重渲染 */
-const features = computed(() => [t('login.feature1'), t('login.feature2'), t('login.feature3')])
+const features = computed(() => [t('core.login.feature1'), t('core.login.feature2'), t('core.login.feature3')])
 
 const route = useRoute()
 const router = useRouter()
@@ -184,8 +184,8 @@ const form = reactive({ username: '', password: '', captcha: '' })
 
 // 校验提示同样走 i18n：用 computed 保证切换语言后规则文案立即更新
 const rules = computed<FormRules>(() => ({
-  username: [{ required: true, message: t('login.usernameRequired'), trigger: 'blur' }],
-  password: [{ required: true, message: t('login.passwordRequired'), trigger: 'blur' }],
+  username: [{ required: true, message: t('core.login.usernameRequired'), trigger: 'blur' }],
+  password: [{ required: true, message: t('core.login.passwordRequired'), trigger: 'blur' }],
 }))
 
 /** 验证码：后端未实现时 data 为 null，此处静默隐藏该输入项 */
@@ -221,7 +221,7 @@ async function onSubmit(): Promise<void> {
       localStorage.removeItem(REMEMBER_KEY)
     }
 
-    ElMessage.success(t('login.success'))
+    ElMessage.success(t('core.login.success'))
     const redirect = (route.query.redirect as string) || '/dashboard'
     router.replace(redirect)
   } catch {
@@ -248,22 +248,22 @@ let countdownTimer: number | undefined
 const resetForm = reactive({ account: '', channel: '', code: '', password: '', confirm: '' })
 
 const resetRules = computed<FormRules>(() => ({
-  account: [{ required: true, message: t('login.resetAccountRequired'), trigger: 'blur' }],
-  channel: [{ required: true, message: t('login.resetChannelRequired'), trigger: 'change' }],
+  account: [{ required: true, message: t('core.login.resetAccountRequired'), trigger: 'blur' }],
+  channel: [{ required: true, message: t('core.login.resetChannelRequired'), trigger: 'change' }],
   code: [
-    { required: true, message: t('login.resetCodeRequired'), trigger: 'blur' },
-    { pattern: /^\d{6}$/, message: t('login.resetCodeFormat'), trigger: 'blur' },
+    { required: true, message: t('core.login.resetCodeRequired'), trigger: 'blur' },
+    { pattern: /^\d{6}$/, message: t('core.login.resetCodeFormat'), trigger: 'blur' },
   ],
   password: [
-    { required: true, message: t('login.resetPasswordRequired'), trigger: 'blur' },
+    { required: true, message: t('core.login.resetPasswordRequired'), trigger: 'blur' },
     { validator: passwordValidator(() => ({ username: resetForm.account })), trigger: 'blur' },
   ],
   confirm: [
-    { required: true, message: t('login.resetConfirmRequired'), trigger: 'blur' },
+    { required: true, message: t('core.login.resetConfirmRequired'), trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (value !== resetForm.password) {
-          callback(new Error(t('login.resetConfirmMismatch')))
+          callback(new Error(t('core.login.resetConfirmMismatch')))
           return
         }
         callback()
@@ -274,7 +274,7 @@ const resetRules = computed<FormRules>(() => ({
 }))
 
 function channelLabel(channel: string): string {
-  return channel === 'email' ? t('login.resetChannelEmail') : t('login.resetChannelSms')
+  return channel === 'email' ? t('core.login.resetChannelEmail') : t('core.login.resetChannelSms')
 }
 
 function openReset(): void {
@@ -306,7 +306,7 @@ async function onSendCode(): Promise<void> {
   sending.value = true
   try {
     await sendResetCode({ account: resetForm.account, channel: resetForm.channel as ResetChannel })
-    ElMessage.success(t('login.resetCodeSent'))
+    ElMessage.success(t('core.login.resetCodeSent'))
     countdown.value = RESET_COUNTDOWN
     window.clearInterval(countdownTimer)
     countdownTimer = window.setInterval(() => {
@@ -335,7 +335,7 @@ async function onReset(): Promise<void> {
       code: resetForm.code,
       password: resetForm.password,
     })
-    ElMessage.success(t('login.resetSuccess'))
+    ElMessage.success(t('core.login.resetSuccess'))
     resetVisible.value = false
   } finally {
     resetting.value = false

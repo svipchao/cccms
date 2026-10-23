@@ -77,6 +77,19 @@ WHERE NOT EXISTS (
 );
 
 -- ---------------------------------------------------------------------
+-- 内置定时任务：数据库定时备份（F3）
+--
+-- **默认停用（status=0）**：备份会占用磁盘与数据库读 IO，且保留策略需要运维确认，
+-- 由管理员在「定时任务」里启用并调整表达式（默认每天 02:30）。
+-- 保留策略取 backup.keep_count / backup.keep_days，见 BackupLogic::prune()。
+-- ---------------------------------------------------------------------
+INSERT INTO `sys_crontab` (`name`, `expression`, `target`, `params`, `status`, `group_name`, `overlap`, `timeout`, `retry_times`, `retry_interval`, `remark`, `create_time`, `update_time`)
+SELECT '数据库定时备份', '0 30 2 * * *', 'plugin\\cccms\\command\\task\\DbBackupTask', NULL, 0, '系统', 'skip', 3600, 1, 600, '每天 02:30 备份数据库到 runtime/backups（默认停用，确认磁盘与保留策略后启用）', NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM `sys_crontab` WHERE `target` = 'plugin\\cccms\\command\\task\\DbBackupTask'
+);
+
+-- ---------------------------------------------------------------------
 -- 系统配置默认值
 --
 -- 这些配置项定义了系统的「可配置面」。
@@ -113,7 +126,7 @@ INSERT IGNORE INTO `sys_config` (`name`, `title`, `type`, `value`, `options`, `g
 ('security.rate_limit_limit',  '普通接口次数',    'input-number', '60',                           NULL, '安全', 10, 1, '每用户每路由每分钟允许的调用次数；0 表示不限制', NOW(), NOW()),
 ('security.rate_limit_heavy_limit','重接口次数',   'input-number', '5',                            NULL, '安全', 11, 1, '导出/导入/代码生成等重接口每用户每路由每分钟次数；0 表示不限制', NOW(), NOW()),
 ('security.rate_limit_window', '限流窗口',        'input-number', '60',                           NULL, '安全', 12, 1, '单位秒，计数窗口长度', NOW(), NOW()),
-('security.rate_limit_whitelist','限流白名单',     'input',        '/oceanengine/consume/',         NULL, '安全', 20, 1, '逗号分隔的路径前缀，命中即不限流、不计入限流计数（如 /oceanengine/consume/ 表示该前缀下所有接口放行）', NOW(), NOW()),
+('security.rate_limit_whitelist','限流白名单',     'input',        '',                              NULL, '安全', 20, 1, '逗号分隔的路径前缀，命中即不限流、不计入限流计数（如 /open/callback/ 表示该前缀下所有接口放行）；留空 = 全部按限流规则执行', NOW(), NOW()),
 
 -- 上传
 ('upload.max_size',             '单文件上限',      'input-number', '10',                           NULL, '上传', 1, 1, '单位 MB；单请求直传的上限。大文件请走分片上传（前端自动切换）', NOW(), NOW()),
@@ -152,6 +165,16 @@ INSERT IGNORE INTO `sys_config` (`name`, `title`, `type`, `value`, `options`, `g
 ('log.record_read',             '记录查询操作',    'switch',       '0',                            NULL, '日志', 3, 1, '开启后 GET 请求也会写入操作日志', NOW(), NOW()),
 ('log.slow_threshold',          '慢接口告警阈值',  'input-number', '3000',                         NULL, '日志', 4, 1, '单位毫秒；请求耗时超过该值时写慢接口告警日志(slow.log)，0 表示关闭', NOW(), NOW()),
 ('export.keep_minutes',         '导出文件保留时长','input-number', '60',                           NULL, '日志', 5, 1, '单位分钟；异步导出的归档文件保留多久，过期即删并置为「已过期」', NOW(), NOW()),
+
+-- 监控（F6：服务器资源看板；阈值同时用于页面标红与 Prometheus 告警规则）
+('monitor.cpu_threshold',       'CPU 告警阈值',    'input-number', '85',                           NULL, '监控', 1, 1, '单位 %；看板超过即标红，建议与 Prometheus 告警规则保持同一阈值', NOW(), NOW()),
+('monitor.memory_threshold',    '内存告警阈值',    'input-number', '90',                           NULL, '监控', 2, 1, '单位 %；系统内存使用率（MemTotal - MemAvailable）', NOW(), NOW()),
+('monitor.disk_threshold',      '磁盘告警阈值',    'input-number', '90',                           NULL, '监控', 3, 1, '单位 %；runtime 目录所在分区的已用比例', NOW(), NOW()),
+('monitor.connections_threshold','数据库连接阈值',  'input-number', '80',                           NULL, '监控', 4, 1, '单位 %；MySQL 连接数占 max_connections 的比例', NOW(), NOW()),
+
+-- 备份（F3：数据库备份 / 还原）
+('backup.keep_count',           '定时备份保留份数','input-number', '10',                           NULL, '备份', 1, 1, '定时备份最多保留几份，超出按时间删最旧的；手工备份不受此限（要留多久由人决定）', NOW(), NOW()),
+('backup.keep_days',            '备份保留天数',    'input-number', '30',                           NULL, '备份', 2, 1, '所有已完成备份超过该天数即清理（含还原前的自动备份）；0 表示不按天数清理', NOW(), NOW()),
 
 -- 找回密码（渠道开关默认关闭，最安全；开启前请先配好 邮箱 / 短信 分组）
 ('security.reset_channel',      '找回密码渠道',    'select',       'off',                          '[{"label":"关闭","value":"off"},{"label":"邮箱","value":"email"},{"label":"短信","value":"sms"},{"label":"邮箱 + 短信","value":"both"}]', '安全', 13, 1, '找回密码可用的验证码通道；off 表示关闭找回入口', NOW(), NOW()),

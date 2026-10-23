@@ -65,6 +65,21 @@ COPY --from=builder /usr/local/lib/php/extensions /usr/local/lib/php/extensions
 COPY --from=builder /app/vendor /app/vendor
 COPY . .
 
+# 依赖补丁必须在源码就位后执行（patch 会改 vendor 里的第三方文件）。
+# 构建用的是 `--no-scripts`，跳过了 composer 的 post-autoload-dump，
+# 这里显式补一次：否则生产容器在 PHP 8.3 下会持续输出 Qiniu SDK 的弃用告警，
+# 而本地 / CI（都走了 post-autoload-dump）看不到。
+RUN php support/vendor_patch.php
+
+# 非 root 运行：应用只需要写 runtime/ 与 public/storage/，其余目录只读。
+# 命名卷首次挂载时会继承镜像里这两个目录的属主，因此这里的 chown 对持久化也有效。
+RUN addgroup -S cccms \
+    && adduser -S -G cccms cccms \
+    && mkdir -p runtime public/storage \
+    && chown -R cccms:cccms runtime public/storage
+
+USER cccms
+
 # 生产默认关闭 debug（异常详情不外泄）；本地调试可在运行时覆盖为 true
 ENV APP_DEBUG=false
 

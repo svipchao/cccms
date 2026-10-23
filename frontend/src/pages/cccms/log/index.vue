@@ -1,12 +1,14 @@
 <template>
   <div class="art-fill">
-    <!-- 标签页：操作日志 / 登录分析（后者需要 cccms:log:analysis，无权限时不渲染入口） -->
-    <div v-if="canAnalyse" class="log-tabs">
-      <el-radio-group v-model="activeTab" size="small">
-        <el-radio-button value="operation">{{ t('log.tabOperation') }}</el-radio-button>
-        <el-radio-button value="login">{{ t('log.tabLogin') }}</el-radio-button>
-      </el-radio-group>
-    </div>
+    <!--
+      标签页：操作日志 / 登录分析（后者需要 cccms:log:analysis，无权限时不渲染入口）。
+      bar-only：只渲染切换条，内容由下面的 ArtTable / 分析面板各自跟随 activeTab 显示，
+      这样表格的高度链与滚动仍归页面自己管，不会被 el-tabs 的内容区包一层。
+    -->
+    <ArtTabs v-if="canAnalyse" v-model="activeTab" class="log-tabs" bar-only>
+      <el-tab-pane :label="t('cccms.log.tabOperation')" name="operation" />
+      <el-tab-pane :label="t('cccms.log.tabLogin')" name="login" />
+    </ArtTabs>
 
     <ArtTable
       v-show="activeTab === 'operation'"
@@ -31,13 +33,17 @@
           :disabled="selection.length === 0"
           @click="onBatchDelete"
           ><template #icon><i class="ri-delete-bin-line" /></template>
-          {{ selection.length ? t('log.deleteSelectedCount', { count: selection.length }) : t('log.deleteSelected') }}
+          {{
+            selection.length
+              ? t('cccms.log.deleteSelectedCount', { count: selection.length })
+              : t('cccms.log.deleteSelected')
+          }}
         </el-button>
       </template>
 
       <template #toolbar-right>
         <el-button v-auth="'cccms:log:export'" @click="onExport"
-          ><template #icon><i class="ri-download-2-line" /></template> {{ t('common.export') }}
+          ><template #icon><i class="ri-download-2-line" /></template> {{ t('core.common.export') }}
         </el-button>
       </template>
 
@@ -62,7 +68,7 @@
           <span
             class="log-method"
             :class="[methodTone(row.method), { 'is-active': query.method === row.method }]"
-            :title="t('log.clickToFilter')"
+            :title="t('cccms.log.clickToFilter')"
             @click.stop="filterByMethod(row.method)"
           >
             {{ row.method }}
@@ -78,10 +84,10 @@
           <span
             class="log-status"
             :class="{ 'is-active': String(row.status) === query.status }"
-            :title="t('log.clickToFilter')"
+            :title="t('cccms.log.clickToFilter')"
             @click.stop="filterByStatus(row.status)"
           >
-            {{ row.status === 1 ? t('log.success') : t('log.failed') }}
+            {{ row.status === 1 ? t('cccms.log.success') : t('cccms.log.failed') }}
           </span>
         </div>
       </template>
@@ -89,7 +95,7 @@
       <!-- 追踪：操作ID（本次操作链路）+ 会话ID（页面会话轨迹），行首标注字段，无权限时只展示 -->
       <template #trace="{ row }">
         <div class="log-trace-line">
-          <span class="log-trace-tag">{{ t('log.actionId') }}</span>
+          <span class="log-trace-tag">{{ t('cccms.log.actionId') }}</span>
           <el-button
             v-if="row.action_id && canAction"
             link
@@ -103,7 +109,7 @@
           <span v-else>—</span>
         </div>
         <div v-if="row.session_id" class="log-trace-line">
-          <span class="log-trace-tag">{{ t('log.sessionId') }}</span>
+          <span class="log-trace-tag">{{ t('cccms.log.sessionId') }}</span>
           <el-button v-if="canSession" link type="primary" class="log-trace-id" @click="openSession(row.session_id)">
             {{ row.session_id }}
           </el-button>
@@ -113,9 +119,9 @@
 
       <!-- 操作列只保留详情 / 删除：操作ID 与 会话ID 已并进「追踪」列 -->
       <template #action="{ row }">
-        <el-button link type="primary" @click="openDetail(row)">{{ t('log.detail') }}</el-button>
+        <el-button link type="primary" @click="openDetail(row)">{{ t('cccms.log.detail') }}</el-button>
         <el-button v-auth="'cccms:log:delete'" link type="danger" @click="onDeleteOne(row.id)">
-          {{ t('common.delete') }}
+          {{ t('core.common.delete') }}
         </el-button>
       </template>
     </ArtTable>
@@ -124,12 +130,12 @@
     <div v-if="canAnalyse && activeTab === 'login'" v-loading="analysisLoading" class="login-analysis">
       <div class="analysis-bar">
         <el-radio-group v-model="analysisDays" size="small">
-          <el-radio-button :value="7">{{ t('log.analysisRange7') }}</el-radio-button>
-          <el-radio-button :value="30">{{ t('log.analysisRange30') }}</el-radio-button>
-          <el-radio-button :value="90">{{ t('log.analysisRange90') }}</el-radio-button>
+          <el-radio-button :value="7">{{ t('cccms.log.analysisRange7') }}</el-radio-button>
+          <el-radio-button :value="30">{{ t('cccms.log.analysisRange30') }}</el-radio-button>
+          <el-radio-button :value="90">{{ t('cccms.log.analysisRange90') }}</el-radio-button>
         </el-radio-group>
         <el-button size="small" @click="loadAnalysis"
-          ><template #icon><i class="ri-refresh-line" /></template>{{ t('log.analysisRefresh') }}</el-button
+          ><template #icon><i class="ri-refresh-line" /></template>{{ t('cccms.log.analysisRefresh') }}</el-button
         >
       </div>
 
@@ -142,14 +148,18 @@
         </div>
 
         <div class="analysis-panel">
-          <div class="analysis-panel-title">{{ t('log.analysisTrend') }}</div>
+          <div class="analysis-panel-title">{{ t('cccms.log.analysisTrend') }}</div>
           <div ref="trendRef" class="analysis-chart" />
         </div>
 
         <div class="analysis-grid">
           <div class="analysis-panel">
-            <div class="analysis-panel-title">{{ t('log.analysisTopUsers') }}</div>
-            <el-empty v-if="analysis.top_users.length === 0" :description="t('log.analysisEmpty')" :image-size="60" />
+            <div class="analysis-panel-title">{{ t('cccms.log.analysisTopUsers') }}</div>
+            <el-empty
+              v-if="analysis.top_users.length === 0"
+              :description="t('cccms.log.analysisEmpty')"
+              :image-size="60"
+            />
             <el-table v-else :data="analysis.top_users" size="small" :show-header="false">
               <el-table-column prop="username" />
               <el-table-column prop="count" width="80" align="right" />
@@ -157,8 +167,12 @@
           </div>
 
           <div class="analysis-panel">
-            <div class="analysis-panel-title">{{ t('log.analysisTopIps') }}</div>
-            <el-empty v-if="analysis.top_ips.length === 0" :description="t('log.analysisEmpty')" :image-size="60" />
+            <div class="analysis-panel-title">{{ t('cccms.log.analysisTopIps') }}</div>
+            <el-empty
+              v-if="analysis.top_ips.length === 0"
+              :description="t('cccms.log.analysisEmpty')"
+              :image-size="60"
+            />
             <el-table v-else :data="analysis.top_ips" size="small" :show-header="false">
               <el-table-column prop="ip" />
               <el-table-column prop="count" width="80" align="right" />
@@ -167,47 +181,51 @@
         </div>
 
         <div class="analysis-panel">
-          <div class="analysis-panel-title">{{ t('log.analysisIpChanges') }}</div>
-          <el-empty v-if="analysis.ip_changes.length === 0" :description="t('log.analysisNoChange')" :image-size="60" />
+          <div class="analysis-panel-title">{{ t('cccms.log.analysisIpChanges') }}</div>
+          <el-empty
+            v-if="analysis.ip_changes.length === 0"
+            :description="t('cccms.log.analysisNoChange')"
+            :image-size="60"
+          />
           <el-table v-else :data="analysis.ip_changes" size="small">
-            <el-table-column prop="username" :label="t('log.username')" width="160" />
-            <el-table-column prop="from_ip" :label="t('log.analysisFromIp')" width="160" />
-            <el-table-column prop="to_ip" :label="t('log.analysisToIp')" width="160" />
-            <el-table-column prop="time" :label="t('log.analysisTime')" />
+            <el-table-column prop="username" :label="t('cccms.log.username')" width="160" />
+            <el-table-column prop="from_ip" :label="t('cccms.log.analysisFromIp')" width="160" />
+            <el-table-column prop="to_ip" :label="t('cccms.log.analysisToIp')" width="160" />
+            <el-table-column prop="time" :label="t('cccms.log.analysisTime')" />
           </el-table>
         </div>
 
-        <div class="analysis-hint">{{ t('log.analysisHint') }}</div>
+        <div class="analysis-hint">{{ t('cccms.log.analysisHint') }}</div>
       </template>
     </div>
 
-    <el-drawer v-model="detailVisible" :title="t('log.detailTitle')" size="680px">
+    <el-drawer v-model="detailVisible" :title="t('cccms.log.detailTitle')" size="680px">
       <div v-loading="detailLoading" class="detail-body">
         <template v-if="current">
           <el-descriptions :column="2" border size="small">
-            <el-descriptions-item :label="t('log.result')">
+            <el-descriptions-item :label="t('cccms.log.result')">
               <el-tag :type="current.status === 1 ? 'success' : 'danger'" effect="light" size="small">
-                {{ current.status === 1 ? t('log.success') : t('log.failed') }}
+                {{ current.status === 1 ? t('cccms.log.success') : t('cccms.log.failed') }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="t('log.actionName')">{{ current.title || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('log.node')">{{ current.node || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('log.username')">{{ current.username || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('log.time')">{{ current.create_time || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('log.request')"
+            <el-descriptions-item :label="t('cccms.log.actionName')">{{ current.title || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.node')">{{ current.node || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.username')">{{ current.username || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.time')">{{ current.create_time || '—' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.request')"
               >{{ current.method }} {{ current.path }}</el-descriptions-item
             >
-            <el-descriptions-item :label="t('log.statusCode')">
+            <el-descriptions-item :label="t('cccms.log.statusCode')">
               <el-tag :type="statusTag(current.status_code)" effect="light" size="small">
                 {{ current.status_code }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="IP">{{ current.ip || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('log.cost')">{{ current.cost ?? 0 }} ms</el-descriptions-item>
-            <el-descriptions-item :label="t('log.requestId')">
+            <el-descriptions-item :label="t('cccms.log.cost')">{{ current.cost ?? 0 }} ms</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.requestId')">
               <span class="log-trace">{{ current.trace_id || '—' }}</span>
             </el-descriptions-item>
-            <el-descriptions-item :label="t('log.actionId')" :span="2">
+            <el-descriptions-item :label="t('cccms.log.actionId')" :span="2">
               <span class="log-trace">{{ current.action_id || '—' }}</span>
               <el-button
                 v-if="current.action_id"
@@ -217,10 +235,10 @@
                 class="log-trace-btn"
                 @click="openAction(current.action_id)"
               >
-                {{ t('log.viewAction') }}
+                {{ t('cccms.log.viewAction') }}
               </el-button>
             </el-descriptions-item>
-            <el-descriptions-item :label="t('log.sessionId')" :span="2">
+            <el-descriptions-item :label="t('cccms.log.sessionId')" :span="2">
               <span class="log-trace">{{ current.session_id || '—' }}</span>
               <el-button
                 v-if="current.session_id"
@@ -230,10 +248,10 @@
                 class="log-trace-btn"
                 @click="openSession(current.session_id)"
               >
-                {{ t('log.viewSession') }}
+                {{ t('cccms.log.viewSession') }}
               </el-button>
             </el-descriptions-item>
-            <el-descriptions-item v-if="current.message" :label="t('log.message')" :span="2">
+            <el-descriptions-item v-if="current.message" :label="t('cccms.log.message')" :span="2">
               {{ current.message }}
             </el-descriptions-item>
             <el-descriptions-item label="User-Agent" :span="2">
@@ -242,12 +260,12 @@
           </el-descriptions>
 
           <div class="log-block">
-            <div class="log-block-title">{{ t('log.params') }}</div>
+            <div class="log-block-title">{{ t('cccms.log.params') }}</div>
             <pre class="log-pre">{{ pretty(current.params) }}</pre>
           </div>
 
           <div class="log-block">
-            <div class="log-block-title">{{ t('log.response') }}</div>
+            <div class="log-block-title">{{ t('cccms.log.response') }}</div>
             <pre class="log-pre">{{ pretty(current.result) }}</pre>
           </div>
         </template>
@@ -257,38 +275,38 @@
     <!-- 链路视图：同一次用户操作的全部记录按时间升序 -->
     <el-drawer
       v-model="actionVisible"
-      :title="t('log.actionTitle', { id: actionId || '—' })"
+      :title="t('cccms.log.actionTitle', { id: actionId || '—' })"
       size="760px"
       @closed="onActionClosed"
     >
       <div v-loading="actionLoading" class="trace-body">
         <template v-if="action">
           <el-descriptions :column="3" border size="small">
-            <el-descriptions-item :label="t('log.recordCount')">{{ action.total }}</el-descriptions-item>
-            <el-descriptions-item :label="t('log.failedCount')">
+            <el-descriptions-item :label="t('cccms.log.recordCount')">{{ action.total }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.failedCount')">
               <el-tag :type="action.failed > 0 ? 'danger' : 'success'" effect="light" size="small">
                 {{ action.failed }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="t('log.totalCost')">{{ action.cost }} ms</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.totalCost')">{{ action.cost }} ms</el-descriptions-item>
           </el-descriptions>
 
           <div class="trace-toolbar">
             <el-button size="small" @click="copyActionId">
-              <template #icon><i class="ri-file-copy-line" /></template>{{ t('log.actionCopy') }}
+              <template #icon><i class="ri-file-copy-line" /></template>{{ t('cccms.log.actionCopy') }}
             </el-button>
             <el-button size="small" :loading="actionLoading" @click="reloadAction">
-              <template #icon><i class="ri-refresh-line" /></template>{{ t('common.refresh') }}
+              <template #icon><i class="ri-refresh-line" /></template>{{ t('core.common.refresh') }}
             </el-button>
           </div>
 
           <!-- 一次操作属于某次页面会话：从这里可以继续往上看整段轨迹 -->
           <div v-if="action.session_id && canSession" class="trace-jump">
             <span
-              >{{ t('log.sessionId') }}: <span class="log-trace">{{ action.session_id }}</span></span
+              >{{ t('cccms.log.sessionId') }}: <span class="log-trace">{{ action.session_id }}</span></span
             >
             <el-button link type="primary" @click="openSession(action.session_id)">
-              {{ t('log.viewSession') }}
+              {{ t('cccms.log.viewSession') }}
             </el-button>
           </div>
 
@@ -298,11 +316,11 @@
             type="warning"
             :closable="false"
             show-icon
-            :title="t('log.chainTruncated', { limit: ACTION_LIMIT })"
+            :title="t('cccms.log.chainTruncated', { limit: ACTION_LIMIT })"
           />
 
-          <el-empty v-if="action.total === 0" :description="t('log.actionEmpty')">
-            <div class="trace-empty-hint">{{ t('log.actionEmptyHint') }}</div>
+          <el-empty v-if="action.total === 0" :description="t('cccms.log.actionEmpty')">
+            <div class="trace-empty-hint">{{ t('cccms.log.actionEmptyHint') }}</div>
           </el-empty>
 
           <el-timeline v-else class="trace-timeline">
@@ -317,12 +335,15 @@
             </el-timeline-item>
           </el-timeline>
 
-          <div class="trace-hint">{{ t('log.chainScopeHint') }}</div>
+          <div class="trace-hint">{{ t('cccms.log.chainScopeHint') }}</div>
         </template>
 
         <!-- 加载失败：明确区分「没有记录」与「没取到」，并给重试入口 -->
-        <el-empty v-else-if="!actionLoading" :description="actionError ? t('log.chainFailed') : t('log.actionEmpty')">
-          <el-button size="small" @click="reloadAction">{{ t('common.refresh') }}</el-button>
+        <el-empty
+          v-else-if="!actionLoading"
+          :description="actionError ? t('cccms.log.chainFailed') : t('cccms.log.actionEmpty')"
+        >
+          <el-button size="small" @click="reloadAction">{{ t('core.common.refresh') }}</el-button>
         </el-empty>
       </div>
     </el-drawer>
@@ -330,21 +351,23 @@
     <!-- 会话轨迹（审计视角）：一次页面会话内的操作按时间串联，操作内再展开请求 -->
     <el-drawer
       v-model="sessionVisible"
-      :title="t('log.sessionTitle', { id: sessionId || '—' })"
+      :title="t('cccms.log.sessionTitle', { id: sessionId || '—' })"
       size="760px"
       @closed="onSessionClosed"
     >
       <div v-loading="sessionLoading && sessionRows.length === 0" class="trace-body">
         <template v-if="sessionGroups.length > 0">
           <el-descriptions :column="3" border size="small">
-            <el-descriptions-item :label="t('log.recordCount')">{{ sessionTotal }}</el-descriptions-item>
-            <el-descriptions-item :label="t('log.sessionActions')">{{ sessionGroups.length }}</el-descriptions-item>
-            <el-descriptions-item :label="t('log.sessionLoaded')">{{ sessionRows.length }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.recordCount')">{{ sessionTotal }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.sessionActions')">{{
+              sessionGroups.length
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.log.sessionLoaded')">{{ sessionRows.length }}</el-descriptions-item>
           </el-descriptions>
 
           <div class="trace-toolbar">
             <el-button size="small" :loading="sessionLoading" @click="reloadSession">
-              <template #icon><i class="ri-refresh-line" /></template>{{ t('common.refresh') }}
+              <template #icon><i class="ri-refresh-line" /></template>{{ t('core.common.refresh') }}
             </el-button>
           </div>
 
@@ -355,12 +378,12 @@
                 {{ group.actionId }}
               </el-button>
               <span v-else-if="group.actionId" class="log-trace">{{ group.actionId }}</span>
-              <span v-else class="session-unknown">{{ t('log.sessionUnknownAction') }}</span>
+              <span v-else class="session-unknown">{{ t('cccms.log.sessionUnknownAction') }}</span>
               <el-tag effect="plain" size="small">
-                {{ t('log.sessionRequestCount', { count: group.rows.length }) }}
+                {{ t('cccms.log.sessionRequestCount', { count: group.rows.length }) }}
               </el-tag>
               <el-tag v-if="group.failed > 0" type="danger" effect="light" size="small">
-                {{ t('log.sessionActionFailed', { count: group.failed }) }}
+                {{ t('cccms.log.sessionActionFailed', { count: group.failed }) }}
               </el-tag>
               <span class="session-cost">{{ group.cost }} ms</span>
             </div>
@@ -369,19 +392,19 @@
 
           <div class="session-more">
             <el-button v-if="sessionHasMore" size="small" :loading="sessionLoading" @click="loadSessionPage(false)">
-              {{ t('log.sessionLoadMore') }}
+              {{ t('cccms.log.sessionLoadMore') }}
             </el-button>
-            <span v-else class="trace-hint">{{ t('log.sessionNoMore') }}</span>
+            <span v-else class="trace-hint">{{ t('cccms.log.sessionNoMore') }}</span>
           </div>
 
-          <div class="trace-hint">{{ t('log.chainScopeHint') }}</div>
+          <div class="trace-hint">{{ t('cccms.log.chainScopeHint') }}</div>
         </template>
 
         <el-empty
           v-else-if="!sessionLoading"
-          :description="sessionError ? t('log.chainFailed') : t('log.sessionEmpty')"
+          :description="sessionError ? t('cccms.log.chainFailed') : t('cccms.log.sessionEmpty')"
         >
-          <el-button size="small" @click="reloadSession">{{ t('common.refresh') }}</el-button>
+          <el-button size="small" @click="reloadSession">{{ t('core.common.refresh') }}</el-button>
         </el-empty>
       </div>
     </el-drawer>
@@ -395,11 +418,10 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import * as echarts from 'echarts/core'
-import { LineChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
+import { echarts } from '@/utils/echarts'
+import { copyText as writeClipboard } from '@/utils/clipboard'
 import ArtTable from '@/components/core/ArtTable.vue'
+import ArtTabs from '@/components/core/ArtTabs.vue'
 import { useTable } from '@/composables/useTable'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
@@ -417,9 +439,6 @@ import {
 import { useExportTaskStore } from '@/stores/exportTask'
 import type { ArtTableColumn } from '@/types/table'
 import TraceRecord from './TraceRecord.vue'
-
-// 按需引入：与工作台同一取舍（只用到折线图，不必整包）
-echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const { t, locale } = useI18n({ useScope: 'global' })
 
@@ -461,44 +480,44 @@ const columns = computed<ArtTableColumn[]>(() => [
    */
   {
     prop: 'params',
-    label: t('log.paramsContent'),
+    label: t('cccms.log.paramsContent'),
     minWidth: 200,
     defaultShow: false,
     formatter: (row) => clip(row.params),
-    filter: { type: 'text', queryKey: 'params_like', placeholder: t('log.keywordPlaceholder') },
+    filter: { type: 'text', queryKey: 'params_like', placeholder: t('cccms.log.keywordPlaceholder') },
   },
   {
     prop: 'result',
-    label: t('log.responseContent'),
+    label: t('cccms.log.responseContent'),
     minWidth: 200,
     defaultShow: false,
     formatter: (row) => clip(row.result),
-    filter: { type: 'text', queryKey: 'result_like', placeholder: t('log.keywordPlaceholder') },
+    filter: { type: 'text', queryKey: 'result_like', placeholder: t('cccms.log.keywordPlaceholder') },
   },
 
   // 可见列：合并为 8 列（时间 / 操作 / 操作人 / 请求 / 结果 / 追踪 / 耗时 / 操作）
   // 耗时单独留一列：它是排障核心指标，需要列头排序入口（并入时间列就没有排序了）
-  { prop: 'create_time', label: t('log.time'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
-  { prop: 'title', label: t('log.actionName'), minWidth: 200, slot: 'action_name', filter: { type: 'text' } },
-  { prop: 'username', label: t('log.username'), width: 130, slot: 'operator', filter: { type: 'text' } },
-  { prop: 'path', label: t('log.path'), minWidth: 240, slot: 'request', filter: { type: 'text' } },
+  { prop: 'create_time', label: t('cccms.log.time'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
+  { prop: 'title', label: t('cccms.log.actionName'), minWidth: 200, slot: 'action_name', filter: { type: 'text' } },
+  { prop: 'username', label: t('cccms.log.username'), width: 130, slot: 'operator', filter: { type: 'text' } },
+  { prop: 'path', label: t('cccms.log.path'), minWidth: 240, slot: 'request', filter: { type: 'text' } },
   {
     prop: 'status',
-    label: t('log.result'),
+    label: t('cccms.log.result'),
     // 两行结构：第一行 3 位状态码、第二行「成功/失败」（英文 Success 约 48px）
     width: 100,
     slot: 'result',
     filter: {
       type: 'enum',
       options: [
-        { label: t('log.success'), value: 1 },
-        { label: t('log.failed'), value: 0 },
+        { label: t('cccms.log.success'), value: 1 },
+        { label: t('cccms.log.failed'), value: 0 },
       ],
     },
   },
-  { prop: 'action_id', label: t('log.trace'), width: 260, slot: 'trace', filter: { type: 'text' } },
-  { prop: 'cost', label: t('log.costMs'), width: 110, align: 'right', sortable: 'custom' },
-  { prop: 'action', label: t('table.action'), width: 140, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'action_id', label: t('cccms.log.trace'), width: 260, slot: 'trace', filter: { type: 'text' } },
+  { prop: 'cost', label: t('cccms.log.costMs'), width: 110, align: 'right', sortable: 'custom' },
+  { prop: 'action', label: t('core.table.action'), width: 140, fixed: 'right', slot: 'action', lockVisible: true },
 
   /*
    * 以下列默认隐藏：表格里已合并展示，这里只为顶部搜索区提供筛选入口。
@@ -507,14 +526,14 @@ const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76, defaultShow: false },
   {
     prop: 'method',
-    label: t('log.method'),
+    label: t('cccms.log.method'),
     width: 90,
     defaultShow: false,
     filter: { type: 'enum', options: METHOD_OPTIONS },
   },
   { prop: 'ip', label: 'IP', width: 140, defaultShow: false, filter: { type: 'text' } },
-  { prop: 'session_id', label: t('log.sessionId'), width: 220, defaultShow: false, filter: { type: 'text' } },
-  { prop: 'trace_id', label: t('log.requestId'), width: 220, defaultShow: false, filter: { type: 'text' } },
+  { prop: 'session_id', label: t('cccms.log.sessionId'), width: 220, defaultShow: false, filter: { type: 'text' } },
+  { prop: 'trace_id', label: t('cccms.log.requestId'), width: 220, defaultShow: false, filter: { type: 'text' } },
 ])
 
 /** 隐藏列（参数 / 结果）在列设置里被打开时只显示摘要，避免整段 JSON 撑开表格 */
@@ -588,12 +607,12 @@ const analysisCards = computed(() => {
   }
 
   return [
-    { label: t('log.analysisTotal'), value: String(s.total), tone: '' },
-    { label: t('log.analysisSuccess'), value: String(s.success), tone: 'is-ok' },
-    { label: t('log.analysisFailed'), value: String(s.failed), tone: s.failed > 0 ? 'is-danger' : '' },
-    { label: t('log.analysisFailRate'), value: `${s.fail_rate}%`, tone: s.fail_rate > 0 ? 'is-danger' : '' },
-    { label: t('log.analysisFailUsers'), value: String(s.users), tone: '' },
-    { label: t('log.analysisFailIps'), value: String(s.ips), tone: '' },
+    { label: t('cccms.log.analysisTotal'), value: String(s.total), tone: '' },
+    { label: t('cccms.log.analysisSuccess'), value: String(s.success), tone: 'is-ok' },
+    { label: t('cccms.log.analysisFailed'), value: String(s.failed), tone: s.failed > 0 ? 'is-danger' : '' },
+    { label: t('cccms.log.analysisFailRate'), value: `${s.fail_rate}%`, tone: s.fail_rate > 0 ? 'is-danger' : '' },
+    { label: t('cccms.log.analysisFailUsers'), value: String(s.users), tone: '' },
+    { label: t('cccms.log.analysisFailIps'), value: String(s.ips), tone: '' },
   ]
 })
 
@@ -663,7 +682,7 @@ function renderTrend(): void {
     },
     series: [
       {
-        name: t('log.analysisTrendSuccess'),
+        name: t('cccms.log.analysisTrendSuccess'),
         type: 'line',
         smooth: true,
         symbol: 'circle',
@@ -673,7 +692,7 @@ function renderTrend(): void {
         lineStyle: { width: 2, color: primary },
       },
       {
-        name: t('log.analysisTrendFailed'),
+        name: t('cccms.log.analysisTrendFailed'),
         type: 'line',
         smooth: true,
         symbol: 'circle',
@@ -776,7 +795,7 @@ async function openAction(id: string): Promise<void> {
     return
   }
   if (!canAction.value) {
-    ElMessage.warning(t('log.chainNoAuth'))
+    ElMessage.warning(t('cccms.log.chainNoAuth'))
     return
   }
 
@@ -807,7 +826,7 @@ async function copyActionId(): Promise<void> {
   if (!id) {
     return
   }
-  await copyText(id, t('log.actionCopied'), t('log.actionCopyFailed'))
+  await copyText(id, t('cccms.log.actionCopied'), t('cccms.log.actionCopyFailed'))
 }
 
 /* ---- 会话轨迹（审计视角） ---- */
@@ -914,7 +933,7 @@ async function openSession(id: string): Promise<void> {
     return
   }
   if (!canSession.value) {
-    ElMessage.warning(t('log.chainNoAuth'))
+    ElMessage.warning(t('cccms.log.chainNoAuth'))
     return
   }
 
@@ -941,30 +960,13 @@ function onSessionClosed(): void {
   sessionId.value = ''
 }
 
-/** 复制文本：http 内网等非安全上下文没有 navigator.clipboard，用临时 textarea 兜底 */
+/** 复制文本并给出提示；非安全上下文（http 内网）由 `utils/clipboard` 兜底 */
 async function copyText(text: string, okMessage: string, failMessage: string): Promise<void> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text)
-    } else if (!fallbackCopy(text)) {
-      throw new Error('clipboard unavailable')
-    }
+  if (await writeClipboard(text)) {
     ElMessage.success(okMessage)
-  } catch {
+  } else {
     ElMessage.warning(failMessage)
   }
-}
-
-function fallbackCopy(text: string): boolean {
-  const area = document.createElement('textarea')
-  area.value = text
-  area.style.position = 'fixed'
-  area.style.opacity = '0'
-  document.body.appendChild(area)
-  area.select()
-  const copied = document.execCommand('copy')
-  area.remove()
-  return copied
 }
 
 onMounted(() => {
@@ -1023,7 +1025,7 @@ onBeforeUnmount(() => {
 async function onExport(): Promise<void> {
   const result = await logExport({ ...query })
   // 一律异步：提示排队后打开全局「导出任务」面板看进度
-  ElMessage.success(t('log.exportQueued', { total: result.total }))
+  ElMessage.success(t('cccms.log.exportQueued', { total: result.total }))
   exportTaskStore.open()
 }
 
@@ -1047,7 +1049,7 @@ async function openDetail(row: LogRow): Promise<void> {
       current.value = full
     }
   } catch {
-    ElMessage.error(t('log.detailFailed'))
+    ElMessage.error(t('cccms.log.detailFailed'))
   } finally {
     detailLoading.value = false
   }
@@ -1107,26 +1109,26 @@ async function onBatchDelete(): Promise<void> {
   }
   try {
     await ElMessageBox.confirm(
-      t('log.deleteSelectedConfirm', { count: selection.value.length }),
-      t('log.batchDeleteTitle'),
+      t('cccms.log.deleteSelectedConfirm', { count: selection.value.length }),
+      t('cccms.log.batchDeleteTitle'),
       { type: 'warning' },
     )
   } catch {
     return
   }
   await logDelete(selection.value.map((row) => row.id))
-  ElMessage.success(t('log.deleteSuccess'))
+  ElMessage.success(t('cccms.log.deleteSuccess'))
   load()
 }
 
 async function onDeleteOne(id: number): Promise<void> {
   try {
-    await ElMessageBox.confirm(t('log.deleteOneConfirm'), t('common.delete'), { type: 'warning' })
+    await ElMessageBox.confirm(t('cccms.log.deleteOneConfirm'), t('core.common.delete'), { type: 'warning' })
   } catch {
     return
   }
   await logDelete([id])
-  ElMessage.success(t('log.deleteSuccess'))
+  ElMessage.success(t('cccms.log.deleteSuccess'))
   load()
 }
 </script>
@@ -1135,7 +1137,6 @@ async function onDeleteOne(id: number): Promise<void> {
 /* ---- 标签页 ---- */
 .log-tabs {
   flex: none;
-  margin-bottom: 12px;
 }
 
 /* ---- 登录分析 ---- */

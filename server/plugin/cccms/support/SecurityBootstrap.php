@@ -37,6 +37,19 @@ class SecurityBootstrap implements Bootstrap
 
     public static function start($worker): void
     {
+        self::check(Environment::isDevLayout());
+    }
+
+    /**
+     * 自检主体。
+     *
+     * 抽成带参数的静态方法是为了**可测试**：生产硬门槛依赖「仓库根有没有 frontend 目录」
+     * 这种进程级事实，测试环境没法翻成生产布局，只能把判定结果作为入参注入。
+     *
+     * @param bool $isDevLayout 本地开发布局（见 `Environment::isDevLayout()`）
+     */
+    public static function check(bool $isDevLayout): void
+    {
         $secret = (string)(getenv('JWT_SECRET') ?: '');
 
         if ($secret === '') {
@@ -75,7 +88,7 @@ class SecurityBootstrap implements Bootstrap
         $dbUser = (string)(getenv('DB_USERNAME') ?: '');
         $dbPass = (string)(getenv('DB_PASSWORD') ?: '');
         if ($dbUser === '' || $dbPass === '') {
-            if (!Environment::isDevLayout()) {
+            if (!$isDevLayout) {
                 throw new RuntimeException(
                     '生产环境必须显式注入 DB_USERNAME / DB_PASSWORD，服务拒绝启动。'
                     . '否则会回退到仓库中公开的默认口令（root/123456）。'
@@ -90,7 +103,7 @@ class SecurityBootstrap implements Bootstrap
 
         // 其余生产硬门槛：这些项改错不会造成不可逆损失，因此按 fail-closed 处理 ——
         // 起不来会被立刻发现，带着 debug 上线不会。
-        if (!Environment::isDevLayout()) {
+        if (!$isDevLayout) {
             if (filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN)) {
                 throw new RuntimeException(
                     '生产环境不允许开启 APP_DEBUG，服务拒绝启动。'

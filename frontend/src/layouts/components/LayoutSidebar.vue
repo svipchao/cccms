@@ -12,19 +12,19 @@
             {{ avatarText }}
           </el-avatar>
           <div v-show="!collapsed || mobile" class="sidebar-user-info">
-            <span class="sidebar-user-name">{{ userStore.nickname || t('layout.notLoggedIn') }}</span>
+            <span class="sidebar-user-name">{{ userStore.nickname || t('core.layout.notLoggedIn') }}</span>
             <span class="sidebar-user-role">
               {{
                 userStore.superAdmin
-                  ? t('layout.superAdmin')
-                  : (userStore.profile?.roles || []).join(' / ') || t('layout.normalUser')
+                  ? t('core.layout.superAdmin')
+                  : (userStore.profile?.roles || []).join(' / ') || t('core.layout.normalUser')
               }}
             </span>
           </div>
         </div>
 
         <!-- 注销登录：与头像并排、靠右 -->
-        <el-tooltip :content="t('layout.logout')" placement="bottom">
+        <el-tooltip :content="t('core.layout.logout')" placement="bottom">
           <button type="button" class="sidebar-user-action" @click="onLogout">
             <i class="ri-logout-box-r-line" />
           </button>
@@ -39,7 +39,9 @@
           </button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item disabled> {{ t('tenant.currentTenant') }}：{{ currentTenantName }} </el-dropdown-item>
+              <el-dropdown-item disabled>
+                {{ t('cccms.tenant.currentTenant') }}：{{ currentTenantName }}
+              </el-dropdown-item>
               <el-dropdown-item
                 v-for="item in tenantChoices"
                 :key="item.id"
@@ -53,7 +55,7 @@
         </el-dropdown>
 
         <!-- 2. 切换主题模式（亮/暗） -->
-        <el-tooltip :content="t('setting.mode')" placement="bottom">
+        <el-tooltip :content="t('core.setting.mode')" placement="bottom">
           <button type="button" class="sidebar-user-action" @click="setting.toggleDark()">
             <i :class="setting.isDark ? 'ri-sun-line' : 'ri-moon-line'" />
           </button>
@@ -224,19 +226,19 @@ const canRefresh = computed(() => userStore.hasAuth('cccms:config:refresh'))
 
 function refreshLabel(scope: string): string {
   const labels: Record<string, string> = {
-    all: t('layout.syncAll'),
-    menu: t('layout.syncMenu'),
-    perm: t('layout.syncPerm'),
-    cache: t('layout.syncCacheItem'),
+    all: t('core.layout.syncAll'),
+    menu: t('core.layout.syncMenu'),
+    perm: t('core.layout.syncPerm'),
+    cache: t('core.layout.syncCacheItem'),
   }
-  return labels[scope] ?? t('common.refresh')
+  return labels[scope] ?? t('core.common.refresh')
 }
 
 function describeRefresh(result: RefreshResult): string {
   const parts: string[] = []
   if (result.menu) {
     parts.push(
-      t('layout.refreshMenu', {
+      t('core.layout.refreshMenu', {
         created: result.menu.created,
         updated: result.menu.updated,
         removed: result.menu.removed,
@@ -244,12 +246,12 @@ function describeRefresh(result: RefreshResult): string {
     )
   }
   if (result.perm) {
-    parts.push(t('layout.refreshPerm', { created: result.perm.created, skipped: result.perm.skipped }))
+    parts.push(t('core.layout.refreshPerm', { created: result.perm.created, skipped: result.perm.skipped }))
   }
   if (result.cache) {
-    parts.push(t('layout.refreshCacheDone'))
+    parts.push(t('core.layout.refreshCacheDone'))
   }
-  return parts.join('；') || t('layout.refreshNoChange')
+  return parts.join('；') || t('core.layout.refreshNoChange')
 }
 
 async function onRefreshCommand(command: string | number | object): Promise<void> {
@@ -257,7 +259,9 @@ async function onRefreshCommand(command: string | number | object): Promise<void
 
   if (scope === 'all') {
     try {
-      await ElMessageBox.confirm(t('layout.refreshAllConfirm'), t('layout.refreshAllTitle'), { type: 'warning' })
+      await ElMessageBox.confirm(t('core.layout.refreshAllConfirm'), t('core.layout.refreshAllTitle'), {
+        type: 'warning',
+      })
     } catch {
       return
     }
@@ -266,7 +270,7 @@ async function onRefreshCommand(command: string | number | object): Promise<void
   refreshing.value = true
   try {
     const result = await systemRefresh(scope)
-    ElMessage.success(t('layout.refreshDone', { name: refreshLabel(scope), detail: describeRefresh(result) }))
+    ElMessage.success(t('core.layout.refreshDone', { name: refreshLabel(scope), detail: describeRefresh(result) }))
 
     // 菜单 / 按钮节点变了 → 重挂动态路由 + 刷新权限，侧边栏立即生效
     if (scope === 'menu' || scope === 'perm' || scope === 'all') {
@@ -275,7 +279,7 @@ async function onRefreshCommand(command: string | number | object): Promise<void
   } catch (error) {
     // 失败原因由拦截器统一提示；超时时后台可能仍在跑，补一句避免用户重复触发
     if ((error as { code?: string })?.code === 'ECONNABORTED') {
-      ElMessage.warning(t('layout.refreshTimeout'))
+      ElMessage.warning(t('core.layout.refreshTimeout'))
     }
   } finally {
     refreshing.value = false
@@ -288,7 +292,7 @@ const tenantChoices = ref<TenantOption[]>([])
 /** 当前生效租户名：优先取候选里的名字，拉取失败时回落到「当前租户」 */
 const currentTenantName = computed(() => {
   const hit = tenantChoices.value.find((item) => item.id === userStore.tenantId)
-  return hit?.name || t('tenant.currentTenant')
+  return hit?.name || t('cccms.tenant.currentTenant')
 })
 
 async function loadTenantChoices(): Promise<void> {
@@ -310,13 +314,15 @@ async function onTenantCommand(command: string | number | object): Promise<void>
 
   const name = tenantChoices.value.find((item) => item.id === id)?.name ?? ''
   try {
-    await ElMessageBox.confirm(t('tenant.switchConfirm', { name }), t('tenant.switchTitle'), { type: 'warning' })
+    await ElMessageBox.confirm(t('cccms.tenant.switchConfirm', { name }), t('cccms.tenant.switchTitle'), {
+      type: 'warning',
+    })
   } catch {
     return
   }
 
   await userStore.switchTenant(id)
-  ElMessage.success(t('tenant.switchSuccess', { name }))
+  ElMessage.success(t('cccms.tenant.switchSuccess', { name }))
 
   // 页面上的每一份数据都属于切换前的租户，且 `keep_alive` 的页面还会被缓存复用，
   // 只有整体重载才能保证不残留旧租户数据（令牌在 localStorage，重载不会丢登录态）。
@@ -326,10 +332,10 @@ async function onTenantCommand(command: string | number | object): Promise<void>
 /** 注销登录：作废令牌 + 清理各 store + 跳登录页 */
 async function onLogout(): Promise<void> {
   try {
-    await ElMessageBox.confirm(t('layout.logoutConfirm'), t('layout.logout'), {
+    await ElMessageBox.confirm(t('core.layout.logoutConfirm'), t('core.layout.logout'), {
       type: 'warning',
-      confirmButtonText: t('layout.logoutConfirmBtn'),
-      cancelButtonText: t('common.cancel'),
+      confirmButtonText: t('core.layout.logoutConfirmBtn'),
+      cancelButtonText: t('core.common.cancel'),
     })
   } catch {
     return

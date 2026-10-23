@@ -12,7 +12,9 @@ return [
     // 后台可用 `security.token_ttl` 覆盖。
     'ttl' => 7200,
     // 字段级 encrypt 密钥（AES-256-GCM 种子，经 sha256 规整为 32 字节）。
-    // 生产环境务必经环境变量 DATA_ENCRYPT_KEY 注入；
+    // **不提供默认值**：与 JWT_SECRET 同一口径 —— 仓库内公开的默认密钥等于没有密钥。
+    // 未注入时 `Cipher::configured()` 返回 false，字段级 encrypt 自动停用（启动期只告警，
+    // 因为更换密钥会让历史密文永久不可解密，见 SecurityBootstrap）。
     // 已确认**不做密钥轮换**，一旦更换，历史加密字段将无法解密。
-    'data_encrypt_key' => getenv('DATA_ENCRYPT_KEY') ?: 'cccms-local-dev-crypto-key-0123456789abcdef',
+    'data_encrypt_key' => (string)(getenv('DATA_ENCRYPT_KEY') ?: ''),
 ];

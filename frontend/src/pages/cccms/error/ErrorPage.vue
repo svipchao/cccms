@@ -9,8 +9,8 @@
       <h1 class="error-page-title">{{ t(titleKey) }}</h1>
       <p class="error-page-desc">{{ t(descKey) }}</p>
       <div class="error-page-actions">
-        <el-button type="primary" @click="goHome">{{ t('error.backHome') }}</el-button>
-        <el-button @click="goBack">{{ t('error.backPrev') }}</el-button>
+        <el-button type="primary" @click="goHome">{{ t('core.error.backHome') }}</el-button>
+        <el-button @click="goBack">{{ t('core.error.backPrev') }}</el-button>
       </div>
     </div>
   </div>

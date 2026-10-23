@@ -1,6 +1,6 @@
 <template>
   <div class="art-fill">
-    <el-alert class="rule-tip" type="info" :closable="false" show-icon :title="t('data_rule.tip')" />
+    <el-alert class="rule-tip" type="info" :closable="false" show-icon :title="t('cccms.data_rule.tip')" />
 
     <ArtTable
       :columns="columns"
@@ -19,48 +19,48 @@
       <template #toolbar>
         <el-button v-auth="'cccms:data_rule:save'" type="primary" @click="openCreate"
           ><template #icon><i class="ri-add-line" /></template>
-          {{ t('data_rule.create') }}
+          {{ t('cccms.data_rule.create') }}
         </el-button>
         <el-button v-auth="'cccms:data_rule:table_index'" @click="openTables"
           ><template #icon><i class="ri-settings-3-line" /></template>
-          {{ t('data_rule.managedTables') }}
+          {{ t('cccms.data_rule.managedTables') }}
         </el-button>
       </template>
 
       <template #toolbar-right>
-        <RecycleToggle :active="recycle" :label="t('data_rule.recycleLabel')" @toggle="toggle" />
+        <RecycleToggle :active="recycle" :label="t('cccms.data_rule.recycleLabel')" @toggle="toggle" />
       </template>
 
       <template #target="{ row }">
         <el-tag v-if="row.table_name" effect="plain" size="small">
           {{ row.table_label || row.table_name }}
         </el-tag>
-        <span v-else class="cond-empty">{{ t('data_rule.anyTable') }}</span>
+        <span v-else class="cond-empty">{{ t('cccms.data_rule.anyTable') }}</span>
       </template>
 
       <template #bind="{ row }">
-        <span v-if="!hasBind(row)">{{ t('data_rule.global') }}</span>
+        <span v-if="!hasBind(row)">{{ t('cccms.data_rule.global') }}</span>
         <template v-else>
           <!-- 组合方式打头：多行规则并排时，立刻能看出是「且」还是「或」 -->
           <el-tag
             size="small"
             :type="row.bind_mode === 'and' ? 'warning' : 'info'"
             class="bind-mode-tag"
-            :title="row.bind_mode === 'and' ? t('data_rule.bindAndTip') : t('data_rule.bindOrTip')"
+            :title="row.bind_mode === 'and' ? t('cccms.data_rule.bindAndTip') : t('cccms.data_rule.bindOrTip')"
           >
-            {{ row.bind_mode === 'and' ? t('data_rule.bindAnd') : t('data_rule.bindOr') }}
+            {{ row.bind_mode === 'and' ? t('cccms.data_rule.bindAnd') : t('cccms.data_rule.bindOr') }}
           </el-tag>
           <el-tag v-if="row.user_name" size="small" effect="plain">
-            {{ t('data_rule.bindUser', { name: row.user_name }) }}
+            {{ t('cccms.data_rule.bindUser', { name: row.user_name }) }}
           </el-tag>
           <el-tag v-if="row.post_name" size="small" effect="plain" class="bind-tag">
-            {{ t('data_rule.bindPost', { name: row.post_name }) }}
+            {{ t('cccms.data_rule.bindPost', { name: row.post_name }) }}
           </el-tag>
           <el-tag v-if="row.role_name" size="small" effect="plain" class="bind-tag">
-            {{ t('data_rule.bindRole', { name: row.role_name }) }}
+            {{ t('cccms.data_rule.bindRole', { name: row.role_name }) }}
           </el-tag>
           <el-tag v-if="row.dept_names" size="small" effect="plain" class="bind-tag">
-            {{ t('data_rule.bindDept', { name: row.dept_names }) }}
+            {{ t('cccms.data_rule.bindDept', { name: row.dept_names }) }}
           </el-tag>
         </template>
       </template>
@@ -71,7 +71,7 @@
             <div v-for="(c, i) in row.conflicts" :key="i" class="conflict-line">{{ c.message }}</div>
           </template>
           <el-tag :type="hasUnsat(row) ? 'danger' : 'warning'" size="small" effect="light">
-            {{ hasUnsat(row) ? t('data_rule.conflict') : t('data_rule.hint') }}
+            {{ hasUnsat(row) ? t('cccms.data_rule.conflict') : t('cccms.data_rule.hint') }}
           </el-tag>
         </el-tooltip>
         <span v-else class="cond-empty">—</span>
@@ -92,11 +92,11 @@
 
       <template #action="{ row }">
         <el-button v-auth="'cccms:data_rule:update'" link type="primary" @click="openEdit(row)">
-          {{ t('common.edit') }}
+          {{ t('core.common.edit') }}
         </el-button>
-        <el-popconfirm :title="t('data_rule.deleteConfirm')" @confirm="onDelete(row.id)">
+        <el-popconfirm :title="t('cccms.data_rule.deleteConfirm')" @confirm="onDelete(row.id)">
           <template #reference>
-            <el-button v-auth="'cccms:data_rule:delete'" link type="danger">{{ t('common.delete') }}</el-button>
+            <el-button v-auth="'cccms:data_rule:delete'" link type="danger">{{ t('core.common.delete') }}</el-button>
           </template>
         </el-popconfirm>
       </template>
@@ -104,18 +104,18 @@
 
     <el-dialog
       v-model="formVisible"
-      :title="form.id ? t('data_rule.editTitle') : t('data_rule.createTitle')"
+      :title="form.id ? t('cccms.data_rule.editTitle') : t('cccms.data_rule.createTitle')"
       width="660px"
       top="6vh"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
-        <el-form-item :label="t('data_rule.nameLabel')" prop="name">
-          <el-input v-model="form.name" :placeholder="t('data_rule.namePlaceholder')" />
+        <el-form-item :label="t('cccms.data_rule.nameLabel')" prop="name">
+          <el-input v-model="form.name" :placeholder="t('cccms.data_rule.namePlaceholder')" />
         </el-form-item>
 
         <!-- 绑定对象：四个维度做成选项卡，已选项常驻在选项卡下方（切换选项卡也能看到） -->
-        <el-form-item :label="t('data_rule.bindLabel')">
+        <el-form-item :label="t('cccms.data_rule.bindLabel')">
           <div class="bind-panel">
             <el-tabs v-model="bindTab" class="bind-tabs">
               <el-tab-pane :label="tabLabel('user')" name="user">
@@ -124,29 +124,29 @@
                   :search="searchUsers"
                   :selected-row="selectedUser"
                   :label-fn="userLabel"
-                  :placeholder="t('data_rule.userSearchPlaceholder')"
+                  :placeholder="t('cccms.data_rule.userSearchPlaceholder')"
                 />
-                <div class="form-tip">{{ t('data_rule.userTip') }}</div>
+                <div class="form-tip">{{ t('cccms.data_rule.userTip') }}</div>
               </el-tab-pane>
 
               <el-tab-pane :label="tabLabel('post')" name="post">
                 <ArtNodePicker v-model="draft.post" :data="options.posts" />
-                <div class="form-tip">{{ t('data_rule.postTip') }}</div>
+                <div class="form-tip">{{ t('cccms.data_rule.postTip') }}</div>
               </el-tab-pane>
 
               <el-tab-pane :label="tabLabel('role')" name="role">
                 <ArtNodePicker v-model="draft.role" :data="options.roles" />
                 <div class="form-tip">
-                  {{ t('data_rule.roleTipPrefix') }}<b>{{ t('data_rule.roleTipBold') }}</b
-                  >{{ t('data_rule.roleTipSuffix') }}
+                  {{ t('cccms.data_rule.roleTipPrefix') }}<b>{{ t('cccms.data_rule.roleTipBold') }}</b
+                  >{{ t('cccms.data_rule.roleTipSuffix') }}
                 </div>
               </el-tab-pane>
 
               <el-tab-pane :label="tabLabel('dept')" name="dept">
                 <ArtNodePicker v-model="draft.dept" :data="options.depts" multiple />
                 <div class="form-tip">
-                  {{ t('data_rule.deptTipPrefix') }}<b>{{ t('data_rule.deptTipBold') }}</b
-                  >{{ t('data_rule.deptTipSuffix') }}
+                  {{ t('cccms.data_rule.deptTipPrefix') }}<b>{{ t('cccms.data_rule.deptTipBold') }}</b
+                  >{{ t('cccms.data_rule.deptTipSuffix') }}
                 </div>
               </el-tab-pane>
             </el-tabs>
@@ -154,7 +154,7 @@
             <div class="bind-add">
               <el-button type="primary" plain size="small" :disabled="!canAdd" @click="addBinding"
                 ><template #icon><i class="ri-add-line" /></template>
-                {{ t('data_rule.addToSelected') }}
+                {{ t('cccms.data_rule.addToSelected') }}
               </el-button>
               <span class="form-tip bind-add-tip">{{ addHint }}</span>
             </div>
@@ -162,9 +162,9 @@
             <!-- 已选项：放在选项卡之外，切到哪个选项卡都看得见 -->
             <div class="bind-selected">
               <div class="bind-selected-head">
-                <span>{{ t('data_rule.selectedBindings') }}</span>
+                <span>{{ t('cccms.data_rule.selectedBindings') }}</span>
                 <el-button v-if="selectedGroups.length" link type="danger" size="small" @click="clearBindings">
-                  {{ t('data_rule.clearAll') }}
+                  {{ t('cccms.data_rule.clearAll') }}
                 </el-button>
               </div>
               <template v-if="selectedGroups.length">
@@ -183,27 +183,27 @@
                   </el-tag>
                 </div>
               </template>
-              <span v-else class="cond-empty">{{ t('data_rule.noneSelected') }}</span>
+              <span v-else class="cond-empty">{{ t('cccms.data_rule.noneSelected') }}</span>
             </div>
           </div>
         </el-form-item>
 
         <!-- 绑定关系：单条规则内部的组合方式；默认 or 与历史行为一致 -->
-        <el-form-item :label="t('data_rule.bindModeLabel')" prop="bind_mode">
+        <el-form-item :label="t('cccms.data_rule.bindModeLabel')" prop="bind_mode">
           <el-radio-group v-model="form.bind_mode">
-            <el-radio value="or">{{ t('data_rule.bindModeOr') }}</el-radio>
-            <el-radio value="and">{{ t('data_rule.bindModeAnd') }}</el-radio>
+            <el-radio value="or">{{ t('cccms.data_rule.bindModeOr') }}</el-radio>
+            <el-radio value="and">{{ t('cccms.data_rule.bindModeAnd') }}</el-radio>
           </el-radio-group>
           <div class="form-tip">
-            {{ t('data_rule.bindModeTipPrefix') }}<b>{{ t('data_rule.bindModeTipBoldOr') }}</b
-            >{{ t('data_rule.bindModeTipMiddle') }}<b>{{ t('data_rule.bindModeTipBoldAnd') }}</b
-            >{{ t('data_rule.bindModeTipSuffix') }}<br />
-            {{ t('data_rule.bindModeTipTail') }}
+            {{ t('cccms.data_rule.bindModeTipPrefix') }}<b>{{ t('cccms.data_rule.bindModeTipBoldOr') }}</b
+            >{{ t('cccms.data_rule.bindModeTipMiddle') }}<b>{{ t('cccms.data_rule.bindModeTipBoldAnd') }}</b
+            >{{ t('cccms.data_rule.bindModeTipSuffix') }}<br />
+            {{ t('cccms.data_rule.bindModeTipTail') }}
           </div>
         </el-form-item>
 
         <!-- 目标表 + 字段（级联选择） -->
-        <el-form-item :label="t('data_rule.targetTableLabel')" prop="field">
+        <el-form-item :label="t('cccms.data_rule.targetTableLabel')" prop="field">
           <el-cascader
             v-model="targetValue"
             :options="cascaderOptions"
@@ -211,21 +211,21 @@
             filterable
             clearable
             class="target-cascader"
-            :placeholder="t('data_rule.targetPlaceholder')"
+            :placeholder="t('cccms.data_rule.targetPlaceholder')"
           />
           <div class="form-tip">{{ fieldHint }}</div>
         </el-form-item>
 
-        <el-form-item :label="t('data_rule.actionLabel')" prop="action">
+        <el-form-item :label="t('cccms.data_rule.actionLabel')" prop="action">
           <el-select v-model="form.action" style="width: 100%">
             <el-option
               v-for="a in options.actions"
               :key="a"
-              :label="t('data_rule.optionWithCode', { name: actionLabel(a), code: a })"
+              :label="t('cccms.data_rule.optionWithCode', { name: actionLabel(a), code: a })"
               :value="a"
             />
           </el-select>
-          <div class="form-tip">{{ t('data_rule.actionTip') }}</div>
+          <div class="form-tip">{{ t('cccms.data_rule.actionTip') }}</div>
           <!-- 风险提示：encrypt 是「存储加密」而不是访问控制，容易被误当成敏感字段的防护手段 -->
           <el-alert
             v-if="form.action === 'encrypt'"
@@ -233,34 +233,34 @@
             :closable="false"
             show-icon
             style="margin-top: 8px"
-            :title="t('data_rule.encryptTitle')"
-            :description="t('data_rule.encryptDesc')"
+            :title="t('cccms.data_rule.encryptTitle')"
+            :description="t('cccms.data_rule.encryptDesc')"
           />
         </el-form-item>
 
         <template v-if="form.action === 'row'">
-          <el-form-item :label="t('data_rule.operatorLabel')" prop="operator">
+          <el-form-item :label="t('cccms.data_rule.operatorLabel')" prop="operator">
             <el-select v-model="form.operator" style="width: 100%">
               <el-option
                 v-for="op in operatorOptions"
                 :key="op"
-                :label="t('data_rule.optionWithCode', { name: operatorLabel(op), code: op })"
+                :label="t('cccms.data_rule.optionWithCode', { name: operatorLabel(op), code: op })"
                 :value="op"
               />
             </el-select>
           </el-form-item>
-          <el-form-item :label="t('data_rule.valueTypeLabel')" prop="value_type">
+          <el-form-item :label="t('cccms.data_rule.valueTypeLabel')" prop="value_type">
             <el-radio-group v-model="form.value_type">
-              <el-radio value="static">{{ t('data_rule.staticValue') }}</el-radio>
-              <el-radio value="dynamic">{{ t('data_rule.dynamicValue') }}</el-radio>
+              <el-radio value="static">{{ t('cccms.data_rule.staticValue') }}</el-radio>
+              <el-radio value="dynamic">{{ t('cccms.data_rule.dynamicValue') }}</el-radio>
             </el-radio-group>
             <div class="form-tip">
-              {{ t('data_rule.valueTypeTipPrefix') }}<b>{{ t('data_rule.valueTypeTipBold') }}</b
-              >{{ t('data_rule.valueTypeTipSuffix') }}
+              {{ t('cccms.data_rule.valueTypeTipPrefix') }}<b>{{ t('cccms.data_rule.valueTypeTipBold') }}</b
+              >{{ t('cccms.data_rule.valueTypeTipSuffix') }}
             </div>
           </el-form-item>
 
-          <el-form-item :label="t('data_rule.valueLabel')" prop="value">
+          <el-form-item :label="t('cccms.data_rule.valueLabel')" prop="value">
             <el-select
               v-if="form.value_type === 'dynamic'"
               v-model="valueTokens"
@@ -269,7 +269,7 @@
               allow-create
               default-first-option
               style="width: 100%"
-              :placeholder="t('data_rule.valuePlaceholder')"
+              :placeholder="t('cccms.data_rule.valuePlaceholder')"
             >
               <el-option
                 v-for="v in options.value_vars ?? []"
@@ -278,25 +278,25 @@
                 :value="v.value"
               />
             </el-select>
-            <el-input v-else v-model="form.value" :placeholder="t('data_rule.staticValuePlaceholder')" />
+            <el-input v-else v-model="form.value" :placeholder="t('cccms.data_rule.staticValuePlaceholder')" />
             <div class="form-tip">{{ valueHint }}</div>
           </el-form-item>
         </template>
 
-        <el-form-item :label="t('data_rule.remarkLabel')" prop="remark">
+        <el-form-item :label="t('cccms.data_rule.remarkLabel')" prop="remark">
           <el-input v-model="form.remark" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="formVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('common.confirm') }}</el-button>
+        <el-button @click="formVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 受控表：只有登记在此的表才会出现在「目标表」候选里 -->
     <el-dialog
       v-model="tableVisible"
-      :title="t('data_rule.managedTableTitle')"
+      :title="t('cccms.data_rule.managedTableTitle')"
       width="820px"
       top="8vh"
       :close-on-click-modal="false"
@@ -306,8 +306,8 @@
         type="info"
         :closable="false"
         show-icon
-        :title="t('data_rule.managedTableTip')"
-        :description="t('data_rule.managedTableDesc')"
+        :title="t('cccms.data_rule.managedTableTip')"
+        :description="t('cccms.data_rule.managedTableDesc')"
       />
 
       <div class="tbl-add">
@@ -315,7 +315,7 @@
           v-model="addForm.table_name"
           filterable
           clearable
-          :placeholder="t('data_rule.addTablePlaceholder')"
+          :placeholder="t('cccms.data_rule.addTablePlaceholder')"
           class="tbl-add-select"
         >
           <el-option
@@ -325,7 +325,11 @@
             :value="item.table"
           />
         </el-select>
-        <el-input v-model="addForm.label" :placeholder="t('data_rule.semanticNamePlaceholder')" class="tbl-add-label" />
+        <el-input
+          v-model="addForm.label"
+          :placeholder="t('cccms.data_rule.semanticNamePlaceholder')"
+          class="tbl-add-label"
+        />
         <el-button
           v-auth="'cccms:data_rule:table_save'"
           type="primary"
@@ -333,51 +337,51 @@
           :loading="tableSaving"
           @click="onAddTable"
         >
-          {{ t('data_rule.add') }}
+          {{ t('cccms.data_rule.add') }}
         </el-button>
       </div>
 
       <el-table :data="tableData.list" size="small" border>
-        <el-table-column :label="t('data_rule.tableNameLabel')" width="180">
+        <el-table-column :label="t('cccms.data_rule.tableNameLabel')" width="180">
           <template #default="{ row }">
             <span class="tbl-name">{{ row.table_name }}</span>
             <el-tag v-if="!row.exists" type="danger" size="small" effect="plain">
-              {{ t('data_rule.tableMissing') }}
+              {{ t('cccms.data_rule.tableMissing') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column :label="t('data_rule.semanticNameLabel')" min-width="170">
+        <el-table-column :label="t('cccms.data_rule.semanticNameLabel')" min-width="170">
           <template #default="{ row }">
             <el-input v-model="row.label" size="small" @change="onUpdateTable(row)" />
           </template>
         </el-table-column>
-        <el-table-column :label="t('data_rule.remarkLabel')" min-width="150">
+        <el-table-column :label="t('cccms.data_rule.remarkLabel')" min-width="150">
           <template #default="{ row }">
             <el-input v-model="row.remark" size="small" @change="onUpdateTable(row)" />
           </template>
         </el-table-column>
-        <el-table-column prop="field_count" :label="t('data_rule.fieldCountLabel')" width="80" align="center" />
-        <el-table-column :label="t('data_rule.controlledLabel')" width="80" align="center">
+        <el-table-column prop="field_count" :label="t('cccms.data_rule.fieldCountLabel')" width="80" align="center" />
+        <el-table-column :label="t('cccms.data_rule.controlledLabel')" width="80" align="center">
           <template #default="{ row }">
             <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="onUpdateTable(row)" />
           </template>
         </el-table-column>
-        <el-table-column :label="t('table.action')" width="80" align="center">
+        <el-table-column :label="t('core.table.action')" width="80" align="center">
           <template #default="{ row }">
-            <el-popconfirm :title="t('data_rule.removeConfirm')" @confirm="onRemoveTable(row)">
+            <el-popconfirm :title="t('cccms.data_rule.removeConfirm')" @confirm="onRemoveTable(row)">
               <template #reference>
                 <el-button v-auth="'cccms:data_rule:table_delete'" link type="danger">
-                  {{ t('data_rule.remove') }}
+                  {{ t('cccms.data_rule.remove') }}
                 </el-button>
               </template>
             </el-popconfirm>
           </template>
         </el-table-column>
-        <template #empty>{{ t('data_rule.noManagedTable') }}</template>
+        <template #empty>{{ t('cccms.data_rule.noManagedTable') }}</template>
       </el-table>
 
       <template #footer>
-        <el-button @click="tableVisible = false">{{ t('data_rule.close') }}</el-button>
+        <el-button @click="tableVisible = false">{{ t('cccms.data_rule.close') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -433,25 +437,25 @@ interface CascadeNode {
 
 /** 规则动作 → 语言包 key（文案跟随语言切换） */
 const ACTION_LABEL_KEYS: Record<string, string> = {
-  row: 'data_rule.actionRow',
-  hidden: 'data_rule.actionHidden',
-  readonly: 'data_rule.actionReadonly',
-  mask: 'data_rule.actionMask',
-  encrypt: 'data_rule.actionEncrypt',
+  row: 'cccms.data_rule.actionRow',
+  hidden: 'cccms.data_rule.actionHidden',
+  readonly: 'cccms.data_rule.actionReadonly',
+  mask: 'cccms.data_rule.actionMask',
+  encrypt: 'cccms.data_rule.actionEncrypt',
 }
 
 /** 操作符语义 → 语言包 key（后端 options.operator_labels 优先，这里做兜底） */
 const OPERATOR_LABEL_KEYS: Record<string, string> = {
-  '=': 'data_rule.opEq',
-  '!=': 'data_rule.opNe',
-  '<>': 'data_rule.opNe',
-  '>': 'data_rule.opGt',
-  '>=': 'data_rule.opGe',
-  '<': 'data_rule.opLt',
-  '<=': 'data_rule.opLe',
-  like: 'data_rule.opLike',
-  in: 'data_rule.opIn',
-  between: 'data_rule.opBetween',
+  '=': 'cccms.data_rule.opEq',
+  '!=': 'cccms.data_rule.opNe',
+  '<>': 'cccms.data_rule.opNe',
+  '>': 'cccms.data_rule.opGt',
+  '>=': 'cccms.data_rule.opGe',
+  '<': 'cccms.data_rule.opLt',
+  '<=': 'cccms.data_rule.opLe',
+  like: 'cccms.data_rule.opLike',
+  in: 'cccms.data_rule.opIn',
+  between: 'cccms.data_rule.opBetween',
 }
 
 /** 这些类型用 like 没有意义；反过来，字符串列也不该出现比较操作符 */
@@ -474,10 +478,10 @@ const NUMERIC_TYPES = [
 // 表格列文案跟随语言切换，用 computed 包裹
 const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 70 },
-  { prop: 'name', label: t('data_rule.nameLabel'), minWidth: 140, filter: { type: 'text' } },
+  { prop: 'name', label: t('cccms.data_rule.nameLabel'), minWidth: 140, filter: { type: 'text' } },
   {
     prop: 'table_name',
-    label: t('data_rule.targetTableLabel'),
+    label: t('cccms.data_rule.targetTableLabel'),
     width: 160,
     slot: 'target',
     filter: {
@@ -485,13 +489,13 @@ const columns = computed<ArtTableColumn[]>(() => [
       options: options.value.tables.map((item) => ({ label: item.label, value: item.table })),
     },
   },
-  { prop: 'field', label: t('data_rule.fieldLabel'), width: 120, filter: { type: 'text' } },
-  { prop: 'bind', label: t('data_rule.bindLabel'), minWidth: 200, slot: 'bind' },
+  { prop: 'field', label: t('cccms.data_rule.fieldLabel'), width: 120, filter: { type: 'text' } },
+  { prop: 'bind', label: t('cccms.data_rule.bindLabel'), minWidth: 200, slot: 'bind' },
   // prop 用 action_type 而不是 action：下面还有一个「操作」列，重复 key 会让 v-for 出问题
   // 列头筛选写回的是 query.action（后端按 action 过滤），故用 queryKey 指回
   {
     prop: 'action_type',
-    label: t('data_rule.actionColumnLabel'),
+    label: t('cccms.data_rule.actionColumnLabel'),
     width: 106,
     align: 'center',
     slot: 'action_type',
@@ -501,10 +505,10 @@ const columns = computed<ArtTableColumn[]>(() => [
       options: options.value.actions.map((a) => ({ label: actionLabel(a), value: a })),
     },
   },
-  { prop: 'condition', label: t('data_rule.conditionLabel'), minWidth: 150, slot: 'condition' },
+  { prop: 'condition', label: t('cccms.data_rule.conditionLabel'), minWidth: 150, slot: 'condition' },
   // 体检结果：冲突这类问题「配的时候看不出来、用的时候页面空白」，列表上直接标出来
-  { prop: 'conflict', label: t('data_rule.conflictColumnLabel'), width: 78, align: 'center', slot: 'conflict' },
-  { prop: 'action', label: t('table.action'), width: 130, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'conflict', label: t('cccms.data_rule.conflictColumnLabel'), width: 78, align: 'center', slot: 'conflict' },
+  { prop: 'action', label: t('core.table.action'), width: 130, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 // 回收站开关：必须在 useTable 之前（列表闭包在 setup 阶段就会执行一次）
@@ -601,8 +605,8 @@ const form = reactive({ ...emptyForm })
 
 // 校验提示同样走 i18n：用 computed 保证切换语言后规则文案立即更新
 const rules = computed<FormRules>(() => ({
-  name: [{ required: true, message: t('data_rule.nameRequired'), trigger: 'blur' }],
-  field: [{ required: true, message: t('data_rule.fieldRequired'), trigger: 'change' }],
+  name: [{ required: true, message: t('cccms.data_rule.nameRequired'), trigger: 'blur' }],
+  field: [{ required: true, message: t('cccms.data_rule.fieldRequired'), trigger: 'change' }],
 }))
 
 /** 目标表 → 字段 的级联候选；「不限表」用 __none__ 表示，子节点是各表字段并集 */
@@ -625,7 +629,7 @@ const cascaderOptions = computed<CascadeNode[]>(() => {
   }
 
   return [
-    { value: '__none__', label: t('data_rule.anyTableOption'), children: union },
+    { value: '__none__', label: t('cccms.data_rule.anyTableOption'), children: union },
     ...tables.map((table) => ({
       value: table.table,
       label: `${table.label}（${table.full}）`,
@@ -682,9 +686,9 @@ watch(operatorOptions, (available) => {
 
 const fieldHint = computed(() => {
   if (!form.table_name) {
-    return t('data_rule.fieldHintAnyTable')
+    return t('cccms.data_rule.fieldHintAnyTable')
   }
-  return t('data_rule.fieldHintTable')
+  return t('cccms.data_rule.fieldHintTable')
 })
 
 /* ---- 行级取值：动态变量 ---- */
@@ -705,15 +709,15 @@ const valueTokens = computed<string[]>({
 
 const valueHint = computed(() => {
   if (form.value_type !== 'dynamic') {
-    return t('data_rule.valueHintStatic')
+    return t('cccms.data_rule.valueHintStatic')
   }
   if (form.operator === 'between') {
-    return t('data_rule.valueHintBetween')
+    return t('cccms.data_rule.valueHintBetween')
   }
   if (form.operator === 'in') {
-    return t('data_rule.valueHintIn')
+    return t('cccms.data_rule.valueHintIn')
   }
-  return t('data_rule.valueHintOther')
+  return t('cccms.data_rule.valueHintOther')
 })
 
 /* ---- 绑定对象：选项卡 + 已选列表 ---- */
@@ -723,10 +727,10 @@ type BindKey = 'user' | 'post' | 'role' | 'dept'
 
 /** 四个绑定维度的展示名 → 语言包 key */
 const BIND_LABEL_KEYS: Record<BindKey, string> = {
-  user: 'data_rule.bindUserLabel',
-  post: 'data_rule.bindPostLabel',
-  role: 'data_rule.bindRoleLabel',
-  dept: 'data_rule.bindDeptLabel',
+  user: 'cccms.data_rule.bindUserLabel',
+  post: 'cccms.data_rule.bindPostLabel',
+  role: 'cccms.data_rule.bindRoleLabel',
+  dept: 'cccms.data_rule.bindDeptLabel',
 }
 
 /** 当前选项卡 */
@@ -805,7 +809,9 @@ const selectedGroups = computed(() =>
 /** 选项卡标题带已选数量：切到别的选项卡也知道哪些维度已选 */
 function tabLabel(key: BindKey): string {
   const count = selectedIds.value[key].length
-  return count > 0 ? t('data_rule.bindTabWithCount', { name: t(BIND_LABEL_KEYS[key]), count }) : t(BIND_LABEL_KEYS[key])
+  return count > 0
+    ? t('cccms.data_rule.bindTabWithCount', { name: t(BIND_LABEL_KEYS[key]), count })
+    : t(BIND_LABEL_KEYS[key])
 }
 
 /** 当前选项卡的待添加项是否有值 */
@@ -814,7 +820,9 @@ const canAdd = computed(() => {
   return Array.isArray(value) ? value.length > 0 : Number(value) > 0
 })
 
-const addHint = computed(() => (bindTab.value === 'dept' ? t('data_rule.addHintMulti') : t('data_rule.addHintSingle')))
+const addHint = computed(() =>
+  bindTab.value === 'dept' ? t('cccms.data_rule.addHintMulti') : t('cccms.data_rule.addHintSingle'),
+)
 
 /** 添加到已选：单选维度替换，部门并入 */
 function addBinding(): void {
@@ -927,7 +935,7 @@ async function onAddTable(): Promise<void> {
   tableSaving.value = true
   try {
     await dataScopeTableSave({ table_name: addForm.table_name, label: addForm.label })
-    ElMessage.success(t('data_rule.tableAdded'))
+    ElMessage.success(t('cccms.data_rule.tableAdded'))
     addForm.table_name = ''
     addForm.label = ''
     await loadTables()
@@ -945,14 +953,16 @@ async function onUpdateTable(row: DataScopeTableRow): Promise<void> {
     status: row.status,
     remark: row.remark,
   })
-  ElMessage.success(t('data_rule.tableSaved'))
+  ElMessage.success(t('cccms.data_rule.tableSaved'))
   await loadOptions()
 }
 
 async function onRemoveTable(row: DataScopeTableRow): Promise<void> {
   const res = await dataScopeTableDelete(row.id)
   const paused = res?.rules ?? 0
-  ElMessage.success(paused > 0 ? t('data_rule.tableRemovedWithRules', { count: paused }) : t('data_rule.tableRemoved'))
+  ElMessage.success(
+    paused > 0 ? t('cccms.data_rule.tableRemovedWithRules', { count: paused }) : t('cccms.data_rule.tableRemoved'),
+  )
   await loadTables()
   await loadOptions()
 }
@@ -1018,7 +1028,7 @@ async function submitForm(): Promise<void> {
     } else {
       await dataRuleSave(payload)
     }
-    ElMessage.success(t('data_rule.saveSuccess'))
+    ElMessage.success(t('cccms.data_rule.saveSuccess'))
     formVisible.value = false
     load()
   } finally {
@@ -1028,7 +1038,7 @@ async function submitForm(): Promise<void> {
 
 async function onDelete(id: number): Promise<void> {
   await dataRuleDelete(id)
-  ElMessage.success(t('data_rule.deleteSuccess'))
+  ElMessage.success(t('cccms.data_rule.deleteSuccess'))
   load()
 }
 

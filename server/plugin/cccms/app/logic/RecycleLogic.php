@@ -156,6 +156,7 @@ final class RecycleLogic
         }
 
         self::assertRestorable($type, $meta, $ids);
+        self::assertNoDuplicateValues($type, $meta, $ids);
 
         $affected = SoftDelete::restore(self::query($meta), $ids);
 
@@ -167,6 +168,41 @@ final class RecycleLogic
         }
 
         return $affected;
+    }
+
+    /**
+     * 字典数据恢复前的「值重复」校验。
+     *
+     * 场景：值 `1` 先进回收站，随后有人新建了同类型同值的 `1`；
+     * 此时恢复旧行会出现两条 `type_id + value` 相同的记录 —— 下拉框同值多项、回显不确定。
+     * 库上没有 `(type_id, value)` 唯一索引（软删 + 唯一键会让「删了再建」失败），
+     * 因此把校验放在恢复入口。
+     */
+    private static function assertNoDuplicateValues(string $type, array $meta, array $ids): void
+    {
+        if ($type !== 'dict_data') {
+            return;
+        }
+
+        $rows = SoftDelete::onlyTrashed(self::query($meta))
+            ->whereIn('id', $ids)
+            ->field('id,type_id,value')
+            ->select()
+            ->toArray();
+
+        foreach ($rows as $row) {
+            $value = (string)($row['value'] ?? '');
+            if ($value === '') {
+                continue;
+            }
+            $exists = SoftDelete::apply(self::query($meta))
+                ->where('type_id', (int)($row['type_id'] ?? 0))
+                ->where('value', $value)
+                ->find();
+            if ($exists) {
+                throw new ApiException(I18n::t('dict.data_value_exists', ['value' => $value]), 422);
+            }
+        }
     }
 
     /** 彻底删除（附件连同物理文件一起删） */
@@ -189,12 +225,14 @@ final class RecycleLogic
         }
 
         if ($type === 'menu') {
-            // 软删阶段刻意保留 role_node 授权（便于恢复）；彻底删除时一并清掉，避免残留孤儿授权
-            $nodes = Menu::onlyTrashed()->whereIn('id', $ids)->column('node');
-            foreach ($nodes as $node) {
-                if ((string)$node !== '') {
-                    RoleNode::where('node', (string)$node)->delete();
-                }
+            // 软删阶段刻意保留 role_node 授权（便于恢复）；彻底删除时一并清掉，避免残留孤儿授权。
+            // 一次 whereIn 删除：逐条 DELETE 在节点多时会产生上百次往返，且没有事务保护
+            $nodes = array_values(array_filter(
+                array_map('strval', Menu::onlyTrashed()->whereIn('id', $ids)->column('node')),
+                static fn (string $node): bool => $node !== ''
+            ));
+            if ($nodes !== []) {
+                RoleNode::whereIn('node', $nodes)->delete();
             }
         }
 

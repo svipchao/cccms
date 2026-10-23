@@ -11,14 +11,16 @@
           class="art-node-picker-search"
           @input="onKeywordInput"
         />
-        <el-button size="small" @click="clear">{{ t('common.nodePicker.clear') }}</el-button>
+        <el-button size="small" @click="clear">{{ t('core.common.nodePicker.clear') }}</el-button>
       </template>
       <template v-else>
         <el-button v-if="hasChildren" size="small" @click="toggleExpand">
-          {{ expanded ? t('common.nodePicker.collapseAll') : t('common.nodePicker.expandAll') }}
+          {{ expanded ? t('core.common.nodePicker.collapseAll') : t('core.common.nodePicker.expandAll') }}
         </el-button>
-        <el-button v-if="multiple" size="small" @click="checkAll">{{ t('common.nodePicker.selectAll') }}</el-button>
-        <el-button size="small" @click="clear">{{ t('common.nodePicker.clear') }}</el-button>
+        <el-button v-if="multiple" size="small" @click="checkAll">{{
+          t('core.common.nodePicker.selectAll')
+        }}</el-button>
+        <el-button size="small" @click="clear">{{ t('core.common.nodePicker.clear') }}</el-button>
       </template>
     </div>
 
@@ -236,11 +238,11 @@ const rows = computed<NodeRow[]>(() => {
   return out
 })
 
-const searchPlaceholder = computed(() => props.placeholder || t('common.nodePicker.searchPlaceholder'))
+const searchPlaceholder = computed(() => props.placeholder || t('core.common.nodePicker.searchPlaceholder'))
 
 const emptyText = computed(() => {
   if (keyword.value.trim()) {
-    return searching.value ? t('common.nodePicker.searching') : t('common.nodePicker.noMatchUser')
+    return searching.value ? t('core.common.nodePicker.searching') : t('core.common.nodePicker.noMatchUser')
   }
   return props.selectedRow ? '' : searchPlaceholder.value
 })

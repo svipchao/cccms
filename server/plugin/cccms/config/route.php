@@ -1,6 +1,7 @@
 <?php
 
 use plugin\cccms\app\controller\AuthController;
+use plugin\cccms\app\controller\BackupController;
 use plugin\cccms\app\controller\ConfigController;
 use plugin\cccms\app\controller\CrontabController;
 use plugin\cccms\app\controller\DashboardController;
@@ -11,17 +12,21 @@ use plugin\cccms\app\controller\DictController;
 use plugin\cccms\app\controller\ExportController;
 use plugin\cccms\app\controller\FileController;
 use plugin\cccms\app\controller\GeneratorController;
+use plugin\cccms\app\controller\JobController;
 use plugin\cccms\app\controller\LogController;
 use plugin\cccms\app\controller\MaintenanceController;
 use plugin\cccms\app\controller\MenuController;
+use plugin\cccms\app\controller\MonitorController;
 use plugin\cccms\app\controller\NoticeController;
 use plugin\cccms\app\controller\ObservabilityController;
 use plugin\cccms\app\controller\OnlineController;
+use plugin\cccms\app\controller\OpenApiController;
 use plugin\cccms\app\controller\PostController;
 use plugin\cccms\app\controller\ProfileController;
 use plugin\cccms\app\controller\RecycleController;
 use plugin\cccms\app\controller\RoleController;
 use plugin\cccms\app\controller\TenantController;
+use plugin\cccms\app\controller\TerminalController;
 use plugin\cccms\app\controller\UpgradeController;
 use plugin\cccms\app\controller\UserController;
 use Webman\Route;
@@ -181,6 +186,18 @@ Route::get('/online', [OnlineController::class, 'index']);
 Route::post('/online/kick', [OnlineController::class, 'kick']);
 Route::post('/online/kickUser', [OnlineController::class, 'kickUser']);
 
+// ---- 接口监控（聚合数据与 /metrics 同源，见 MonitorLogic 注释） ----
+Route::get('/monitor', [MonitorController::class, 'index']);
+Route::get('/monitor/paths', [MonitorController::class, 'paths']);
+Route::get('/monitor/trend', [MonitorController::class, 'trend']);
+// 服务器资源（F6）：CPU / 负载 / 内存 / 磁盘 / 进程 / Redis / MySQL
+Route::get('/monitor/server', [MonitorController::class, 'server']);
+
+// ---- 接口文档（路由表 + 权限注解自动生成，见 support/OpenApi.php） ----
+Route::get('/apidoc', [OpenApiController::class, 'index']);
+Route::get('/apidoc/detail', [OpenApiController::class, 'detail']);
+Route::get('/apidoc/spec', [OpenApiController::class, 'spec']);
+
 // ---- 通知公告 ----
 // 管理侧
 Route::get('/notice', [NoticeController::class, 'index']);
@@ -224,6 +241,27 @@ Route::post('/crontab/save', [CrontabController::class, 'save']);
 Route::post('/crontab/update', [CrontabController::class, 'update']);
 Route::post('/crontab/delete', [CrontabController::class, 'delete']);
 Route::post('/crontab/run', [CrontabController::class, 'run']);
+
+// ---- 数据库备份 / 还原（F3；还原是破坏性动作，仅授平台超管）----
+Route::get('/backup', [BackupController::class, 'index']);
+Route::post('/backup/create', [BackupController::class, 'create']);
+Route::post('/backup/delete', [BackupController::class, 'delete']);
+Route::get('/backup/download', [BackupController::class, 'download']);
+Route::get('/backup/tables', [BackupController::class, 'tables']);
+Route::post('/backup/restore', [BackupController::class, 'restore']);
+
+// ---- 在线命令终端（F2：命令表在 config/terminal.php，执行走 terminal 队列）----
+Route::get('/terminal', [TerminalController::class, 'index']);
+Route::get('/terminal/history', [TerminalController::class, 'history']);
+Route::get('/terminal/logs', [TerminalController::class, 'logs']);
+Route::post('/terminal/run', [TerminalController::class, 'run']);
+
+// ---- 作业队列（F5，任务中心 tab：权限节点挂在「定时任务」菜单下）----
+Route::get('/job', [JobController::class, 'index']);
+Route::get('/job/stats', [JobController::class, 'stats']);
+Route::get('/job/logs', [JobController::class, 'logs']);
+Route::post('/job/retry', [JobController::class, 'retry']);
+Route::post('/job/remove', [JobController::class, 'remove']);
 
 // ---- 代码生成器 ----
 // 可用性探针：页面据此渲染「未启用」提示，避免点进去才吃 403 弹窗

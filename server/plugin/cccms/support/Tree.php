@@ -40,12 +40,15 @@ final class Tree
 
         $result = $ids;
         $queue  = $ids;
+        // 用哈希判重：`in_array()` 在大子树（部门 / 分类上万节点）下会退化成 O(n²)
+        $seen = array_fill_keys($ids, true);
         while ($queue !== []) {
             $current = (int)array_shift($queue);
             foreach ($children[$current] ?? [] as $child) {
-                if (!in_array($child, $result, true)) {
-                    $result[] = $child;
-                    $queue[]  = $child;
+                if (!isset($seen[$child])) {
+                    $seen[$child] = true;
+                    $result[]     = $child;
+                    $queue[]      = $child;
                 }
             }
         }

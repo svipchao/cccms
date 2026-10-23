@@ -33,6 +33,23 @@ export default tseslint.config(
     },
   },
   {
+    // 类型感知规则只跑纯 TS 文件（stores / composables / utils / api）。
+    // 原因：.vue 需要 vue-eslint-parser + 项目服务，配置复杂且收益低 ——
+    // 模板里的漏 await 由 `vue-tsc` 的 `noUnusedLocals` 与人工评审兜底。
+    files: ['src/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      // 漏 await 的 Promise：以前只在运行时报 unhandled rejection，
+      // 现在在 lint 阶段就提示（warn，避免阻塞既有代码的提交）
+      '@typescript-eslint/no-floating-promises': 'warn',
+    },
+  },
+  {
     rules: {
       // TypeScript 已经负责未定义标识符检查，避免重复且误报浏览器全局
       'no-undef': 'off',

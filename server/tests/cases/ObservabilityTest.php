@@ -75,8 +75,9 @@ return static function (): void {
                 continue;
             }
             $name = explode(' ', $lines[$i])[2];
+            // 类型不预设：CPU 等累计量是 counter，断言写死 gauge 会把新增指标误判成错误
             ok(
-                isset($lines[$i + 1]) && $lines[$i + 1] === '# TYPE ' . $name . ' gauge',
+                isset($lines[$i + 1]) && str_starts_with($lines[$i + 1], '# TYPE ' . $name . ' '),
                 "# HELP {$name} 之后必须紧跟同名 # TYPE"
             );
         }
@@ -100,6 +101,73 @@ return static function (): void {
         contains('cccms_http_request_duration_seconds{quantile="0.95"} 0.08', $text, '浮点应去掉尾随 0');
         contains('cccms_http_request_duration_seconds{quantile="0.99"} 1', $text, '整数秒不该写成 1.000000');
         contains('cccms_memory_limit_bytes 0', $text, 'memory_limit 未设置时报 0');
+    });
+
+    test('服务器资源指标（F6）：CPU 是 counter，其余为 gauge', function (): void {
+        $text = Metrics::render([
+            'node' => [
+                'cpu'       => ['modes' => ['user' => 12.5, 'idle' => 100.0]],
+                'load'      => [0.5, 0.4, 0.3],
+                'memory'    => [
+                    'total'     => 8589934592,
+                    'available' => 4294967296,
+                    'used'      => 4294967296,
+                    'percent'   => 50.0,
+                ],
+                'processes' => 123,
+                'uptime'    => 86400,
+                'redis'     => [
+                    'used_memory'          => 1048576,
+                    'connected_clients'    => 3,
+                    'ops_per_second'       => 20,
+                    'rejected_connections' => 0,
+                ],
+                'mysql'     => [
+                    'threads_connected' => 5,
+                    'threads_running'   => 1,
+                    'connection_usage'  => 12.5,
+                    'uptime_seconds'    => 3600,
+                    'questions'         => 1000,
+                    'slow_queries'      => 2,
+                ],
+            ],
+        ]);
+
+        // CPU 给抓取端的是累计秒数，由 rate() 求占用率；服务端不阻塞采样
+        contains('# TYPE cccms_node_cpu_seconds_total counter', $text, 'CPU 必须是 counter');
+        contains('# TYPE cccms_mysql_questions_total counter', $text, '累计查询数必须是 counter');
+        contains('# TYPE cccms_node_load gauge', $text, '负载是瞬时值');
+        contains('cccms_node_cpu_seconds_total{mode="idle"} 100', $text);
+        contains('cccms_node_load{period="5"} 0.4', $text);
+        contains('cccms_node_memory_used_percent 50', $text);
+        contains('cccms_node_processes 123', $text);
+        contains('cccms_node_uptime_seconds 86400', $text);
+        contains('cccms_redis_connected_clients 3', $text);
+        contains('cccms_mysql_connection_usage_percent 12.5', $text);
+    });
+
+    test('服务器资源指标（F6）：拿不到的项不写 0（未知 ≠ 零）', function (): void {
+        // 模拟 Windows / 容器拿不到 /proc 与依赖不可用：只保留声明，不产生样本行
+        $text = Metrics::render([
+            'node' => [
+                'cpu'       => null,
+                'load'      => null,
+                'memory'    => null,
+                'processes' => null,
+                'uptime'    => null,
+                'redis'     => null,
+                'mysql'     => null,
+            ],
+        ]);
+
+        contains('# TYPE cccms_node_cpu_seconds_total counter', $text, '声明仍然存在（抓取端不会解析失败）');
+        foreach (['cccms_node_processes', 'cccms_node_uptime_seconds', 'cccms_redis_used_memory_bytes'] as $name) {
+            same(
+                0,
+                preg_match('/^' . $name . ' /m', $text),
+                "{$name} 拿不到时不该写 0"
+            );
+        }
     });
 
     test('分位数：最近秩法，空样本返回 0', function (): void {

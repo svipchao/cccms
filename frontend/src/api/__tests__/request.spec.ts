@@ -154,7 +154,7 @@ describe('响应拦截器', () => {
   it('code != 0 且后端没给消息时回落到通用文案', async () => {
     mockAdapter({ data: { code: 500, message: '', data: null } })
 
-    await expect(http.get('/x')).rejects.toThrow('t:common.requestFailed')
+    await expect(http.get('/x')).rejects.toThrow('t:core.common.requestFailed')
   })
 
   it('非信封结构（没有 code 字段）原样返回', async () => {
@@ -218,7 +218,7 @@ describe('错误分支', () => {
 
     await expect(http.get('/user')).rejects.toBeTruthy()
 
-    expect(mocks.messageError).toHaveBeenCalledWith('t:common.loginExpired')
+    expect(mocks.messageError).toHaveBeenCalledWith('t:core.common.loginExpired')
   })
 
   it('429：把后端的限流/锁定文案原样透出（登录失败双维度的前端表现）', async () => {
@@ -236,7 +236,7 @@ describe('错误分支', () => {
 
     await expect(http.get('/x')).rejects.toBeTruthy()
 
-    expect(mocks.messageError).toHaveBeenCalledWith('t:common.requestError')
+    expect(mocks.messageError).toHaveBeenCalledWith('t:core.common.requestError')
   })
 
   it('无响应（网络不可达）时提示网络错误', async () => {
@@ -246,7 +246,7 @@ describe('错误分支', () => {
 
     await expect(http.get('/x')).rejects.toBeTruthy()
 
-    expect(mocks.messageError).toHaveBeenCalledWith('t:common.networkError')
+    expect(mocks.messageError).toHaveBeenCalledWith('t:core.common.networkError')
   })
 
   it('报错文案带上操作 ID（用户可直接到日志页检索本次操作）', async () => {
@@ -254,7 +254,7 @@ describe('错误分支', () => {
 
     await expect(http.get('/x')).rejects.toBeTruthy()
 
-    expect(mocks.messageError).toHaveBeenCalledWith('数据库连接失败t:common.actionIdSuffix')
+    expect(mocks.messageError).toHaveBeenCalledWith('数据库连接失败t:core.common.actionIdSuffix')
   })
 
   it('后端未返回 action_id 时回落到 trace_id，提示里至少要有一个可查的 ID', async () => {
@@ -262,7 +262,7 @@ describe('错误分支', () => {
 
     await expect(http.get('/x')).rejects.toBeTruthy()
 
-    expect(mocks.messageError).toHaveBeenCalledWith('bad gatewayt:common.actionIdSuffix')
+    expect(mocks.messageError).toHaveBeenCalledWith('bad gatewayt:core.common.actionIdSuffix')
   })
 })
 
@@ -278,8 +278,8 @@ describe('业务错误（HTTP 200 + code != 0）', () => {
       data: { code: 422, message: '用户名已存在', data: null, action_id: 'a260918143012-deadbeef' },
     })
 
-    await expect(http.post('/user/save', {})).rejects.toThrow('用户名已存在t:common.actionIdSuffix')
-    expect(mocks.messageError).toHaveBeenCalledWith('用户名已存在t:common.actionIdSuffix')
+    await expect(http.post('/user/save', {})).rejects.toThrow('用户名已存在t:core.common.actionIdSuffix')
+    expect(mocks.messageError).toHaveBeenCalledWith('用户名已存在t:core.common.actionIdSuffix')
   })
 })
 
@@ -350,7 +350,7 @@ describe('downloadFile', () => {
     await expect(downloadFileByPost('/x')).rejects.toBeTruthy()
 
     await vi.waitFor(() => {
-      expect(mocks.messageError).toHaveBeenCalledWith('t:common.requestError')
+      expect(mocks.messageError).toHaveBeenCalledWith('t:core.common.requestError')
     })
   })
 })

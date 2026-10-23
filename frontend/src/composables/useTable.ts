@@ -1,4 +1,15 @@
-import { getCurrentInstance, provide, reactive, ref, watch, type InjectionKey, type Ref } from 'vue'
+import {
+  getCurrentInstance,
+  onActivated,
+  onDeactivated,
+  onUnmounted,
+  provide,
+  reactive,
+  ref,
+  watch,
+  type InjectionKey,
+  type Ref,
+} from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import type { PageResult } from '@/types/table'
@@ -204,6 +215,16 @@ function createFilterStore<Q extends object>(initialQuery: Q, options: FilterSto
     writeJson(savedKey, snapshot())
   }
 
+  /**
+   * 防抖持久化：搜索框直接双向绑定 `query` 时，每敲一个字符都会触发 deep watch，
+   * 同步 `JSON.stringify` + 写 localStorage 会卡主线程。
+   */
+  let persistTimer = 0
+  function persistSoon(): void {
+    window.clearTimeout(persistTimer)
+    persistTimer = window.setTimeout(persist, 200)
+  }
+
   function clearSaved(): void {
     try {
       localStorage.removeItem(savedKey)
@@ -248,21 +269,31 @@ function createFilterStore<Q extends object>(initialQuery: Q, options: FilterSto
     }
   }
 
-  return { query, applySnapshot, readSchemes, persist, controller }
+  return { query, applySnapshot, readSchemes, persist, persistSoon, controller }
 }
 
 export interface UseTableOptions<T, Q extends object> {
   /**
    * 列表请求：会带上 query / page / limit。
    * 返回体用 PageResult<unknown> 接收，避免每个接口都得把行类型透传成泛型。
+   *
+   * 第二个参数承载 `signal`：翻页 / 改筛选时上一次请求会被 abort。
+   * 接口函数不认识这个参数也没关系（JS 允许少传），只是拿不到取消能力。
    */
-  api: (params: Record<string, unknown>) => Promise<PageResult<unknown>>
+  api: (params: Record<string, unknown>, config?: { signal?: AbortSignal }) => Promise<PageResult<unknown>>
   /** 查询条件初始值（重置时回到这里） */
   initialQuery?: Q
   /** 每页条数，默认 15 */
   pageSize?: number
   /** 是否在 setup 阶段立即加载，默认 true */
   immediate?: boolean
+  /**
+   * 从其它标签页切回时是否自动刷新，默认 true。
+   *
+   * 页面被 keep-alive 缓存后，切回来看到的是离开时的旧数据，容易被误判为「改动没生效」。
+   * 仅对处于 keep-alive 中的页面生效（普通页面不会触发 `onActivated`）。
+   */
+  refreshOnActivated?: boolean
   /** 请求成功后的数据加工（如补全 URL、格式化字段） */
   transform?: (list: T[]) => T[]
 }
@@ -284,6 +315,8 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
 ) {
   const list = ref([]) as Ref<T[]>
   const loading = ref(false)
+  /** 最近一次请求是否失败：页面可据此显示占位文案而不是空表格 */
+  const loadFailed = ref(false)
   const total = ref(0)
   const page = ref(1)
   // 默认每页条数取自后台配置 ui.page_size
@@ -324,14 +357,21 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
     void load()
   }
 
-  // 条件、每页条数或排序一变就自动记忆（页码不存）
-  watch(query, store.persist, { deep: true })
-  watch(limit, store.persist)
-  watch(sort, store.persist, { deep: true })
+  // 条件、每页条数或排序一变就自动记忆（页码不存）；写盘走防抖，避免逐字符输入触发同步写
+  watch(query, store.persistSoon, { deep: true })
+  watch(limit, store.persistSoon)
+  watch(sort, store.persistSoon, { deep: true })
+
+  /** 当前在飞的请求：新一轮 load 或组件卸载时取消 */
+  let inflight: AbortController | null = null
 
   if (getCurrentInstance()) {
     provide(TABLE_FILTER_KEY, store.controller(applyScheme))
     provide(TABLE_SORT_KEY, { sort, writeSort })
+
+    // 卸载 / 被 keep-alive 移出画面时取消在飞请求：切走的页面没人看，结果也用不上
+    onUnmounted(() => inflight?.abort())
+    onDeactivated(() => inflight?.abort())
   }
 
   // 请求序号：快速连续翻页/筛选时，先发起的慢请求可能后返回并覆盖较新的结果
@@ -339,6 +379,12 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
 
   async function load(): Promise<void> {
     const seq = ++requestSeq
+
+    // 取消上一次：响应过期有序号兜底，但让后端白跑一遍查询没有意义（改筛选时尤其常见）
+    inflight?.abort()
+    const current = new AbortController()
+    inflight = current
+
     loading.value = true
     const startedAt = Date.now()
     try {
@@ -348,7 +394,7 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
         params.sort = sort.value.prop
         params.order = sort.value.order
       }
-      const res = await options.api(params)
+      const res = await options.api(params, { signal: current.signal })
       // 过期响应直接丢弃，避免「翻到第 2 页却显示第 1 页数据」
       if (seq !== requestSeq) {
         return
@@ -356,9 +402,19 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
       const rows = (res?.list ?? []) as T[]
       list.value = options.transform ? options.transform(rows) : rows
       total.value = res?.total ?? 0
+      loadFailed.value = false
     } catch {
-      // 失败提示由请求拦截器统一处理。这里吞掉异常，避免各页 `void load()` 产生
-      // unhandled rejection；保留上一次的数据，用户可直接重试。
+      // 失败提示由请求拦截器统一处理；这里吞掉异常避免各页 `void load()` 产生 unhandled rejection。
+      // 主动取消（切页 / 卸载）不是错误：不清空数据、不显示错误态。
+      if (current.signal.aborted) {
+        return
+      }
+      // 同时清空列表与分页：保留旧数据会让用户误以为「数据就这些」，尤其在筛选条件已变化时。
+      if (seq === requestSeq) {
+        list.value = []
+        total.value = 0
+        loadFailed.value = true
+      }
     } finally {
       // 本地接口往往十几毫秒就返回，加载动画一闪而过会让人以为「没刷新」。
       // 数据已经在上面赋值了，这里只是让 loading 至少可见一小段时间。
@@ -428,11 +484,24 @@ export function useTable<T = Record<string, unknown>, Q extends object = Record<
 
   if (options.immediate !== false) {
     void load()
+
+    if (getCurrentInstance() && options.refreshOnActivated !== false) {
+      let activatedOnce = false
+      onActivated(() => {
+        // 首次激活紧接着 setup 的那次请求，跳过以免重复拉一遍
+        if (!activatedOnce) {
+          activatedOnce = true
+          return
+        }
+        void load()
+      })
+    }
   }
 
   return {
     list,
     loading,
+    loadFailed,
     total,
     page,
     limit,
@@ -460,7 +529,7 @@ export function useTableFilter<Q extends object = Record<string, unknown>>(optio
   const initialQuery = { ...(options.initialQuery ?? ({} as Q)) } as Q
   const store = createFilterStore(initialQuery)
 
-  watch(store.query, store.persist, { deep: true })
+  watch(store.query, store.persistSoon, { deep: true })
 
   /** 载入命名方案：纯前端过滤无需重新请求，computed 会自动重算 */
   function applyScheme(name: string): void {

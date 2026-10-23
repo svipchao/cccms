@@ -16,6 +16,17 @@ interface TrackedConfig {
   __progressToken?: number
 }
 
+/**
+ * 列表请求的附加配置。
+ *
+ * 目前只承载 `AbortSignal`：列表页切页 / 改筛选 / 卸载时取消上一次请求，
+ * 避免「旧响应回来得比新响应晚」白占后端连接（响应过期还有 `useTable` 的序号兜底，
+ * 但请求本身没必要跑完）。
+ */
+export interface ListRequestConfig {
+  signal?: AbortSignal
+}
+
 let progressSeq = 0
 
 // 注意用 ?? 而不是 ||：生产把 VITE_API_BASE 配成空串（同域直连后端、无前缀）时，
@@ -54,7 +65,7 @@ function responseActionId(response?: { data?: unknown }): string {
 
 /** 报错文案带上操作 ID（没有则原样返回），便于复制后到日志页检索 */
 function withActionId(message: string, actionId: string): string {
-  return actionId ? `${message}${t('common.actionIdSuffix', { id: actionId })}` : message
+  return actionId ? `${message}${t('core.common.actionIdSuffix', { id: actionId })}` : message
 }
 
 instance.interceptors.request.use((config) => {
@@ -105,7 +116,7 @@ instance.interceptors.response.use(
       if (body.code === 0) {
         return body.data as never
       }
-      const failed = withActionId(body.message || t('common.requestFailed'), responseActionId(response))
+      const failed = withActionId(body.message || t('core.common.requestFailed'), responseActionId(response))
       ElMessage.error(failed)
       return Promise.reject(new Error(failed))
     }
@@ -121,7 +132,7 @@ instance.interceptors.response.use(
     if (status === 401) {
       // 已登录态失效时用户看不到日志页，这里不追加操作 ID，避免提示变长
       clearToken()
-      ElMessage.error(message || t('common.loginExpired'))
+      ElMessage.error(message || t('core.common.loginExpired'))
       if (!redirecting && !window.location.hash.startsWith('#/login')) {
         redirecting = true
         // 动态路由与标签页都在内存里：不清掉的话，换账号登录会残留上一个账号的菜单。
@@ -143,17 +154,17 @@ instance.interceptors.response.use(
         .then((text: string) => {
           try {
             const parsed = JSON.parse(text) as { message?: string; action_id?: string; trace_id?: string }
-            const failed = parsed.message || t('common.requestError', { status })
+            const failed = parsed.message || t('core.common.requestError', { status })
             ElMessage.error(withActionId(failed, parsed.action_id || parsed.trace_id || actionId))
           } catch {
-            ElMessage.error(withActionId(t('common.requestError', { status }), actionId))
+            ElMessage.error(withActionId(t('core.common.requestError', { status }), actionId))
           }
         })
-        .catch(() => ElMessage.error(withActionId(t('common.requestError', { status }), actionId)))
+        .catch(() => ElMessage.error(withActionId(t('core.common.requestError', { status }), actionId)))
     } else if (status) {
-      ElMessage.error(withActionId(message || t('common.requestError', { status }), actionId))
+      ElMessage.error(withActionId(message || t('core.common.requestError', { status }), actionId))
     } else {
-      ElMessage.error(t('common.networkError'))
+      ElMessage.error(t('core.common.networkError'))
     }
     return Promise.reject(error)
   },
@@ -208,7 +219,11 @@ export async function downloadFile(
   fallbackName = 'export.csv',
 ): Promise<void> {
   // 导出类请求不受全局 15s 超时约束：大表 CSV 生成耗时不可控
-  const response = (await instance.get(url, { params, responseType: 'blob', timeout: 0 })) as unknown as AxiosResponse<Blob>
+  const response = (await instance.get(url, {
+    params,
+    responseType: 'blob',
+    timeout: 0,
+  })) as unknown as AxiosResponse<Blob>
   triggerBlobDownload(response, fallbackName)
 }
 
@@ -223,7 +238,10 @@ export async function downloadFileByPost(
   data?: unknown,
   fallbackName = 'export.xlsx',
 ): Promise<number | null> {
-  const response = (await instance.post(url, data, { responseType: 'blob', timeout: 0 })) as unknown as AxiosResponse<Blob>
+  const response = (await instance.post(url, data, {
+    responseType: 'blob',
+    timeout: 0,
+  })) as unknown as AxiosResponse<Blob>
   triggerBlobDownload(response, fallbackName)
 
   const total = Number(response.headers['x-export-rows'] ?? '')

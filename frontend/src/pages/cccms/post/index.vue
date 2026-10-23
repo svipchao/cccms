@@ -20,25 +20,29 @@
       <template #toolbar>
         <el-button v-auth="'cccms:post:save'" type="primary" @click="openCreate"
           ><template #icon><i class="ri-add-line" /></template>
-          {{ t('common.create') }}
+          {{ t('core.common.create') }}
         </el-button>
 
         <!-- 批量操作：下挂用户的岗位会被后端跳过并回报 -->
         <el-dropdown :disabled="selected.length === 0" @command="onBatchCommand">
           <el-button :disabled="selected.length === 0">
-            {{ selected.length ? t('post.batchActionWithCount', { count: selected.length }) : t('post.batchAction') }}
+            {{
+              selected.length
+                ? t('cccms.post.batchActionWithCount', { count: selected.length })
+                : t('cccms.post.batchAction')
+            }}
             <el-icon class="el-icon--right"><i class="ri-arrow-down-s-line" /></el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item v-if="hasAuth('cccms:post:batch_status')" command="enable">
-                {{ t('post.batchEnable') }}
+                {{ t('cccms.post.batchEnable') }}
               </el-dropdown-item>
               <el-dropdown-item v-if="hasAuth('cccms:post:batch_status')" command="disable">
-                {{ t('post.batchDisable') }}
+                {{ t('cccms.post.batchDisable') }}
               </el-dropdown-item>
               <el-dropdown-item v-if="hasAuth('cccms:post:batch_delete')" command="delete" divided>
-                {{ t('post.batchDelete') }}
+                {{ t('cccms.post.batchDelete') }}
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -46,22 +50,22 @@
       </template>
 
       <template #toolbar-right>
-        <RecycleToggle :active="recycle" :label="t('post.recycleLabel')" @toggle="toggle" />
+        <RecycleToggle :active="recycle" :label="t('cccms.post.recycleLabel')" @toggle="toggle" />
       </template>
 
       <template #status="{ row }">
         <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="light" round>
-          {{ row.status === 1 ? t('post.enabled') : t('post.disabled') }}
+          {{ row.status === 1 ? t('cccms.post.enabled') : t('cccms.post.disabled') }}
         </el-tag>
       </template>
 
       <template #action="{ row }">
         <el-button v-auth="'cccms:post:update'" link type="primary" @click="openEdit(row)">
-          {{ t('common.edit') }}
+          {{ t('core.common.edit') }}
         </el-button>
-        <el-popconfirm :title="t('post.deleteConfirm')" @confirm="onDelete(row.id)">
+        <el-popconfirm :title="t('cccms.post.deleteConfirm')" @confirm="onDelete(row.id)">
           <template #reference>
-            <el-button v-auth="'cccms:post:delete'" link type="danger">{{ t('common.delete') }}</el-button>
+            <el-button v-auth="'cccms:post:delete'" link type="danger">{{ t('core.common.delete') }}</el-button>
           </template>
         </el-popconfirm>
       </template>
@@ -69,30 +73,30 @@
 
     <el-dialog
       v-model="formVisible"
-      :title="form.id ? t('post.editTitle') : t('post.createTitle')"
+      :title="form.id ? t('cccms.post.editTitle') : t('cccms.post.createTitle')"
       width="480px"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="88px">
-        <el-form-item :label="t('post.codeLabel')" prop="code">
-          <el-input v-model="form.code" :placeholder="t('post.codePlaceholder')" />
+        <el-form-item :label="t('cccms.post.codeLabel')" prop="code">
+          <el-input v-model="form.code" :placeholder="t('cccms.post.codePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('post.nameLabel')" prop="name">
-          <el-input v-model="form.name" :placeholder="t('post.namePlaceholder')" />
+        <el-form-item :label="t('cccms.post.nameLabel')" prop="name">
+          <el-input v-model="form.name" :placeholder="t('cccms.post.namePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('post.sortLabel')" prop="sort">
+        <el-form-item :label="t('cccms.post.sortLabel')" prop="sort">
           <el-input-number v-model="form.sort" :min="0" />
         </el-form-item>
-        <el-form-item :label="t('post.statusLabel')" prop="status">
+        <el-form-item :label="t('cccms.post.statusLabel')" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio :value="1">{{ t('post.enabled') }}</el-radio>
-            <el-radio :value="0">{{ t('post.disabled') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.post.enabled') }}</el-radio>
+            <el-radio :value="0">{{ t('cccms.post.disabled') }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="formVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('common.confirm') }}</el-button>
+        <el-button @click="formVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -146,24 +150,24 @@ interface Query {
 // 表格列文案跟随语言切换，用 computed 包裹
 const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
-  { prop: 'code', label: t('post.codeLabel'), minWidth: 150 },
-  { prop: 'name', label: t('post.nameLabel'), minWidth: 150, filter: { type: 'text' } },
-  { prop: 'sort', label: t('post.sortLabel'), width: 90, align: 'center', sortable: 'custom' },
+  { prop: 'code', label: t('cccms.post.codeLabel'), minWidth: 150 },
+  { prop: 'name', label: t('cccms.post.nameLabel'), minWidth: 150, filter: { type: 'text' } },
+  { prop: 'sort', label: t('cccms.post.sortLabel'), width: 90, align: 'center', sortable: 'custom' },
   {
     prop: 'status',
-    label: t('post.statusLabel'),
+    label: t('cccms.post.statusLabel'),
     width: 90,
     align: 'center',
     slot: 'status',
     filter: {
       type: 'enum',
       options: [
-        { label: t('post.enabled'), value: 1 },
-        { label: t('post.disabled'), value: 0 },
+        { label: t('cccms.post.enabled'), value: 1 },
+        { label: t('cccms.post.disabled'), value: 0 },
       ],
     },
   },
-  { prop: 'action', label: t('table.action'), width: 130, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'action', label: t('core.table.action'), width: 130, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 // 回收站开关：必须在 useTable 之前（列表闭包在 setup 阶段就会执行一次）
@@ -185,8 +189,8 @@ const form = reactive({ ...emptyForm })
 
 // 校验提示同样走 i18n：用 computed 保证切换语言后规则文案立即更新
 const rules = computed<FormRules>(() => ({
-  code: [{ required: true, message: t('post.codeRequired'), trigger: 'blur' }],
-  name: [{ required: true, message: t('post.nameRequired'), trigger: 'blur' }],
+  code: [{ required: true, message: t('cccms.post.codeRequired'), trigger: 'blur' }],
+  name: [{ required: true, message: t('cccms.post.nameRequired'), trigger: 'blur' }],
 }))
 
 function openCreate(): void {
@@ -211,7 +215,7 @@ async function submitForm(): Promise<void> {
     } else {
       await postSave({ ...form })
     }
-    ElMessage.success(t('post.saveSuccess'))
+    ElMessage.success(t('cccms.post.saveSuccess'))
     formVisible.value = false
     load()
   } finally {
@@ -221,7 +225,7 @@ async function submitForm(): Promise<void> {
 
 async function onDelete(id: number): Promise<void> {
   await postDelete(id)
-  ElMessage.success(t('post.deleteSuccess'))
+  ElMessage.success(t('cccms.post.deleteSuccess'))
   load()
 }
 
@@ -236,14 +240,14 @@ function onSelectionChange(rows: Row[]): void {
 /** 越权 / 下挂用户的岗位由后端跳过，这里统一回报 */
 function reportBatch(result: PostBatchResult, action: 'enable' | 'disable' | 'delete'): void {
   const doneKey = {
-    enable: 'post.batchEnableSuccess',
-    disable: 'post.batchDisableSuccess',
-    delete: 'post.batchDeleteSuccess',
+    enable: 'cccms.post.batchEnableSuccess',
+    disable: 'cccms.post.batchDisableSuccess',
+    delete: 'cccms.post.batchDeleteSuccess',
   }[action]
   const partialKey = {
-    enable: 'post.batchEnablePartial',
-    disable: 'post.batchDisablePartial',
-    delete: 'post.batchDeletePartial',
+    enable: 'cccms.post.batchEnablePartial',
+    disable: 'cccms.post.batchDisablePartial',
+    delete: 'cccms.post.batchDeletePartial',
   }[action]
   if (result.skipped.length > 0) {
     ElMessage.warning(t(partialKey, { count: result.affected, skipped: result.skipped.length }))
@@ -266,9 +270,13 @@ async function onBatchCommand(command: string): Promise<void> {
   }
   if (command === 'delete') {
     try {
-      await ElMessageBox.confirm(t('post.batchDeleteConfirm', { count: ids.length }), t('post.batchDeleteTitle'), {
-        type: 'warning',
-      })
+      await ElMessageBox.confirm(
+        t('cccms.post.batchDeleteConfirm', { count: ids.length }),
+        t('cccms.post.batchDeleteTitle'),
+        {
+          type: 'warning',
+        },
+      )
     } catch {
       return
     }

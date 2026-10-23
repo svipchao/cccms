@@ -3,7 +3,7 @@
     <ArtSplitView aside-width="240px">
       <template #aside>
         <ArtTreePanel
-          :title="t('role.treeTitle')"
+          :title="t('cccms.role.treeTitle')"
           :data="treeData"
           :current-key="currentId"
           @node-click="onNodeClick"
@@ -27,19 +27,19 @@
         <template #toolbar>
           <el-button v-auth="'cccms:role:save'" type="primary" @click="openCreate"
             ><template #icon><i class="ri-add-line" /></template>
-            {{ t('common.create') }}
+            {{ t('core.common.create') }}
           </el-button>
           <el-tag v-if="currentId" type="info" closable @close="clearNode">
-            {{ t('role.onlyView', { name: currentNodeName }) }}
+            {{ t('cccms.role.onlyView', { name: currentNodeName }) }}
           </el-tag>
         </template>
 
         <template #toolbar-right>
-          <RecycleToggle :active="recycle" :label="t('role.entityLabel')" @toggle="toggle" />
+          <RecycleToggle :active="recycle" :label="t('cccms.role.entityLabel')" @toggle="toggle" />
         </template>
 
         <template #parent="{ row }">
-          {{ row.parent_id ? roleName(row.parent_id) : t('role.topRole') }}
+          {{ row.parent_id ? roleName(row.parent_id) : t('cccms.role.topRole') }}
         </template>
 
         <template #scope="{ row }">
@@ -48,20 +48,20 @@
 
         <template #status="{ row }">
           <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="light" round>
-            {{ row.status === 1 ? t('role.enabled') : t('role.disabled') }}
+            {{ row.status === 1 ? t('cccms.role.enabled') : t('cccms.role.disabled') }}
           </el-tag>
         </template>
 
         <template #action="{ row }">
           <el-button v-auth="'cccms:role:update'" link type="primary" @click="openEdit(row)">
-            {{ t('common.edit') }}
+            {{ t('core.common.edit') }}
           </el-button>
           <el-button v-auth="'cccms:role:copy'" link type="warning" @click="openCopy(row)">
-            {{ t('role.copy') }}
+            {{ t('cccms.role.copy') }}
           </el-button>
-          <el-popconfirm :title="t('role.confirmDelete')" @confirm="onDelete(row.id)">
+          <el-popconfirm :title="t('cccms.role.confirmDelete')" @confirm="onDelete(row.id)">
             <template #reference>
-              <el-button v-auth="'cccms:role:delete'" link type="danger">{{ t('common.delete') }}</el-button>
+              <el-button v-auth="'cccms:role:delete'" link type="danger">{{ t('core.common.delete') }}</el-button>
             </template>
           </el-popconfirm>
         </template>
@@ -70,24 +70,24 @@
 
     <el-dialog
       v-model="formVisible"
-      :title="form.id ? t('role.editRole') : t('role.createRole')"
+      :title="form.id ? t('cccms.role.editRole') : t('cccms.role.createRole')"
       width="640px"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
-        <el-form-item :label="t('role.name')" prop="name">
-          <el-input v-model="form.name" :placeholder="t('role.nameRequired')" />
+        <el-form-item :label="t('cccms.role.name')" prop="name">
+          <el-input v-model="form.name" :placeholder="t('cccms.role.nameRequired')" />
         </el-form-item>
-        <el-form-item :label="t('role.code')" prop="code">
+        <el-form-item :label="t('cccms.role.code')" prop="code">
           <el-input
             v-model="form.code"
             :disabled="form.code === 'super_admin'"
-            :placeholder="t('role.codePlaceholder')"
+            :placeholder="t('cccms.role.codePlaceholder')"
           />
         </el-form-item>
-        <el-form-item :label="t('role.parent')" prop="parent_id">
-          <el-select v-model="form.parent_id" :placeholder="t('role.topRole')" style="width: 100%">
-            <el-option :label="t('role.noneTop')" :value="0" />
+        <el-form-item :label="t('cccms.role.parent')" prop="parent_id">
+          <el-select v-model="form.parent_id" :placeholder="t('cccms.role.topRole')" style="width: 100%">
+            <el-option :label="t('cccms.role.noneTop')" :value="0" />
             <el-option
               v-for="r in parentOptions"
               :key="r.id"
@@ -96,36 +96,36 @@
               :disabled="r.id === form.id"
             />
           </el-select>
-          <div class="form-tip">{{ t('role.parentTip') }}</div>
+          <div class="form-tip">{{ t('cccms.role.parentTip') }}</div>
         </el-form-item>
-        <el-form-item :label="t('role.dataScope')" prop="data_scope">
+        <el-form-item :label="t('cccms.role.dataScope')" prop="data_scope">
           <el-select v-model="form.data_scope" style="width: 100%">
-            <el-option :label="t('role.scopeAll')" :value="1" />
-            <el-option :label="t('role.scopeDeptAndBelow')" :value="2" />
-            <el-option :label="t('role.scopeDept')" :value="3" />
-            <el-option :label="t('role.scopeSelf')" :value="4" />
-            <el-option :label="t('role.scopeCustom')" :value="5" />
+            <el-option :label="t('cccms.role.scopeAll')" :value="1" />
+            <el-option :label="t('cccms.role.scopeDeptAndBelow')" :value="2" />
+            <el-option :label="t('cccms.role.scopeDept')" :value="3" />
+            <el-option :label="t('cccms.role.scopeSelf')" :value="4" />
+            <el-option :label="t('cccms.role.scopeCustom')" :value="5" />
           </el-select>
           <div class="form-tip">
-            {{ t('role.scopeTipPrefix') }}<b>{{ t('role.scopeTipAnd') }}</b
-            >{{ t('role.scopeTipMiddle') }}<b>{{ t('role.scopeTipAnd2') }}</b
-            >{{ t('role.scopeTipSuffix') }}
+            {{ t('cccms.role.scopeTipPrefix') }}<b>{{ t('cccms.role.scopeTipAnd') }}</b
+            >{{ t('cccms.role.scopeTipMiddle') }}<b>{{ t('cccms.role.scopeTipAnd2') }}</b
+            >{{ t('cccms.role.scopeTipSuffix') }}
           </div>
         </el-form-item>
-        <el-form-item :label="t('role.status')" prop="status">
+        <el-form-item :label="t('cccms.role.status')" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio :value="1">{{ t('role.enabled') }}</el-radio>
-            <el-radio :value="0">{{ t('role.disabled') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.role.enabled') }}</el-radio>
+            <el-radio :value="0">{{ t('cccms.role.disabled') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item :label="t('role.permNodes')">
+        <el-form-item :label="t('cccms.role.permNodes')">
           <div class="node-panel">
             <div class="node-panel-tools">
               <el-button size="small" @click="toggleExpandAll">
-                {{ expandAll ? t('role.collapseAll') : t('role.expandAll') }}
+                {{ expandAll ? t('cccms.role.collapseAll') : t('cccms.role.expandAll') }}
               </el-button>
-              <el-button size="small" @click="checkAllNodes">{{ t('role.selectAll') }}</el-button>
-              <el-button size="small" @click="clearAllNodes">{{ t('role.clear') }}</el-button>
+              <el-button size="small" @click="checkAllNodes">{{ t('cccms.role.selectAll') }}</el-button>
+              <el-button size="small" @click="clearAllNodes">{{ t('cccms.role.clear') }}</el-button>
             </div>
             <el-tree
               :key="treeKey"
@@ -141,38 +141,38 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="formVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('common.confirm') }}</el-button>
+        <el-button @click="formVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 复制角色：只复制角色本体（含档位）与自身节点，不复制子角色 -->
-    <el-dialog v-model="copyVisible" :title="t('role.copyRole')" width="520px" :close-on-click-modal="false">
+    <el-dialog v-model="copyVisible" :title="t('cccms.role.copyRole')" width="520px" :close-on-click-modal="false">
       <el-form ref="copyRef" :model="copyForm" :rules="copyRules" label-width="110px">
-        <el-form-item :label="t('role.sourceRole')">
+        <el-form-item :label="t('cccms.role.sourceRole')">
           <el-input :model-value="copySource?.name" disabled />
         </el-form-item>
-        <el-form-item :label="t('role.newRoleName')" prop="name">
-          <el-input v-model="copyForm.name" :placeholder="t('role.newRoleNameRequired')" />
+        <el-form-item :label="t('cccms.role.newRoleName')" prop="name">
+          <el-input v-model="copyForm.name" :placeholder="t('cccms.role.newRoleNameRequired')" />
         </el-form-item>
-        <el-form-item :label="t('role.newRoleCode')" prop="code">
-          <el-input v-model="copyForm.code" :placeholder="t('role.newRoleCodePlaceholder')" />
+        <el-form-item :label="t('cccms.role.newRoleCode')" prop="code">
+          <el-input v-model="copyForm.code" :placeholder="t('cccms.role.newRoleCodePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('role.parent')">
-          <el-select v-model="copyForm.parent_id" :placeholder="t('role.topRole')" style="width: 100%">
-            <el-option :label="t('role.noneTop')" :value="0" />
+        <el-form-item :label="t('cccms.role.parent')">
+          <el-select v-model="copyForm.parent_id" :placeholder="t('cccms.role.topRole')" style="width: 100%">
+            <el-option :label="t('cccms.role.noneTop')" :value="0" />
             <el-option v-for="r in parentOptions" :key="r.id" :label="r.name" :value="r.id" />
           </el-select>
-          <div class="form-tip">{{ t('role.copyParentTip') }}</div>
+          <div class="form-tip">{{ t('cccms.role.copyParentTip') }}</div>
         </el-form-item>
-        <el-form-item :label="t('role.saveAsTemplate')">
+        <el-form-item :label="t('cccms.role.saveAsTemplate')">
           <el-switch v-model="copyAsTemplate" />
-          <span class="form-tip form-tip-inline">{{ t('role.templateTip') }}</span>
+          <span class="form-tip form-tip-inline">{{ t('cccms.role.templateTip') }}</span>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="copyVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="copying" @click="submitCopy">{{ t('common.confirm') }}</el-button>
+        <el-button @click="copyVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="copying" @click="submitCopy">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -216,50 +216,50 @@ interface Query {
 }
 
 const scopeTextMap = computed<Record<number, string>>(() => ({
-  1: t('role.scopeAll'),
-  2: t('role.scopeDeptAndBelow'),
-  3: t('role.scopeDept'),
-  4: t('role.scopeSelf'),
-  5: t('role.scopeCustomShort'),
+  1: t('cccms.role.scopeAll'),
+  2: t('cccms.role.scopeDeptAndBelow'),
+  3: t('cccms.role.scopeDept'),
+  4: t('cccms.role.scopeSelf'),
+  5: t('cccms.role.scopeCustomShort'),
 }))
 
 const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
-  { prop: 'name', label: t('role.name'), minWidth: 150, filter: { type: 'text' } },
-  { prop: 'code', label: t('role.code'), minWidth: 150 },
-  { prop: 'parent_id', label: t('role.parent'), width: 130, slot: 'parent' },
+  { prop: 'name', label: t('cccms.role.name'), minWidth: 150, filter: { type: 'text' } },
+  { prop: 'code', label: t('cccms.role.code'), minWidth: 150 },
+  { prop: 'parent_id', label: t('cccms.role.parent'), width: 130, slot: 'parent' },
   {
     prop: 'data_scope',
-    label: t('role.dataScope'),
+    label: t('cccms.role.dataScope'),
     width: 140,
     align: 'center',
     slot: 'scope',
     filter: {
       type: 'enum',
       options: [
-        { label: t('role.scopeAll'), value: 1 },
-        { label: t('role.scopeDeptAndBelow'), value: 2 },
-        { label: t('role.scopeDept'), value: 3 },
-        { label: t('role.scopeSelf'), value: 4 },
-        { label: t('role.scopeCustom'), value: 5 },
+        { label: t('cccms.role.scopeAll'), value: 1 },
+        { label: t('cccms.role.scopeDeptAndBelow'), value: 2 },
+        { label: t('cccms.role.scopeDept'), value: 3 },
+        { label: t('cccms.role.scopeSelf'), value: 4 },
+        { label: t('cccms.role.scopeCustom'), value: 5 },
       ],
     },
   },
   {
     prop: 'status',
-    label: t('role.status'),
+    label: t('cccms.role.status'),
     width: 90,
     align: 'center',
     slot: 'status',
     filter: {
       type: 'enum',
       options: [
-        { label: t('role.enabled'), value: 1 },
-        { label: t('role.disabled'), value: 0 },
+        { label: t('cccms.role.enabled'), value: 1 },
+        { label: t('cccms.role.disabled'), value: 0 },
       ],
     },
   },
-  { prop: 'action', label: t('table.action'), width: 170, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'action', label: t('core.table.action'), width: 170, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 /* ---- 左侧树：选中节点后仅列出该角色及其下级 ---- */
@@ -278,7 +278,7 @@ const { list, loading, total, page, limit, load, search, onPageChange, onLimitCh
 })
 
 const roleTreeData = ref<Row[]>([])
-const treeData = computed<Row[]>(() => [{ id: 0, name: t('role.allRoles') }, ...roleTreeData.value])
+const treeData = computed<Row[]>(() => [{ id: 0, name: t('cccms.role.allRoles') }, ...roleTreeData.value])
 const currentNodeName = computed(() =>
   currentId.value ? (flatten(roleTreeData.value).find((r) => r.id === currentId.value)?.name ?? '') : '',
 )
@@ -344,8 +344,8 @@ const emptyForm = {
 const form = reactive({ ...emptyForm })
 
 const rules = computed<FormRules>(() => ({
-  name: [{ required: true, message: t('role.nameRequired'), trigger: 'blur' }],
-  code: [{ required: true, message: t('role.codeRequired'), trigger: 'blur' }],
+  name: [{ required: true, message: t('cccms.role.nameRequired'), trigger: 'blur' }],
+  code: [{ required: true, message: t('cccms.role.codeRequired'), trigger: 'blur' }],
 }))
 
 /** 新增时默认挂在左侧选中的角色下 */
@@ -424,7 +424,7 @@ async function submitForm(): Promise<void> {
     } else {
       await roleSave(payload)
     }
-    ElMessage.success(t('role.saveSuccess'))
+    ElMessage.success(t('cccms.role.saveSuccess'))
     formVisible.value = false
     load()
     await loadOptions()
@@ -435,7 +435,7 @@ async function submitForm(): Promise<void> {
 
 async function onDelete(id: number): Promise<void> {
   await roleDelete(id)
-  ElMessage.success(t('role.deleteSuccess'))
+  ElMessage.success(t('cccms.role.deleteSuccess'))
   load()
   await loadOptions()
 }
@@ -449,8 +449,8 @@ const copySource = ref<Row | null>(null)
 const copyForm = reactive({ id: 0, name: '', code: '', parent_id: 0 })
 
 const copyRules = computed<FormRules>(() => ({
-  name: [{ required: true, message: t('role.newRoleNameRequired'), trigger: 'blur' }],
-  code: [{ required: true, message: t('role.newRoleCodeRequired'), trigger: 'blur' }],
+  name: [{ required: true, message: t('cccms.role.newRoleNameRequired'), trigger: 'blur' }],
+  code: [{ required: true, message: t('cccms.role.newRoleCodeRequired'), trigger: 'blur' }],
 }))
 
 function openCopy(row: Row): void {
@@ -458,7 +458,7 @@ function openCopy(row: Row): void {
   // 与后端 suggestCode() 的派生命名保持一致，用户可改
   Object.assign(copyForm, {
     id: row.id,
-    name: t('role.copyNameSuffix', { name: row.name ?? '' }),
+    name: t('cccms.role.copyNameSuffix', { name: row.name ?? '' }),
     code: `${row.code ?? ''}_copy`,
     parent_id: (row.parent_id as number) ?? 0,
   })
@@ -479,7 +479,7 @@ async function submitCopy(): Promise<void> {
       // 不勾「模板」时不传 status，由后端沿用源角色的状态
       ...(copyAsTemplate.value ? { status: 0 } : {}),
     })
-    ElMessage.success(copyAsTemplate.value ? t('role.copyTemplateSuccess') : t('role.copySuccess'))
+    ElMessage.success(copyAsTemplate.value ? t('cccms.role.copyTemplateSuccess') : t('cccms.role.copySuccess'))
     copyVisible.value = false
     load()
     await loadOptions()

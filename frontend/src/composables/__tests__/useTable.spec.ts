@@ -27,6 +27,17 @@ function emptyPage(): PageResult<unknown> {
 }
 
 /**
+ * 等待筛选条件落盘。
+ *
+ * 持久化是 200ms 防抖（避免搜索框逐字符同步写 localStorage），
+ * 断言 `localStorage` 前必须等抖动窗口过去，否则读到的是上一次的快照。
+ */
+async function flushPersist(): Promise<void> {
+  await nextTick()
+  await new Promise<void>((resolve) => setTimeout(resolve, 250))
+}
+
+/**
  * 在真实组件上下文里跑 composable。
  *
  * `provide` 与 `inject` **不能写在同一个组件的 setup 里**：Vue 的 `inject` 只沿
@@ -34,7 +45,7 @@ function emptyPage(): PageResult<unknown> {
  * 因此这里挂一个父组件调用 `useTable`（它内部 provide），再由子组件 inject 取控制器。
  */
 function mountUseTable(
-  api: (params: Record<string, unknown>) => Promise<PageResult<unknown>>,
+  api: (params: Record<string, unknown>, config?: { signal?: AbortSignal }) => Promise<PageResult<unknown>>,
   options: { name?: string; immediate?: boolean; transform?: (rows: Row[]) => Row[] } = {},
 ) {
   const captured: {
@@ -123,7 +134,7 @@ describe('useTable 筛选方案', () => {
 
     table.query.username = 'alice'
     table.page.value = 3
-    await nextTick()
+    await flushPersist()
 
     const saved = JSON.parse(localStorage.getItem(FILTER_KEY) ?? '{}')
     expect(saved.query).toEqual({ username: 'alice' })
@@ -132,20 +143,22 @@ describe('useTable 筛选方案', () => {
   })
 
   it('排序写入会回到第 1 页、下发 sort/order，并写进筛选快照', async () => {
-    const api = vi.fn(async () => emptyPage())
+    // 声明出参（params）才能读 lastCall?.[0]：否则会被推断成空元组，取索引报 TS2493
+    const api = vi.fn(async (_params?: Record<string, unknown>) => emptyPage())
     const { table } = mountUseTable(api)
 
     table.page.value = 4
     table.writeSort('create_time', 'asc')
 
     await vi.waitFor(() => expect(api).toHaveBeenCalled())
-    expect(api).toHaveBeenLastCalledWith(
+    // 第二个参数是 { signal }，这里只看 params
+    expect(api.mock.lastCall?.[0]).toEqual(
       expect.objectContaining({ page: 1, limit: 15, sort: 'create_time', order: 'asc' }),
     )
     expect(table.page.value).toBe(1)
     expect(table.sort.value).toEqual({ prop: 'create_time', order: 'asc' })
 
-    await nextTick()
+    await flushPersist()
     expect(JSON.parse(localStorage.getItem(FILTER_KEY) ?? '{}').sort).toEqual({
       prop: 'create_time',
       order: 'asc',
@@ -158,18 +171,18 @@ describe('useTable 筛选方案', () => {
       JSON.stringify({ query: { username: '' }, limit: 15, sort: { prop: 'login_time', order: 'desc' } }),
     )
 
-    const api = vi.fn(async () => emptyPage())
+    const api = vi.fn(async (_params?: Record<string, unknown>) => emptyPage())
     const { table } = mountUseTable(api)
 
     await table.load()
-    expect(api).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'login_time', order: 'desc' }))
+    expect(api.mock.lastCall?.[0]).toEqual(expect.objectContaining({ sort: 'login_time', order: 'desc' }))
 
     table.writeSort('', '')
     await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(2))
-    expect(api).toHaveBeenLastCalledWith(expect.not.objectContaining({ sort: expect.anything() }))
+    expect(api.mock.lastCall?.[0]).toEqual(expect.not.objectContaining({ sort: expect.anything() }))
     expect(table.sort.value).toBeNull()
 
-    await nextTick()
+    await flushPersist()
     expect(JSON.parse(localStorage.getItem(FILTER_KEY) ?? '{}')).not.toHaveProperty('sort')
   })
 
@@ -275,7 +288,7 @@ describe('useTable 筛选方案', () => {
     const { table, filter } = mountUseTable(vi.fn(async () => emptyPage()))
 
     table.query.username = 'alice'
-    await nextTick()
+    await flushPersist()
     filter.saveScheme('方案')
 
     expect(filter.hasSaved()).toBe(true)
@@ -318,6 +331,56 @@ describe('useTable 筛选方案', () => {
     await transformed.load()
     expect(transformed.list.value).toEqual([{ id: 2, doubled: 4 }])
   })
+
+  it('请求失败时清空列表并置 loadFailed，不残留上一次的数据', async () => {
+    const api = vi
+      .fn()
+      .mockResolvedValueOnce({ list: [{ id: 1 }], total: 1 })
+      .mockRejectedValueOnce(new Error('boom'))
+
+    const { table } = mountUseTable(api, { name: 'test:fail' })
+    await table.load()
+    expect(table.list.value).toEqual([{ id: 1 }])
+    expect(table.loadFailed.value).toBe(false)
+
+    await table.load()
+    expect(table.list.value).toEqual([])
+    expect(table.total.value).toBe(0)
+    expect(table.loadFailed.value).toBe(true)
+  })
+
+  it('新一轮请求取消上一次：旧请求被 abort，不清空数据也不置失败态', async () => {
+    const pending: Array<{
+      resolve: (value: PageResult<unknown>) => void
+      reject: (reason: unknown) => void
+      signal?: AbortSignal
+    }> = []
+
+    const api = vi.fn(
+      (_params: Record<string, unknown>, config?: { signal?: AbortSignal }) =>
+        new Promise<PageResult<unknown>>((resolve, reject) => {
+          pending.push({ resolve, reject, signal: config?.signal })
+          config?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+        }),
+    )
+
+    const { table } = mountUseTable(api, { name: 'test:abort' })
+
+    const first = table.load()
+    await nextTick()
+    expect(pending).toHaveLength(1)
+
+    const second = table.load()
+    expect(pending[0].signal?.aborted, '上一轮请求应被 abort').toBe(true)
+
+    pending[1].resolve({ list: [{ id: 2 }], total: 2 })
+    await second
+    await first
+
+    expect(table.list.value).toEqual([{ id: 2 }])
+    expect(table.total.value).toBe(2)
+    expect(table.loadFailed.value, '主动取消不是失败').toBe(false)
+  })
 })
 
 describe('useTableFilter（树表等纯前端过滤场景）', () => {
@@ -330,7 +393,7 @@ describe('useTableFilter（树表等纯前端过滤场景）', () => {
     const { query } = mountUseTableFilter()
 
     query.username = 'tree'
-    await nextTick()
+    await flushPersist()
 
     expect(JSON.parse(localStorage.getItem('cccms_table_filter:test:dept') ?? '{}').query).toEqual({
       username: 'tree',

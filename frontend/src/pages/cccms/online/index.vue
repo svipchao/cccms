@@ -13,7 +13,7 @@
       @size-change="onLimitChange"
     >
       <template #toolbar>
-        <el-alert type="info" :closable="false" show-icon :title="t('online.alert')" />
+        <el-alert type="info" :closable="false" show-icon :title="t('cccms.online.alert')" />
       </template>
 
       <template #username="{ row }">
@@ -23,10 +23,10 @@
 
       <template #action="{ row }">
         <el-button v-auth="'cccms:online:kick'" link type="danger" @click="onKick(row)">
-          {{ t('online.kick') }}
+          {{ t('cccms.online.kick') }}
         </el-button>
         <el-button v-auth="'cccms:online:kick_user'" link type="warning" @click="onKickUser(row)">
-          {{ t('online.kickUser') }}
+          {{ t('cccms.online.kickUser') }}
         </el-button>
       </template>
     </ArtTable>
@@ -64,37 +64,37 @@ interface Query {
 const columns = computed<ArtTableColumn[]>(() => [
   {
     prop: 'username',
-    label: t('online.user'),
+    label: t('cccms.online.user'),
     slot: 'username',
     filter: { type: 'text' },
   },
-  { prop: 'device', label: t('online.device'), width: 90 },
-  { prop: 'os', label: t('online.os'), width: 110 },
-  { prop: 'browser', label: t('online.browser'), width: 100 },
+  { prop: 'device', label: t('cccms.online.device'), width: 90 },
+  { prop: 'os', label: t('cccms.online.os'), width: 110 },
+  { prop: 'browser', label: t('cccms.online.browser'), width: 100 },
   { prop: 'ip', label: 'IP', width: 140, filter: { type: 'text' } },
   // 三列时间各用一组 startKey / endKey，互不覆盖
   {
     prop: 'login_at',
-    label: t('online.loginAt'),
+    label: t('cccms.online.loginAt'),
     width: 170,
     filter: { type: 'date', startKey: 'login_start', endKey: 'login_end' },
     sortable: 'custom',
   },
   {
     prop: 'last_at',
-    label: t('online.lastActive'),
+    label: t('cccms.online.lastActive'),
     width: 170,
     filter: { type: 'date', startKey: 'active_start', endKey: 'active_end' },
     sortable: 'custom',
   },
   {
     prop: 'expire_at',
-    label: t('online.expireAt'),
+    label: t('cccms.online.expireAt'),
     width: 170,
     filter: { type: 'date', startKey: 'expire_start', endKey: 'expire_end' },
   },
   { prop: 'ua', label: 'User-Agent', minWidth: 240 },
-  { prop: 'action', label: t('table.action'), width: 210, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'action', label: t('core.table.action'), width: 210, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 const { list, loading, total, page, limit, load, onPageChange, onLimitChange } = useTable<OnlineSession, Query>({
@@ -113,7 +113,7 @@ const { list, loading, total, page, limit, load, onPageChange, onLimitChange } =
 
 async function onKick(row: OnlineSession): Promise<void> {
   try {
-    await ElMessageBox.confirm(t('online.kickConfirm', { name: row.username }), t('online.kick'), {
+    await ElMessageBox.confirm(t('cccms.online.kickConfirm', { name: row.username }), t('cccms.online.kick'), {
       type: 'warning',
     })
   } catch {
@@ -125,21 +125,25 @@ async function onKick(row: OnlineSession): Promise<void> {
     // 错误提示由 axios 拦截器统一处理，这里只吞掉 rejection 避免冒泡到 Vue
     return
   }
-  ElMessage.success(t('online.kickSuccess'))
+  ElMessage.success(t('cccms.online.kickSuccess'))
   load()
 }
 
 async function onKickUser(row: OnlineSession): Promise<void> {
   try {
-    await ElMessageBox.confirm(t('online.kickUserConfirm', { name: row.username }), t('online.kickUserTitle'), {
-      type: 'warning',
-    })
+    await ElMessageBox.confirm(
+      t('cccms.online.kickUserConfirm', { name: row.username }),
+      t('cccms.online.kickUserTitle'),
+      {
+        type: 'warning',
+      },
+    )
   } catch {
     return
   }
   try {
     const res = await onlineKickUser(row.user_id)
-    ElMessage.success(t('online.kickUserSuccess', { count: res.sessions }))
+    ElMessage.success(t('cccms.online.kickUserSuccess', { count: res.sessions }))
   } catch {
     // 同上：提示已在拦截器里给出
     return

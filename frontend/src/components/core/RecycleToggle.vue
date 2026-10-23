@@ -1,5 +1,5 @@
 <template>
-  <el-tooltip :content="active ? t('table.exitRecycle') : t('table.enterRecycle', { label })" placement="top">
+  <el-tooltip :content="active ? t('core.table.exitRecycle') : t('core.table.enterRecycle', { label })" placement="top">
     <el-button
       v-auth="['cccms:recycle:restore', 'cccms:recycle:delete']"
       text

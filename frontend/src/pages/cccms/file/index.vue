@@ -3,13 +3,13 @@
     <ArtSplitView aside-width="248px">
       <template #aside>
         <ArtTreePanel
-          :title="t('file.categoryTreeTitle')"
+          :title="t('cccms.file.categoryTreeTitle')"
           :data="treeData"
           :current-key="currentId"
           @node-click="onNodeClick"
         >
           <template #header>
-            <el-tooltip :content="t('file.addTopCategory')" placement="top">
+            <el-tooltip :content="t('cccms.file.addTopCategory')" placement="top">
               <el-button v-auth="'cccms:file:category_save'" text circle @click="openCategoryCreate(0)"
                 ><i class="ri-add-line"
               /></el-button>
@@ -17,7 +17,7 @@
             <!-- 只显示附件模块的分类，避免看到字典模块的分类 -->
             <RecycleToggle
               :active="categoryRecycle"
-              :label="t('file.categoryTreeTitle')"
+              :label="t('cccms.file.categoryTreeTitle')"
               @toggle="toggleCategoryRecycle"
             />
           </template>
@@ -28,21 +28,21 @@
               <span v-if="data.id > 0" class="cat-node-actions">
                 <!-- 分类回收站：节点操作换成还原 / 彻底删除 -->
                 <template v-if="categoryRecycle">
-                  <el-icon :title="t('table.restore')" @click.stop="onCategoryRestore(data)"
+                  <el-icon :title="t('core.table.restore')" @click.stop="onCategoryRestore(data)"
                     ><i class="ri-restart-line"
                   /></el-icon>
-                  <el-icon :title="t('table.forceDelete')" @click.stop="onCategoryForceDelete(data)">
+                  <el-icon :title="t('core.table.forceDelete')" @click.stop="onCategoryForceDelete(data)">
                     <i class="ri-delete-bin-line" />
                   </el-icon>
                 </template>
                 <template v-else>
-                  <el-icon :title="t('file.addSubCategory')" @click.stop="openCategoryCreate(data.id)"
+                  <el-icon :title="t('cccms.file.addSubCategory')" @click.stop="openCategoryCreate(data.id)"
                     ><i class="ri-add-line"
                   /></el-icon>
-                  <el-icon :title="t('file.renameCategory')" @click.stop="openCategoryEdit(data)"
+                  <el-icon :title="t('cccms.file.renameCategory')" @click.stop="openCategoryEdit(data)"
                     ><i class="ri-edit-line"
                   /></el-icon>
-                  <el-icon :title="t('common.delete')" @click.stop="onCategoryDelete(data)"
+                  <el-icon :title="t('core.common.delete')" @click.stop="onCategoryDelete(data)"
                     ><i class="ri-delete-bin-line"
                   /></el-icon>
                 </template>
@@ -69,7 +69,7 @@
         @force-delete="onForceDelete"
       >
         <template #toolbar-right>
-          <RecycleToggle :active="recycle" :label="t('file.recycleLabel')" @toggle="toggle" />
+          <RecycleToggle :active="recycle" :label="t('cccms.file.recycleLabel')" @toggle="toggle" />
         </template>
 
         <template #toolbar>
@@ -80,19 +80,19 @@
             :http-request="onHttpRequest"
           >
             <el-button type="primary" :loading="uploading"
-              ><template #icon><i class="ri-upload-2-line" /></template>{{ t('file.upload') }}</el-button
+              ><template #icon><i class="ri-upload-2-line" /></template>{{ t('cccms.file.upload') }}</el-button
             >
           </el-upload>
 
           <el-button v-auth="'cccms:file:move'" :disabled="selection.length === 0" @click="openMove"
             ><template #icon><i class="ri-folder-check-line" /></template>
-            {{ selection.length ? t('file.moveWithCount', { count: selection.length }) : t('file.move') }}
+            {{ selection.length ? t('cccms.file.moveWithCount', { count: selection.length }) : t('cccms.file.move') }}
           </el-button>
 
           <el-tag v-if="currentId" type="info" closable @close="clearNode">
-            {{ t('file.onlyView', { name: currentNodeName }) }}
+            {{ t('cccms.file.onlyView', { name: currentNodeName }) }}
           </el-tag>
-          <span v-else class="toolbar-tip">{{ t('file.toolbarTip') }}</span>
+          <span v-else class="toolbar-tip">{{ t('cccms.file.toolbarTip') }}</span>
         </template>
 
         <!-- is_image 由后台 upload.image_ext 配置推导；私有附件不走直链，显示锁图标 -->
@@ -112,7 +112,7 @@
         </template>
 
         <template #public="{ row }">
-          <el-tooltip :content="t('file.publicTip')" placement="top">
+          <el-tooltip :content="t('cccms.file.publicTip')" placement="top">
             <el-switch
               :model-value="row.is_public === 1"
               :disabled="!userStore.hasAuth('cccms:file:public')"
@@ -132,12 +132,12 @@
         <template #action="{ row }">
           <!-- PDF 走内置对话框预览，其余类型回退到新窗口打开（浏览器自行决定预览或下载） -->
           <el-button link type="primary" @click="openPreview(row)">
-            {{ row.is_pdf ? t('file.preview') : t('file.view') }}
+            {{ row.is_pdf ? t('cccms.file.preview') : t('cccms.file.view') }}
           </el-button>
-          <el-button link type="primary" @click="downloadAttachment(row)">{{ t('file.download') }}</el-button>
-          <el-popconfirm :title="t('file.deleteConfirm')" @confirm="onDelete(row.id)">
+          <el-button link type="primary" @click="downloadAttachment(row)">{{ t('cccms.file.download') }}</el-button>
+          <el-popconfirm :title="t('cccms.file.deleteConfirm')" @confirm="onDelete(row.id)">
             <template #reference>
-              <el-button v-auth="'cccms:file:delete'" link type="danger">{{ t('common.delete') }}</el-button>
+              <el-button v-auth="'cccms:file:delete'" link type="danger">{{ t('core.common.delete') }}</el-button>
             </template>
           </el-popconfirm>
         </template>
@@ -147,12 +147,12 @@
     <!-- 分类表单 -->
     <el-dialog
       v-model="categoryVisible"
-      :title="categoryForm.id ? t('file.editCategoryTitle') : t('file.createCategoryTitle')"
+      :title="categoryForm.id ? t('cccms.file.editCategoryTitle') : t('cccms.file.createCategoryTitle')"
       width="460px"
       :close-on-click-modal="false"
     >
       <el-form ref="categoryFormRef" :model="categoryForm" :rules="categoryRules" label-width="92px">
-        <el-form-item :label="t('file.parentCategoryLabel')" prop="parent_id">
+        <el-form-item :label="t('cccms.file.parentCategoryLabel')" prop="parent_id">
           <el-tree-select
             v-model="categoryForm.parent_id"
             :data="categoryOptions"
@@ -162,26 +162,26 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="t('file.categoryNameLabel')" prop="name">
-          <el-input v-model="categoryForm.name" :placeholder="t('file.categoryNamePlaceholder')" />
+        <el-form-item :label="t('cccms.file.categoryNameLabel')" prop="name">
+          <el-input v-model="categoryForm.name" :placeholder="t('cccms.file.categoryNamePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('file.sortLabel')" prop="sort">
+        <el-form-item :label="t('cccms.file.sortLabel')" prop="sort">
           <el-input-number v-model="categoryForm.sort" :min="0" />
         </el-form-item>
-        <el-form-item :label="t('file.remarkLabel')" prop="remark">
-          <el-input v-model="categoryForm.remark" :placeholder="t('file.remarkPlaceholder')" />
+        <el-form-item :label="t('cccms.file.remarkLabel')" prop="remark">
+          <el-input v-model="categoryForm.remark" :placeholder="t('cccms.file.remarkPlaceholder')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="categoryVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitCategory">{{ t('common.confirm') }}</el-button>
+        <el-button @click="categoryVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitCategory">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 移动到分类 -->
-    <el-dialog v-model="moveVisible" :title="t('file.moveTitle')" width="420px">
+    <el-dialog v-model="moveVisible" :title="t('cccms.file.moveTitle')" width="420px">
       <el-form label-width="80px">
-        <el-form-item :label="t('file.targetCategoryLabel')">
+        <el-form-item :label="t('cccms.file.targetCategoryLabel')">
           <el-tree-select
             v-model="moveTarget"
             :data="moveOptions"
@@ -193,8 +193,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="moveVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitMove">{{ t('common.confirm') }}</el-button>
+        <el-button @click="moveVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitMove">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
@@ -208,10 +208,10 @@
       destroy-on-close
       @closed="onPreviewClosed"
     >
-      <iframe v-if="previewUrl" :src="previewUrl" class="pdf-frame" :title="t('file.pdfPreview')" />
+      <iframe v-if="previewUrl" :src="previewUrl" class="pdf-frame" :title="t('cccms.file.pdfPreview')" />
       <template #footer>
-        <el-button @click="openUrl(previewUrl)">{{ t('file.openInNewWindow') }}</el-button>
-        <el-button @click="previewVisible = false">{{ t('file.close') }}</el-button>
+        <el-button @click="openUrl(previewUrl)">{{ t('cccms.file.openInNewWindow') }}</el-button>
+        <el-button @click="previewVisible = false">{{ t('cccms.file.close') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -220,21 +220,15 @@
 <script setup lang="ts">
 defineOptions({ name: 'cccms:file' })
 
-import { computed, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  ElMessage,
-  ElMessageBox,
-  type FormInstance,
-  type FormRules,
-  type UploadRawFile,
-  type UploadRequestOptions,
-} from 'element-plus'
+import { ElMessage, type UploadRawFile, type UploadRequestOptions } from 'element-plus'
 import ArtSplitView from '@/components/core/ArtSplitView.vue'
 import ArtTable from '@/components/core/ArtTable.vue'
 import RecycleToggle from '@/components/core/RecycleToggle.vue'
 import ArtTreePanel from '@/components/core/ArtTreePanel.vue'
 import { useTable } from '@/composables/useTable'
+import { formatBytes } from '@/utils/format'
 import { useRecycle } from '@/composables/useRecycle'
 import { useCategoryTree } from '@/composables/useCategoryTree'
 import { useUserStore } from '@/stores/user'
@@ -275,14 +269,20 @@ const userStore = useUserStore()
 // 表格列文案跟随语言切换，用 computed 包裹
 const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
-  { prop: 'preview', label: t('file.preview'), width: 76, align: 'center', slot: 'preview' },
-  { prop: 'original_name', label: t('file.nameLabel'), minWidth: 200, filter: { type: 'text' } },
-  { prop: 'category_name', label: t('file.categoryColumnLabel'), width: 140 },
-  { prop: 'ext', label: t('file.typeLabel'), width: 100, align: 'center', slot: 'ext', filter: { type: 'text' } },
-  { prop: 'size', label: t('file.sizeLabel'), width: 110, align: 'right', slot: 'size', sortable: 'custom' },
-  { prop: 'is_public', label: t('file.publicLabel'), width: 90, align: 'center', slot: 'public' },
-  { prop: 'create_time', label: t('file.uploadTimeLabel'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
-  { prop: 'action', label: t('table.action'), width: 190, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'preview', label: t('cccms.file.preview'), width: 76, align: 'center', slot: 'preview' },
+  { prop: 'original_name', label: t('cccms.file.nameLabel'), minWidth: 200, filter: { type: 'text' } },
+  { prop: 'category_name', label: t('cccms.file.categoryColumnLabel'), width: 140 },
+  { prop: 'ext', label: t('cccms.file.typeLabel'), width: 100, align: 'center', slot: 'ext', filter: { type: 'text' } },
+  { prop: 'size', label: t('cccms.file.sizeLabel'), width: 110, align: 'right', slot: 'size', sortable: 'custom' },
+  { prop: 'is_public', label: t('cccms.file.publicLabel'), width: 90, align: 'center', slot: 'public' },
+  {
+    prop: 'create_time',
+    label: t('cccms.file.uploadTimeLabel'),
+    width: 170,
+    filter: { type: 'date' },
+    sortable: 'custom',
+  },
+  { prop: 'action', label: t('core.table.action'), width: 190, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 /* ---- 左侧分类树 ---- */
@@ -308,7 +308,7 @@ const {
   openCategoryEdit,
   submitCategory,
   onCategoryDelete,
-} = useCategoryTree(MODULE, { prefix: 'file', onListReload: () => search() })
+} = useCategoryTree(MODULE, { prefix: 'cccms.file', onListReload: () => search() })
 
 /* ---- 回收站：本页附件入口；附件分类入口由 useCategoryTree 管理 ---- */
 // 声明在 useTable 之前：列表闭包在 setup 阶段就会执行一次
@@ -325,8 +325,6 @@ const { list, loading, total, page, limit, selection, load, search, onPageChange
     api: (params) => fileList({ ...params, category_id: currentId.value, trashed: recycle.value ? 1 : 0 }),
     initialQuery: { original_name: '', ext: '', start: '', end: '' },
   })
-
-
 
 /* ---- 上传 ---- */
 const uploading = ref(false)
@@ -353,7 +351,7 @@ async function onHttpRequest(options: UploadRequestOptions): Promise<void> {
     const result = file.size > MAX_SIZE ? await chunkedUpload(file, categoryId) : await singleUpload(file, categoryId)
     options.onSuccess(result)
     uploading.value = false
-    ElMessage.success(t('file.uploadSuccess'))
+    ElMessage.success(t('cccms.file.uploadSuccess'))
     search()
   } catch (error) {
     // onError 的形参类型 UploadAjaxError 未从 element-plus 导出，这里只作失败信号用
@@ -373,8 +371,8 @@ async function singleUpload(file: UploadRawFile, categoryId: number): Promise<Fi
 
 async function chunkedUpload(file: UploadRawFile, categoryId: number): Promise<FileRow> {
   if (!userStore.hasAuth('cccms:file:upload:chunk')) {
-    ElMessage.warning(t('file.uploadChunkNoPermission'))
-    throw new Error(t('file.uploadChunkNoPermission'))
+    ElMessage.warning(t('cccms.file.uploadChunkNoPermission'))
+    throw new Error(t('cccms.file.uploadChunkNoPermission'))
   }
 
   const chunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE))
@@ -439,7 +437,7 @@ async function submitMove(): Promise<void> {
   saving.value = true
   try {
     await fileMove(ids, moveTarget.value)
-    ElMessage.success(t('file.moveSuccess', { count: ids.length }))
+    ElMessage.success(t('cccms.file.moveSuccess', { count: ids.length }))
     moveVisible.value = false
     // 表格未开 reserve-selection，刷新后勾选会自动清空
     load()
@@ -451,7 +449,7 @@ async function submitMove(): Promise<void> {
 /* ---- 预览 ---- */
 const previewVisible = ref(false)
 const previewUrl = ref('')
-const previewTitle = ref(t('file.preview'))
+const previewTitle = ref(t('cccms.file.preview'))
 /** 对话框里用的 blob URL（私有附件），关闭时释放 */
 let dialogObjectUrl = ''
 
@@ -467,7 +465,7 @@ async function resolveUrl(row: FileRow): Promise<string> {
   try {
     return await fileBlobUrl(row.id)
   } catch {
-    ElMessage.error(t('file.privatePreviewFailed'))
+    ElMessage.error(t('cccms.file.privatePreviewFailed'))
     return ''
   }
 }
@@ -482,7 +480,7 @@ async function openPreview(row: FileRow): Promise<void> {
   if (row.is_pdf) {
     dialogObjectUrl = url.startsWith('blob:') ? url : ''
     previewUrl.value = url
-    previewTitle.value = row.original_name || t('file.pdfPreview')
+    previewTitle.value = row.original_name || t('cccms.file.pdfPreview')
     previewVisible.value = true
     return
   }
@@ -518,7 +516,7 @@ async function onTogglePublic(row: FileRow): Promise<boolean> {
   try {
     await fileSetPublic(row.id, next)
     row.is_public = next ? 1 : 0
-    ElMessage.success(t('file.publicUpdated'))
+    ElMessage.success(t('cccms.file.publicUpdated'))
     return true
   } catch {
     return false
@@ -532,21 +530,13 @@ function openUrl(url: string): void {
 
 async function onDelete(id: number): Promise<void> {
   await fileDelete(id)
-  ElMessage.success(t('file.deleteSuccess'))
+  ElMessage.success(t('cccms.file.deleteSuccess'))
   load()
 }
 
+/** 附件大小：0 是真实值（空文件），展示成 0 B；口径见 utils/format */
 function formatSize(size: number): string {
-  if (!size) {
-    return '0 B'
-  }
-  if (size < 1024) {
-    return `${size} B`
-  }
-  if (size < 1024 * 1024) {
-    return `${(size / 1024).toFixed(1)} KB`
-  }
-  return `${(size / 1048576).toFixed(2)} MB`
+  return formatBytes(size)
 }
 
 loadCategories()

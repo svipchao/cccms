@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
-use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Post;
 use plugin\cccms\app\model\UserPost;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\PageInput;
 use plugin\cccms\support\SortInput;
 use plugin\cccms\support\Tree;
+use plugin\cccms\support\UniqueGuard;
 
 /**
  * 岗位逻辑。
@@ -99,19 +100,16 @@ final class PostLogic
         if ($code === '') {
             throw new ApiException(I18n::t('post.code_required'), 422);
         }
-        $q = Post::withoutAllScopes('uk_code 是全局唯一键，跨租户查重才不会撞索引')->withTrashed()->where('code', $code);
-        if ($excludeId > 0) {
-            $q->where('id', '<>', $excludeId);
-        }
-        $exist = $q->find();
-        if ($exist) {
-            throw new ApiException(
-                !empty($exist->delete_time)
-                    ? I18n::t('post.code_in_trash', ['code' => $code])
-                    : I18n::t('post.code_exists'),
-                422
-            );
-        }
+
+        UniqueGuard::assertFree(
+            Post::class,
+            'code',
+            $code,
+            $excludeId,
+            'post.code_exists',
+            'post.code_in_trash',
+            ['code' => $code]
+        );
     }
 
     // ---- 批量操作 ----
@@ -124,7 +122,7 @@ final class PostLogic
      */
     public static function batchStatus(array $ids, int $status): array
     {
-        $ids     = self::batchIds($ids);
+        $ids     = Tree::batchIds($ids);
         $inScope = self::scopedIds($ids);
 
         $affected = $inScope === []
@@ -144,16 +142,22 @@ final class PostLogic
      */
     public static function batchDelete(array $ids): array
     {
-        $ids     = self::batchIds($ids);
+        $ids     = Tree::batchIds($ids);
         $inScope = self::scopedIds($ids);
         $skipped = array_values(array_diff($ids, $inScope));
 
+        // 一次查出被占用的岗位，避免逐个 count()（N+1）
+        $occupied = array_fill_keys(
+            array_map('intval', UserPost::whereIn('post_id', $inScope)->column('post_id')),
+            true
+        );
+
         $deletable = [];
         foreach ($inScope as $id) {
-            if (UserPost::where('post_id', $id)->count() === 0) {
-                $deletable[] = $id;
-            } else {
+            if (isset($occupied[$id])) {
                 $skipped[] = $id;
+            } else {
+                $deletable[] = $id;
             }
         }
 
@@ -173,13 +177,4 @@ final class PostLogic
         return array_map('intval', Post::newScopedQuery()->whereIn('id', $ids)->column('id'));
     }
 
-    /**
-     * 规范化批量 id：去重、去非正整数。
-     *
-     * @return int[]
-     */
-    private static function batchIds(array $ids): array
-    {
-        return Tree::batchIds($ids);
-    }
 }

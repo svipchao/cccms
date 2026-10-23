@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\support;
 
-use FilesystemIterator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
+use plugin\cccms\support\Scan\PluginFs;
 
 /**
  * 写入口字段白名单检查（防 Mass Assignment，R-02）。
@@ -246,44 +244,18 @@ final class WriteGuardChecker
      */
     private static function pluginDirs(): array
     {
-        $out = [];
-        foreach (glob(base_path() . '/plugin/*', GLOB_ONLYDIR) ?: [] as $dir) {
-            if (!is_dir($dir . '/app') || !is_file($dir . '/db/menu.php')) {
-                continue;
-            }
-            $out[] = $dir;
-        }
-        sort($out);
-
-        return $out;
+        return PluginFs::pluginDirs();
     }
 
     /** @return array<int,string> */
     private static function phpFiles(string $dir): array
     {
-        if (!is_dir($dir)) {
-            return [];
-        }
-        $files    = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
-        );
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                $files[] = $file->getPathname();
-            }
-        }
-        sort($files);
-
-        return $files;
+        return PluginFs::phpFiles($dir);
     }
 
     /** 转成相对项目根的路径，输出更短 */
     private static function rel(string $path): string
     {
-        $root = str_replace('\\', '/', dirname(rtrim(base_path(), '/\\'))) . '/';
-        $path = str_replace('\\', '/', $path);
-
-        return str_starts_with($path, $root) ? substr($path, strlen($root)) : $path;
+        return PluginFs::rel($path);
     }
 }

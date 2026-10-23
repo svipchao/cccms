@@ -16,6 +16,7 @@ use plugin\cccms\app\model\Role;
 use plugin\cccms\app\model\Tenant;
 use plugin\cccms\app\model\User;
 use plugin\cccms\support\UserContext;
+use think\facade\Db;
 
 /**
  * 工作台统计。
@@ -70,40 +71,109 @@ final class DashboardLogic
         ];
     }
 
-    /** 关键业务对象的数量（多数只统计启用中的），逐项按权限节点下发 */
+    /**
+     * 关键业务对象的数量（多数只统计启用中的），逐项按权限节点下发。
+     *
+     * 性能：13 个计数合成**一条 SQL**（各模型查询先 `fetchSql(true)` 拿到带作用域的
+     * 子查询，再拼成 `SELECT (子查询) AS 键, ...`）。
+     * 为什么不是缓存：工作台是登录后的默认落地页，「刚加完用户回来数字没变」比
+     * 多一次聚合查询更让人困惑；合成一条后往返次数从 13+ 降到 1，且没有任何延迟生效。
+     * 为什么不是并发：Webman 进程内单请求同步执行，PHP 侧没有并行查询能力。
+     */
     private static function counts(UserContext $user): array
     {
         $today = date('Y-m-d');
 
-        $counters = [
-            'user'      => static fn (): int => (int)User::where('status', 1)->count(),
-            'role'      => static fn (): int => (int)Role::where('status', 1)->count(),
-            'dept'      => static fn (): int => (int)Dept::where('status', 1)->count(),
-            'post'      => static fn (): int => (int)Post::where('status', 1)->count(),
-            'menu'      => static fn (): int => (int)Menu::where('type', 2)->count(),
-            'file'      => static fn (): int => File::newScopedQuery()->count(),
-            'log'       => static fn (): int => OperationLog::newScopedQuery()->count(),
-            'today_log' => static fn (): int => OperationLog::newScopedQuery()
+        /** @var array<string,callable():string> $subQueries 返回标量子查询 SQL */
+        $subQueries = [
+            'user'      => static fn (): string => (string)User::where('status', 1)->fetchSql(true)->count(),
+            'role'      => static fn (): string => (string)Role::where('status', 1)->fetchSql(true)->count(),
+            'dept'      => static fn (): string => (string)Dept::where('status', 1)->fetchSql(true)->count(),
+            'post'      => static fn (): string => (string)Post::where('status', 1)->fetchSql(true)->count(),
+            'menu'      => static fn (): string => (string)Menu::where('type', 2)->fetchSql(true)->count(),
+            'file'      => static fn (): string => (string)File::newScopedQuery()->fetchSql(true)->count(),
+            'log'       => static fn (): string => (string)OperationLog::newScopedQuery()->fetchSql(true)->count(),
+            'today_log' => static fn (): string => (string)OperationLog::newScopedQuery()
                 ->whereBetween('create_time', [$today . ' 00:00:00', $today . ' 23:59:59'])
+                ->fetchSql(true)
                 ->count(),
-            'online'    => static fn (): int => OnlineLogic::count(),
-            'dict'      => static fn (): int => (int)DictType::where('status', 1)->count(),
-            'crontab'   => static fn (): int => (int)Crontab::where('status', 1)->count(),
-            'data_rule' => static fn (): int => (int)DataRule::count(),
-            'tenant'    => static fn (): int => (int)Tenant::count(),
+            'dict'      => static fn (): string => (string)DictType::where('status', 1)->fetchSql(true)->count(),
+            'crontab'   => static fn (): string => (string)Crontab::where('status', 1)->fetchSql(true)->count(),
+            'data_rule' => static fn (): string => (string)DataRule::fetchSql(true)->count(),
+            'tenant'    => static fn (): string => (string)Tenant::fetchSql(true)->count(),
         ];
 
-        $counts = [];
-        foreach ($counters as $key => $counter) {
+        $allowed = [];
+        foreach ($subQueries as $key => $build) {
             if ($user->hasPermission(self::CARD_PERMISSIONS[$key])) {
-                $counts[$key] = self::safe($counter);
+                $allowed[$key] = $build;
             }
+        }
+
+        $counts = self::fetchCounts($allowed);
+
+        // 在线人数走 Redis（不是 SQL），单独取；取不到按 0 处理
+        if ($user->hasPermission(self::CARD_PERMISSIONS['online'])) {
+            $counts['online'] = self::safe(static fn (): int => OnlineLogic::count());
         }
 
         // 我的未读消息：阅读侧对「登录即可」，与权限节点无关
         $counts['notice_unread'] = self::safe(static fn (): int => NoticeLogic::unreadCount($user->id));
 
         return $counts;
+    }
+
+    /**
+     * 把多个计数子查询合成一次聚合查询。
+     *
+     * 失败（某条子查询语法不被当前数据库接受等）时退化为逐项统计：
+     * 工作台是落地页，宁可多几次往返也不能整体 500。
+     *
+     * @param array<string,callable():string> $builders
+     * @return array<string,int>
+     */
+    private static function fetchCounts(array $builders): array
+    {
+        if ($builders === []) {
+            return [];
+        }
+
+        try {
+            $selects = [];
+            foreach ($builders as $key => $build) {
+                $sql = trim($build());
+                if ($sql === '') {
+                    continue;
+                }
+                // 子查询里的表名由模型/查询构造器拼好（含租户与数据权限条件），这里只做包裹
+                $selects[] = '(' . $sql . ') AS `' . $key . '`';
+            }
+
+            if ($selects === []) {
+                return [];
+            }
+
+            $rows = Db::query('SELECT ' . implode(', ', $selects));
+            $row  = is_array($rows) && isset($rows[0]) ? (array)$rows[0] : [];
+
+            $counts = [];
+            foreach (array_keys($builders) as $key) {
+                if (array_key_exists($key, $row)) {
+                    $counts[$key] = (int)$row[$key];
+                }
+            }
+
+            return $counts;
+        } catch (\Throwable) {
+            $counts = [];
+            foreach ($builders as $key => $build) {
+                $counts[$key] = self::safe(
+                    static fn (): int => (int)(Db::query('SELECT (' . $build() . ') AS `cnt`')[0]['cnt'] ?? 0)
+                );
+            }
+
+            return $counts;
+        }
     }
 
     /**

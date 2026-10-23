@@ -1,4 +1,4 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 import type { SwitchTenantResult } from './auth'
 
@@ -30,8 +30,8 @@ export interface TenantOption {
   expire_at?: string | null
 }
 
-export function tenantList(params: Record<string, unknown>) {
-  return http.get<PageResult<TenantRow>>('/tenant', params)
+export function tenantList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult<TenantRow>>('/tenant', params, config)
 }
 
 export function tenantRead(id: number) {

@@ -17,29 +17,29 @@
       <template #toolbar>
         <el-button v-auth="'cccms:notice:save'" type="primary" @click="openCreate"
           ><template #icon><i class="ri-add-line" /></template>
-          {{ t('common.create') }}
+          {{ t('core.common.create') }}
         </el-button>
       </template>
 
       <template #toolbar-right>
-        <RecycleToggle :active="recycle" :label="t('notice.recycleLabel')" @toggle="toggle" />
+        <RecycleToggle :active="recycle" :label="t('cccms.notice.recycleLabel')" @toggle="toggle" />
       </template>
 
       <template #type="{ row }">
         <el-tag :type="row.type === 2 ? 'primary' : 'info'" effect="plain">
-          {{ row.type === 2 ? t('notice.typeAnnouncement') : t('notice.typeNotification') }}
+          {{ row.type === 2 ? t('cccms.notice.typeAnnouncement') : t('cccms.notice.typeNotification') }}
         </el-tag>
       </template>
 
       <template #level="{ row }">
         <el-tag :type="row.level === 2 ? 'danger' : 'info'" effect="light">
-          {{ row.level === 2 ? t('notice.levelImportant') : t('notice.levelNormal') }}
+          {{ row.level === 2 ? t('cccms.notice.levelImportant') : t('cccms.notice.levelNormal') }}
         </el-tag>
       </template>
 
       <template #status="{ row }">
         <el-tag :type="row.status === 1 ? 'success' : 'warning'" effect="light" round>
-          {{ row.status === 1 ? t('notice.published') : t('notice.draft') }}
+          {{ row.status === 1 ? t('cccms.notice.published') : t('cccms.notice.draft') }}
         </el-tag>
       </template>
 
@@ -51,14 +51,14 @@
 
       <template #action="{ row }">
         <el-button v-auth="'cccms:notice:report'" link type="success" @click="openReport(row)">
-          {{ t('notice.report') }}
+          {{ t('cccms.notice.report') }}
         </el-button>
         <el-button v-auth="'cccms:notice:update'" link type="primary" @click="openEdit(row)">
-          {{ t('common.edit') }}
+          {{ t('core.common.edit') }}
         </el-button>
-        <el-popconfirm :title="t('notice.deleteConfirm')" @confirm="onDelete(row.id)">
+        <el-popconfirm :title="t('cccms.notice.deleteConfirm')" @confirm="onDelete(row.id)">
           <template #reference>
-            <el-button v-auth="'cccms:notice:delete'" link type="danger">{{ t('common.delete') }}</el-button>
+            <el-button v-auth="'cccms:notice:delete'" link type="danger">{{ t('core.common.delete') }}</el-button>
           </template>
         </el-popconfirm>
       </template>
@@ -66,57 +66,62 @@
 
     <el-dialog
       v-model="formVisible"
-      :title="form.id ? t('notice.editTitle') : t('notice.createTitle')"
+      :title="form.id ? t('cccms.notice.editTitle') : t('cccms.notice.createTitle')"
       width="720px"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item :label="t('notice.titleLabel')" prop="title">
-          <el-input v-model="form.title" :placeholder="t('notice.titlePlaceholder')" maxlength="128" show-word-limit />
+        <el-form-item :label="t('cccms.notice.titleLabel')" prop="title">
+          <el-input
+            v-model="form.title"
+            :placeholder="t('cccms.notice.titlePlaceholder')"
+            maxlength="128"
+            show-word-limit
+          />
         </el-form-item>
-        <el-form-item :label="t('notice.typeLabel')" prop="type">
+        <el-form-item :label="t('cccms.notice.typeLabel')" prop="type">
           <el-radio-group v-model="form.type">
-            <el-radio :value="1">{{ t('notice.typeNotification') }}</el-radio>
-            <el-radio :value="2">{{ t('notice.typeAnnouncement') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.notice.typeNotification') }}</el-radio>
+            <el-radio :value="2">{{ t('cccms.notice.typeAnnouncement') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item :label="t('notice.levelLabel')" prop="level">
+        <el-form-item :label="t('cccms.notice.levelLabel')" prop="level">
           <el-radio-group v-model="form.level">
-            <el-radio :value="1">{{ t('notice.levelNormal') }}</el-radio>
-            <el-radio :value="2">{{ t('notice.levelImportant') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.notice.levelNormal') }}</el-radio>
+            <el-radio :value="2">{{ t('cccms.notice.levelImportant') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item :label="t('notice.statusLabel')" prop="status">
+        <el-form-item :label="t('cccms.notice.statusLabel')" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio :value="1">{{ t('notice.publish') }}</el-radio>
-            <el-radio :value="0">{{ t('notice.draft') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.notice.publish') }}</el-radio>
+            <el-radio :value="0">{{ t('cccms.notice.draft') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item :label="t('notice.scopeLabel')" prop="scope">
+        <el-form-item :label="t('cccms.notice.scopeLabel')" prop="scope">
           <el-radio-group v-model="form.scope" @change="onScopeChange">
-            <el-radio :value="0">{{ t('notice.scopeAll') }}</el-radio>
-            <el-radio :value="1">{{ t('notice.scopeDept') }}</el-radio>
-            <el-radio :value="2">{{ t('notice.scopeRole') }}</el-radio>
-            <el-radio :value="3">{{ t('notice.scopeUser') }}</el-radio>
+            <el-radio :value="0">{{ t('cccms.notice.scopeAll') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.notice.scopeDept') }}</el-radio>
+            <el-radio :value="2">{{ t('cccms.notice.scopeRole') }}</el-radio>
+            <el-radio :value="3">{{ t('cccms.notice.scopeUser') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item v-if="form.scope === 1" :label="t('notice.selectDeptLabel')">
+        <el-form-item v-if="form.scope === 1" :label="t('cccms.notice.selectDeptLabel')">
           <ArtNodePicker v-model="form.target_ids" :data="options.depts" multiple />
-          <i18n-t keypath="notice.scopeDeptTip" scope="global" tag="div" class="form-tip">
+          <i18n-t keypath="cccms.notice.scopeDeptTip" scope="global" tag="div" class="form-tip">
             <template #sub>
-              <b>{{ t('notice.scopeDeptTipSub') }}</b>
+              <b>{{ t('cccms.notice.scopeDeptTipSub') }}</b>
             </template>
           </i18n-t>
         </el-form-item>
-        <el-form-item v-if="form.scope === 2" :label="t('notice.selectRoleLabel')">
+        <el-form-item v-if="form.scope === 2" :label="t('cccms.notice.selectRoleLabel')">
           <ArtNodePicker v-model="form.target_ids" :data="options.roles" multiple />
-          <i18n-t keypath="notice.scopeRoleTip" scope="global" tag="div" class="form-tip">
+          <i18n-t keypath="cccms.notice.scopeRoleTip" scope="global" tag="div" class="form-tip">
             <template #sub>
-              <b>{{ t('notice.scopeRoleTipSub') }}</b>
+              <b>{{ t('cccms.notice.scopeRoleTipSub') }}</b>
             </template>
           </i18n-t>
         </el-form-item>
-        <el-form-item v-if="form.scope === 3" :label="t('notice.selectUserLabel')">
+        <el-form-item v-if="form.scope === 3" :label="t('cccms.notice.selectUserLabel')">
           <el-select
             v-model="form.target_ids"
             multiple
@@ -125,7 +130,7 @@
             reserve-keyword
             :remote-method="searchUsers"
             :loading="userLoading"
-            :placeholder="t('notice.userSearchPlaceholder')"
+            :placeholder="t('cccms.notice.userSearchPlaceholder')"
             style="width: 100%"
           >
             <el-option
@@ -135,58 +140,58 @@
               :value="u.id"
             />
           </el-select>
-          <div class="form-tip">{{ t('notice.scopeUserTip') }}</div>
+          <div class="form-tip">{{ t('cccms.notice.scopeUserTip') }}</div>
         </el-form-item>
-        <el-form-item :label="t('notice.publishAtLabel')">
+        <el-form-item :label="t('cccms.notice.publishAtLabel')">
           <el-date-picker
             v-model="form.publish_at"
             type="datetime"
             value-format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="t('notice.publishAtPlaceholder')"
+            :placeholder="t('cccms.notice.publishAtPlaceholder')"
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="t('notice.expireAtLabel')">
+        <el-form-item :label="t('cccms.notice.expireAtLabel')">
           <el-date-picker
             v-model="form.expire_at"
             type="datetime"
             value-format="YYYY-MM-DD HH:mm:ss"
-            :placeholder="t('notice.expireAtPlaceholder')"
+            :placeholder="t('cccms.notice.expireAtPlaceholder')"
             style="width: 100%"
           />
         </el-form-item>
         <!-- 正文是长文，用富文本编辑器；备注/说明这类短文本仍用 textarea -->
-        <el-form-item :label="t('notice.contentLabel')" prop="content">
-          <ArtRichEditor v-model="form.content" :placeholder="t('notice.contentPlaceholder')" :min-height="220" />
+        <el-form-item :label="t('cccms.notice.contentLabel')" prop="content">
+          <ArtRichEditor v-model="form.content" :placeholder="t('cccms.notice.contentPlaceholder')" :min-height="220" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="formVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('common.confirm') }}</el-button>
+        <el-button @click="formVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 已读回执统计报表 -->
     <el-dialog
       v-model="reportVisible"
-      :title="t('notice.reportTitle', { title: report.notice.title })"
+      :title="t('cccms.notice.reportTitle', { title: report.notice.title })"
       width="780px"
       :close-on-click-modal="false"
     >
       <div class="report-summary">
-        <el-tag type="info" effect="plain">{{ t('notice.reportShouldRead', { count: report.total }) }}</el-tag>
-        <el-tag type="success" effect="plain">{{ t('notice.reportRead', { count: report.read }) }}</el-tag>
-        <el-tag type="warning" effect="plain">{{ t('notice.reportUnread', { count: report.unread }) }}</el-tag>
+        <el-tag type="info" effect="plain">{{ t('cccms.notice.reportShouldRead', { count: report.total }) }}</el-tag>
+        <el-tag type="success" effect="plain">{{ t('cccms.notice.reportRead', { count: report.read }) }}</el-tag>
+        <el-tag type="warning" effect="plain">{{ t('cccms.notice.reportUnread', { count: report.unread }) }}</el-tag>
         <el-radio-group v-model="reportView" size="small" class="report-switch" @change="onReportViewChange">
-          <el-radio-button value="read">{{ t('notice.reportReadDetail') }}</el-radio-button>
-          <el-radio-button value="unread">{{ t('notice.reportUnreadDetail') }}</el-radio-button>
+          <el-radio-button value="read">{{ t('cccms.notice.reportReadDetail') }}</el-radio-button>
+          <el-radio-button value="unread">{{ t('cccms.notice.reportUnreadDetail') }}</el-radio-button>
         </el-radio-group>
       </div>
       <el-table v-loading="reportLoading" :data="report.list" size="small" border>
-        <el-table-column prop="user_id" :label="t('notice.userIdLabel')" width="90" />
-        <el-table-column prop="username" :label="t('notice.usernameLabel')" min-width="120" />
-        <el-table-column prop="nickname" :label="t('notice.nicknameLabel')" min-width="120" />
-        <el-table-column prop="read_time" :label="t('notice.readTimeLabel')" min-width="170">
+        <el-table-column prop="user_id" :label="t('cccms.notice.userIdLabel')" width="90" />
+        <el-table-column prop="username" :label="t('cccms.notice.usernameLabel')" min-width="120" />
+        <el-table-column prop="nickname" :label="t('cccms.notice.nicknameLabel')" min-width="120" />
+        <el-table-column prop="read_time" :label="t('cccms.notice.readTimeLabel')" min-width="170">
           <template #default="{ row }">{{ row.read_time || '—' }}</template>
         </el-table-column>
       </el-table>
@@ -200,7 +205,7 @@
         />
       </div>
       <template #footer>
-        <el-button @click="reportVisible = false">{{ t('notice.close') }}</el-button>
+        <el-button @click="reportVisible = false">{{ t('cccms.notice.close') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -256,91 +261,91 @@ interface Query {
 // 表格列文案跟随语言切换，用 computed 包裹
 const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
-  { prop: 'title', label: t('notice.titleLabel'), minWidth: 220, filter: { type: 'text' } },
+  { prop: 'title', label: t('cccms.notice.titleLabel'), minWidth: 220, filter: { type: 'text' } },
   {
     prop: 'type',
-    label: t('notice.typeLabel'),
+    label: t('cccms.notice.typeLabel'),
     width: 90,
     align: 'center',
     slot: 'type',
     filter: {
       type: 'enum',
       options: [
-        { label: t('notice.typeNotification'), value: 1 },
-        { label: t('notice.typeAnnouncement'), value: 2 },
+        { label: t('cccms.notice.typeNotification'), value: 1 },
+        { label: t('cccms.notice.typeAnnouncement'), value: 2 },
       ],
     },
   },
   {
     prop: 'level',
-    label: t('notice.levelLabel'),
+    label: t('cccms.notice.levelLabel'),
     width: 90,
     align: 'center',
     slot: 'level',
     filter: {
       type: 'enum',
       options: [
-        { label: t('notice.levelNormal'), value: 1 },
-        { label: t('notice.levelImportant'), value: 2 },
+        { label: t('cccms.notice.levelNormal'), value: 1 },
+        { label: t('cccms.notice.levelImportant'), value: 2 },
       ],
     },
   },
   {
     prop: 'status',
-    label: t('notice.statusLabel'),
+    label: t('cccms.notice.statusLabel'),
     width: 100,
     align: 'center',
     slot: 'status',
     filter: {
       type: 'enum',
       options: [
-        { label: t('notice.published'), value: 1 },
-        { label: t('notice.draft'), value: 0 },
+        { label: t('cccms.notice.published'), value: 1 },
+        { label: t('cccms.notice.draft'), value: 0 },
       ],
     },
   },
   {
     prop: 'scope',
-    label: t('notice.scopeLabel'),
+    label: t('cccms.notice.scopeLabel'),
     width: 110,
     align: 'center',
     slot: 'scope',
     filter: {
       type: 'enum',
       options: [
-        { label: t('notice.scopeAll'), value: 0 },
-        { label: t('notice.scopeDept'), value: 1 },
-        { label: t('notice.scopeRole'), value: 2 },
-        { label: t('notice.scopeUser'), value: 3 },
+        { label: t('cccms.notice.scopeAll'), value: 0 },
+        { label: t('cccms.notice.scopeDept'), value: 1 },
+        { label: t('cccms.notice.scopeRole'), value: 2 },
+        { label: t('cccms.notice.scopeUser'), value: 3 },
       ],
     },
   },
   // 发布时间 / 到期时间各用一组 startKey / endKey，避免和创建时间范围互相覆盖
   {
     prop: 'publish_at',
-    label: t('notice.publishAtLabel'),
+    label: t('cccms.notice.publishAtLabel'),
     width: 170,
     filter: { type: 'date', startKey: 'publish_start', endKey: 'publish_end' },
     sortable: 'custom',
   },
   {
     prop: 'expire_at',
-    label: t('notice.expireAtLabel'),
+    label: t('cccms.notice.expireAtLabel'),
     width: 170,
     filter: { type: 'date', startKey: 'expire_start', endKey: 'expire_end' },
     sortable: 'custom',
   },
-  { prop: 'read_count', label: t('notice.readCountLabel'), width: 110, align: 'right', sortable: 'custom' },
-  { prop: 'create_time', label: t('notice.createdAtLabel'), width: 170, filter: { type: 'date' } },
-  { prop: 'action', label: t('table.action'), width: 170, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'read_count', label: t('cccms.notice.readCountLabel'), width: 110, align: 'right', sortable: 'custom' },
+  { prop: 'create_time', label: t('cccms.notice.createdAtLabel'), width: 170, filter: { type: 'date' } },
+  { prop: 'action', label: t('core.table.action'), width: 170, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 // 投放范围 → 语言包 key（整句在语言包里，这里只做映射）
 const SCOPE_KEYS: Record<number, string> = {
-  0: 'notice.scopeAll',
-  1: 'notice.scopeDept',
-  2: 'notice.scopeRole',
-  3: 'notice.scopeUser',
+  0: 'cccms.notice.scopeAll',
+  1: 'cccms.notice.scopeDept',
+  2: 'cccms.notice.scopeRole',
+  3: 'cccms.notice.scopeUser',
 }
 
 function scopeLabel(scope: number): string {
@@ -393,7 +398,7 @@ const form = reactive({ ...emptyForm })
 
 // 校验提示同样走 i18n：用 computed 保证切换语言后规则文案立即更新
 const rules = computed<FormRules>(() => ({
-  title: [{ required: true, message: t('notice.titleRequired'), trigger: 'blur' }],
+  title: [{ required: true, message: t('cccms.notice.titleRequired'), trigger: 'blur' }],
 }))
 
 // ---- 投放目标候选 ----
@@ -471,7 +476,7 @@ async function submitForm(): Promise<void> {
     return
   }
   if (form.scope !== 0 && (!Array.isArray(form.target_ids) || form.target_ids.length === 0)) {
-    ElMessage.warning(t('notice.targetRequired'))
+    ElMessage.warning(t('cccms.notice.targetRequired'))
     return
   }
   saving.value = true
@@ -482,7 +487,7 @@ async function submitForm(): Promise<void> {
     } else {
       await noticeSave(payload)
     }
-    ElMessage.success(t('notice.saveSuccess'))
+    ElMessage.success(t('cccms.notice.saveSuccess'))
     formVisible.value = false
     load()
   } finally {
@@ -492,7 +497,7 @@ async function submitForm(): Promise<void> {
 
 async function onDelete(id: number): Promise<void> {
   await noticeDelete(id)
-  ElMessage.success(t('notice.deleteSuccess'))
+  ElMessage.success(t('cccms.notice.deleteSuccess'))
   load()
 }
 

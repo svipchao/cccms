@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace plugin\cccms\support;
 
 use FilesystemIterator;
+use plugin\cccms\support\Upgrade\GitClient;
 use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -71,6 +72,28 @@ final class Upgrader
     // ---------------------------------------------------------------------
 
     /**
+     * 结构性排除项：**不依赖配置文件**，任何情况下都生效。
+     *
+     * 覆盖它们轻则站点起不来，重则把线上密钥换成上游示例值：
+     * 密钥（`.env`）、依赖（`vendor` / `node_modules`）、运行数据（`runtime`）、构建产物（`dist`）。
+     * 配置里的 `exclude` 只能在此基础上**追加**，不能移除 —— 否则配置漏读一次就等于全线放开。
+     */
+    private const SAFETY_EXCLUDE = [
+        '.git',
+        'server/.env',
+        'server/vendor',
+        'server/runtime',
+        'frontend/.env',
+        'frontend/.env.local',
+        'frontend/.env.production',
+        'frontend/node_modules',
+        'frontend/dist',
+    ];
+
+    /** 配置文件兜底读取结果（CLI / 测试进程里没有 webman 配置仓库，避免每次调用都 require） */
+    private static ?array $fileConfig = null;
+
+    /**
      * 读取本模块配置（缺失项用默认值兜底）。
      *
      * @return array<string,mixed>
@@ -92,9 +115,40 @@ final class Upgrader
             'git'            => 'git',
         ];
 
-        $conf = config('plugin.cccms.upgrade');
+        try {
+            $conf = config('plugin.cccms.upgrade');
+        } catch (Throwable) {
+            $conf = null;
+        }
 
-        return array_merge($defaults, is_array($conf) ? $conf : []);
+        // CLI / 测试运行器不加载 webman 的插件配置，此时 `config()` 拿到 null。
+        // 直接读配置文件兜底（与 Terminal / Realtime 同一口径）：配置读不到就退化成
+        // 「只有 SAFETY_EXCLUDE 生效」，绝不能因为读不到配置而把排除清单清空。
+        if (!is_array($conf) || $conf === []) {
+            $conf = self::fileConfig();
+        }
+
+        $settings            = array_merge($defaults, $conf);
+        $settings['exclude'] = array_merge(self::SAFETY_EXCLUDE, (array)($settings['exclude'] ?? []));
+
+        return $settings;
+    }
+
+    /**
+     * 直接读 plugin/cccms/config/upgrade.php（不经 webman 配置仓库）。
+     *
+     * @return array<string,mixed>
+     */
+    private static function fileConfig(): array
+    {
+        if (self::$fileConfig !== null) {
+            return self::$fileConfig;
+        }
+
+        $file = dirname(__DIR__) . '/config/upgrade.php';
+        $conf = is_file($file) ? require $file : [];
+
+        return self::$fileConfig = is_array($conf) ? $conf : [];
     }
 
     /**
@@ -215,12 +269,24 @@ final class Upgrader
     // 清单过滤
     // ---------------------------------------------------------------------
 
-    /** 是否被排除（仅供目录剪枝与文件判断复用） */
+    /**
+     * 是否被排除（仅供目录剪枝与文件判断复用）。
+     *
+     * 两条独立规则：密钥文件按**文件名**判定（放哪一层都必须排除，新增插件自带的
+     * `.env` 同样受保护），其余按配置里的路径前缀判定（必须按目录边界匹配，
+     * 避免 `server/vendor` 误伤 `server/vendor_patch.php`）。
+     */
     public static function excluded(string $relative): bool
     {
         $path = trim(str_replace('\\', '/', $relative), '/');
         if ($path === '') {
             return false;
+        }
+
+        // `.env` / `.env.local` / `.env.production` 永不同步；`.env.example` 是模板（无真实值），允许同步
+        $base = basename($path);
+        if ($base === '.env' || str_starts_with($base, '.env.')) {
+            return $base !== '.env.example';
         }
 
         foreach ((array)self::settings()['exclude'] as $prefix) {
@@ -293,71 +359,10 @@ final class Upgrader
     // git
     // ---------------------------------------------------------------------
 
-    /**
-     * 执行 git 命令。
-     *
-     * 用 proc_open 的**数组形式**参数（不经过 shell），避免路径含空格 / 特殊字符时出错，
-     * 也顺带避免了命令注入。
-     *
-     * 统一注入 `core.autocrlf=false` / `core.eol=lf`：缓存仓库的工作区必须是 blob 原样，
-     * 否则 Windows 上 checkout 会自动把 LF 转成 CRLF，让同一版本在不同时刻算出不同哈希，
-     * 分类结果随之漂移。
-     *
-     * @param  array<int,string> $args
-     * @return array{0:int,1:string,2:string} [退出码, stdout, stderr]
-     */
-    private static function git(array $args, ?string $cwd = null): array
-    {
-        $bin = (string)self::settings()['git'];
-        $cmd = array_merge(
-            [
-                $bin,
-                '-c', 'core.autocrlf=false',
-                '-c', 'core.eol=lf',
-                // 中文文件名不能被转义成 \xxx，否则 diffStat 的 path 与 ls-tree 的 path 对不上
-                '-c', 'core.quotepath=false',
-            ],
-            $args
-        );
-
-        $descriptors = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
-
-        // 无终端环境下禁用 git 的交互提示，免得它去读终端、报出「No such device or address」
-        // 这种无法定位的错误；用 putenv 注到本进程（子进程继承），不依赖 getenv() 是否可用。
-        if (function_exists('putenv')) {
-            putenv('GIT_TERMINAL_PROMPT=0');
-            putenv('GCM_INTERACTIVE=never');
-        }
-
-        $process = @proc_open($cmd, $descriptors, $pipes, $cwd);
-        if (!is_resource($process)) {
-            throw new ApiException(
-                '无法执行 git，请确认已安装并加入 PATH（当前配置：' . $bin . '）',
-                500
-            );
-        }
-
-        fclose($pipes[0]);
-        $stdout = (string)stream_get_contents($pipes[1]);
-        $stderr = (string)stream_get_contents($pipes[2]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-
-        return [proc_close($process), $stdout, $stderr];
-    }
-
-    /** git 是否可用 */
+    /** git 是否可用（命令执行在 `Upgrade\GitClient`，这里只保留对外入口） */
     public static function gitAvailable(): bool
     {
-        try {
-            return self::git(['--version'])[0] === 0;
-        } catch (Throwable) {
-            return false;
-        }
+        return GitClient::available();
     }
 
     /**
@@ -378,7 +383,7 @@ final class Upgrader
         }
 
         if ($fetch) {
-            [$code, , $err] = self::git(['fetch', '--quiet', '--tags', '--force', 'origin'], $repo);
+            [$code, , $err] = GitClient::run(['fetch', '--quiet', '--tags', '--force', 'origin'], $repo);
             if ($code !== 0) {
                 // 目录还在但结构已坏（例如手动删了一半）→ 重建后再用
                 self::createRepo($repo, $url, $source);
@@ -398,7 +403,7 @@ final class Upgrader
 
         @mkdir(dirname($repo), 0755, true);
 
-        [$code, , $err] = self::git(['clone', '--quiet', $remote, $repo]);
+        [$code, , $err] = GitClient::run(['clone', '--quiet', $remote, $repo]);
         if ($code !== 0) {
             throw new ApiException(
                 '拉取上游仓库失败：' . self::maskCredentials(trim($err ?: 'clone 退出码 ' . $code))
@@ -459,7 +464,7 @@ final class Upgrader
             $parts[] = $status;
         }
 
-        $version = self::gitVersion();
+        $version = GitClient::version();
         if ($version !== '') {
             $parts[] = version_compare($version, '2.3.0', '<')
                 ? 'git ' . $version . '（早于 2.3，不支持禁用交互提示）'
@@ -528,186 +533,24 @@ final class Upgrader
         return $status;
     }
 
-    /** 当前 git 版本号（取不到返回空串） */
-    private static function gitVersion(): string
-    {
-        [$code, $out] = self::git(['--version']);
-        if ($code !== 0 || preg_match('~(\d+(?:\.\d+)+)~', $out, $match) !== 1) {
-            return '';
-        }
-
-        return $match[1];
-    }
-
     /**
-     * git 版本过旧导致「不认某个选项」时的补充提示。
-     *
-     * 这类报错的原文是 `Unknown option: xxx` 加一大段 usage，使用者看不出根因是「git 太老」
-     * （例如 1.8.5 之前的 git 不支持 `-C <dir>`，1.7.x 也不认 GIT_TERMINAL_PROMPT）。
-     */
-    private static function legacyHint(string $err): string
-    {
-        if (stripos($err, 'unknown option') === false && stripos($err, 'usage: git') === false) {
-            return '';
-        }
-
-        $version = self::gitVersion();
-
-        return '（当前 git' . ($version !== '' ? ' ' . $version : '版本偏旧') . ' 不支持该命令所需的选项，'
-            . '请升级 git 到 1.8.5 以上（建议 2.x）后重试）';
-    }
-
-    /**
-     * 目标版本在缓存仓库里的「新鲜」引用。
-     *
-     * `fetch` 只更新远端跟踪分支（`origin/*`）与 tag，**不会**动本地分支；
-     * 而缓存仓库是 clone 出来的，本地分支永远停在 clone 那一刻。
-     * 因此分支名一律改走 `origin/<ref>`，否则 `reset --hard main` 会一直得到旧 commit。
-     *
-     * tag 优先于同名分支（与 git 自身的 ref 解析顺序一致），
-     * commit sha / `origin/xxx` 等解析不到本地分支的引用原样返回。
-     */
-    private static function freshRef(string $repo, string $ref): string
-    {
-        $ref = trim($ref);
-        if ($ref === '') {
-            return $ref;
-        }
-
-        if (self::resolveCommit($repo, 'refs/tags/' . $ref) !== '') {
-            return $ref;
-        }
-
-        if (self::resolveCommit($repo, 'refs/remotes/origin/' . $ref) !== '') {
-            return 'origin/' . $ref;
-        }
-
-        return $ref;
-    }
-
-    /**
-     * 切到目标版本（无条件重写工作区），返回该版本的 commit。
-     *
-     * 用 `reset --hard` 而不是 `checkout`：checkout 在「已处于该 ref 且工作区干净」时会跳过写文件，
-     * 于是行尾转换配置变化后旧工作区不会被修正；reset --hard 每次都按当前配置重写。
-     */
-    private static function checkout(string $repo, string $ref): string
-    {
-        $ref = self::freshRef($repo, $ref);
-
-        [$code, , $err] = self::git(['reset', '--hard', '--quiet', $ref], $repo);
-
-        if ($code !== 0) {
-            // 目标可能是刚发布的 tag：补一次 fetch 再试
-            self::git(['fetch', '--quiet', '--tags', '--force', 'origin'], $repo);
-            [$code, , $err] = self::git(['reset', '--hard', '--quiet', $ref], $repo);
-        }
-
-        if ($code !== 0) {
-            throw new ApiException(
-                "切换上游版本失败（{$ref}）：" . self::maskCredentials(trim($err)) . self::legacyHint($err),
-                500
-            );
-        }
-
-        [$ok, $out] = self::git(['rev-parse', 'HEAD'], $repo);
-
-        return $ok === 0 ? trim($out) : '';
-    }
-
-    /** 解析某个 ref 的 commit（不存在返回空串，不抛异常） */
-    private static function resolveCommit(string $repo, string $ref): string
-    {
-        if ($ref === '') {
-            return '';
-        }
-
-        [$code, $out] = self::git(['rev-parse', '--verify', '--quiet', $ref], $repo);
-
-        return $code === 0 ? trim($out) : '';
-    }
-
-    /**
-     * 上游提交记录（`from..to`）。
+     * 上游提交记录（`from..to`），实现见 `Upgrade\GitClient::commits()`。
      *
      * @return array<int,array{hash:string,short:string,author:string,date:string,message:string}>
      */
     public static function commits(string $repo, string $from, string $to, int $limit = 100): array
     {
-        if ($from === '' || $to === '' || $from === $to) {
-            return [];
-        }
-
-        [$code, $out] = self::git([
-            'log', '--no-merges',
-            '--date=format:%Y-%m-%d %H:%M',
-            '--pretty=format:%H%x1f%h%x1f%an%x1f%ad%x1f%s',
-            '-n', (string)$limit,
-            $from . '..' . $to,
-        ], $repo);
-        if ($code !== 0) {
-            return [];
-        }
-
-        $rows = [];
-        foreach (explode("\n", trim($out)) as $line) {
-            if ($line === '') {
-                continue;
-            }
-            $parts = explode("\x1f", $line);
-            if (count($parts) < 5) {
-                continue;
-            }
-            $rows[] = [
-                'hash'    => $parts[0],
-                'short'   => $parts[1],
-                'author'  => $parts[2],
-                'date'    => $parts[3],
-                'message' => $parts[4],
-            ];
-        }
-
-        return $rows;
+        return GitClient::commits($repo, $from, $to, $limit);
     }
 
     /**
-     * 文件行数统计（`from..to`）。
-     *
-     * 用 `-z` 分隔，避免文件名含制表符 / 空格时解析出错。
+     * 文件行数统计（`from..to`），实现见 `Upgrade\GitClient::diffStat()`。
      *
      * @return array<string,array{added:int,deleted:int,binary:bool}>
      */
     public static function diffStat(string $repo, string $from, string $to): array
     {
-        if ($from === '' || $to === '' || $from === $to) {
-            return [];
-        }
-
-        [$code, $out] = self::git(['diff', '--numstat', '--no-renames', '-z', $from, $to], $repo);
-        if ($code !== 0) {
-            return [];
-        }
-
-        $stats = [];
-        foreach (explode("\0", $out) as $entry) {
-            $entry = trim($entry, "\n");
-            if ($entry === '') {
-                continue;
-            }
-            $parts = explode("\t", $entry);
-            if (count($parts) < 3) {
-                continue;
-            }
-
-            $binary           = $parts[0] === '-';
-            $stats[$parts[2]] = [
-                'added'   => $binary ? 0 : (int)$parts[0],
-                'deleted' => $binary ? 0 : (int)$parts[1],
-                'binary'  => $binary,
-            ];
-        }
-
-        return $stats;
+        return GitClient::diffStat($repo, $from, $to);
     }
 
     /**
@@ -719,10 +562,10 @@ final class Upgrader
      */
     private static function upstreamFiles(string $repo): array
     {
-        [$code, $out, $err] = self::git(['ls-tree', '-r', '-z', '--name-only', 'HEAD'], $repo);
+        [$code, $out, $err] = GitClient::run(['ls-tree', '-r', '-z', '--name-only', 'HEAD'], $repo);
         if ($code !== 0) {
             throw new ApiException(
-                '读取上游文件清单失败：' . self::maskCredentials(trim($err)) . self::legacyHint($err),
+                '读取上游文件清单失败：' . self::maskCredentials(trim($err)) . GitClient::legacyHint($err),
                 500
             );
         }
@@ -910,13 +753,13 @@ final class Upgrader
         // 上游还没打该 tag 时回退到跟踪分支：否则首次使用会因为「版本不存在」直接卡住
         $fallback = '';
         try {
-            $commit = self::checkout($repo, $ref);
+            $commit = GitClient::checkout($repo, $ref);
         } catch (ApiException $e) {
             $track = (string)$setting['track'];
             if ($ref === $track) {
                 throw $e;
             }
-            $commit   = self::checkout($repo, $track);
+            $commit   = GitClient::checkout($repo, $track);
             $fallback = $ref;
             $ref      = $track;
         }
@@ -981,7 +824,7 @@ final class Upgrader
         $src     = self::resolveSource($source);
         $ref     = $ref ?: (string)self::settings()['track'];
         $repo    = self::ensureRepo($src['key'], $fetch);
-        $commit  = self::checkout($repo, $ref);
+        $commit  = GitClient::checkout($repo, $ref);
         $remote  = self::upstreamFiles($repo);
         $base    = (array)($state['files'] ?? []);
         $baseRef = (string)($state['base'] ?? '');
@@ -1024,7 +867,7 @@ final class Upgrader
         // 统一以解析后的 commit 作区间端点：基线若记的是分支名（如 main），
         // 直接用 ref 名会被 git 解析成本地陈旧分支，比对结果随之失真。
         $baseCommit = (string)($state['base_commit'] ?? '');
-        $from       = self::resolveCommit($repo, $baseCommit) !== '' ? $baseCommit : self::freshRef($repo, $baseRef);
+        $from       = GitClient::resolveCommit($repo, $baseCommit) !== '' ? $baseCommit : GitClient::freshRef($repo, $baseRef);
         $stats      = self::diffStat($repo, $from, $commit);
         $commits    = self::commits($repo, $from, $commit);
 
@@ -1058,7 +901,7 @@ final class Upgrader
             'ref'         => $ref,
             'commit'      => $commit,
             'base'        => $baseRef,
-            'base_commit' => self::resolveCommit($repo, $from),
+            'base_commit' => GitClient::resolveCommit($repo, $from),
             'items'       => $items,
             'files'       => $files,
             'summary'     => self::summarize($items),
@@ -1216,7 +1059,7 @@ final class Upgrader
 
         $url = self::resolveSource($source)['url'];
 
-        [$code, $out, $err] = self::git(['ls-remote', '--tags', '--refs', $url]);
+        [$code, $out, $err] = GitClient::run(['ls-remote', '--tags', '--refs', $url]);
         if ($code !== 0) {
             throw new ApiException(
                 '读取远端版本失败：' . self::maskCredentials(trim($err))

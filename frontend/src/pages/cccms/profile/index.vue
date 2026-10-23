@@ -5,7 +5,7 @@
       <el-col :xs="24" :md="10">
         <el-card shadow="never" class="profile-card">
           <template #header>
-            <span class="profile-card-title">{{ t('profile.accountInfo') }}</span>
+            <span class="profile-card-title">{{ t('cccms.profile.accountInfo') }}</span>
           </template>
 
           <div class="profile-identity">
@@ -19,20 +19,24 @@
           </div>
 
           <el-descriptions :column="1" border size="small" class="profile-desc">
-            <el-descriptions-item :label="t('profile.role')">
+            <el-descriptions-item :label="t('cccms.profile.role')">
               {{ detail.roles?.length ? detail.roles.join('、') : '—' }}
             </el-descriptions-item>
-            <el-descriptions-item :label="t('profile.dept')">
+            <el-descriptions-item :label="t('cccms.profile.dept')">
               {{ detail.depts?.length ? detail.depts.join('、') : '—' }}
             </el-descriptions-item>
-            <el-descriptions-item :label="t('profile.status')">
+            <el-descriptions-item :label="t('cccms.profile.status')">
               <el-tag :type="detail.status === 1 ? 'success' : 'info'" size="small" effect="light">
-                {{ detail.status === 1 ? t('profile.enabled') : t('profile.disabled') }}
+                {{ detail.status === 1 ? t('cccms.profile.enabled') : t('cccms.profile.disabled') }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="t('profile.lastLogin')">{{ detail.login_time || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('profile.loginIp')">{{ detail.login_ip || '—' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('profile.createTime')">{{
+            <el-descriptions-item :label="t('cccms.profile.lastLogin')">{{
+              detail.login_time || '—'
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.profile.loginIp')">{{
+              detail.login_ip || '—'
+            }}</el-descriptions-item>
+            <el-descriptions-item :label="t('cccms.profile.createTime')">{{
               detail.create_time || '—'
             }}</el-descriptions-item>
           </el-descriptions>
@@ -42,41 +46,41 @@
         <el-card shadow="never" class="profile-card">
           <template #header>
             <div class="profile-card-head">
-              <span class="profile-card-title">{{ t('profile.devices') }}</span>
+              <span class="profile-card-title">{{ t('cccms.profile.devices') }}</span>
               <el-button link type="primary" :loading="sessionsLoading" @click="loadSessions">
-                {{ t('common.refresh') }}
+                {{ t('core.common.refresh') }}
               </el-button>
             </div>
           </template>
 
           <el-table v-loading="sessionsLoading" :data="sessions" row-key="jti" size="small">
-            <el-table-column :label="t('profile.device')" width="150">
+            <el-table-column :label="t('cccms.profile.device')" width="150">
               <template #default="{ row }">
                 <el-space>
                   {{ row.device || '—' }}
                   <el-tag v-if="row.current" type="success" size="small" effect="light">
-                    {{ t('profile.currentDevice') }}
+                    {{ t('cccms.profile.currentDevice') }}
                   </el-tag>
                 </el-space>
               </template>
             </el-table-column>
-            <el-table-column prop="os" :label="t('profile.os')" width="120" />
-            <el-table-column prop="browser" :label="t('profile.browser')" width="110" />
+            <el-table-column prop="os" :label="t('cccms.profile.os')" width="120" />
+            <el-table-column prop="browser" :label="t('cccms.profile.browser')" width="110" />
             <el-table-column prop="ip" label="IP" width="150" />
-            <el-table-column prop="login_at" :label="t('profile.loginTime')" width="170" />
-            <el-table-column prop="last_at" :label="t('profile.lastActive')" width="170" />
-            <el-table-column :label="t('table.action')" width="100">
+            <el-table-column prop="login_at" :label="t('cccms.profile.loginTime')" width="170" />
+            <el-table-column prop="last_at" :label="t('cccms.profile.lastActive')" width="170" />
+            <el-table-column :label="t('core.table.action')" width="100">
               <template #default="{ row }">
                 <el-button link type="danger" :disabled="row.current" @click="onRevoke(row)">
-                  {{ t('profile.revoke') }}
+                  {{ t('cccms.profile.revoke') }}
                 </el-button>
               </template>
             </el-table-column>
-            <template #empty>{{ t('profile.noOtherDevices') }}</template>
+            <template #empty>{{ t('cccms.profile.noOtherDevices') }}</template>
           </el-table>
 
           <div class="profile-tip profile-session-tip">
-            {{ t('profile.revokeTip') }}
+            {{ t('cccms.profile.revokeTip') }}
           </div>
         </el-card>
       </el-col>
@@ -85,30 +89,30 @@
         <!-- 基本资料 -->
         <el-card shadow="never" class="profile-card">
           <template #header>
-            <span class="profile-card-title">{{ t('profile.basicInfo') }}</span>
+            <span class="profile-card-title">{{ t('cccms.profile.basicInfo') }}</span>
           </template>
 
           <el-form ref="infoRef" :model="infoForm" :rules="infoRules" label-width="80px">
-            <el-form-item :label="t('profile.nickname')" prop="nickname">
+            <el-form-item :label="t('cccms.profile.nickname')" prop="nickname">
               <el-input
                 v-model="infoForm.nickname"
                 maxlength="64"
                 show-word-limit
-                :placeholder="t('profile.nicknamePlaceholder')"
+                :placeholder="t('cccms.profile.nicknamePlaceholder')"
               />
             </el-form-item>
-            <el-form-item :label="t('profile.email')" prop="email">
-              <el-input v-model="infoForm.email" :placeholder="t('profile.optional')" />
+            <el-form-item :label="t('cccms.profile.email')" prop="email">
+              <el-input v-model="infoForm.email" :placeholder="t('cccms.profile.optional')" />
             </el-form-item>
-            <el-form-item :label="t('profile.phone')" prop="phone">
-              <el-input v-model="infoForm.phone" :placeholder="t('profile.optional')" />
+            <el-form-item :label="t('cccms.profile.phone')" prop="phone">
+              <el-input v-model="infoForm.phone" :placeholder="t('cccms.profile.optional')" />
             </el-form-item>
-            <el-form-item :label="t('profile.avatar')" prop="avatar">
-              <el-input v-model="infoForm.avatar" :placeholder="t('profile.avatarPlaceholder')" />
+            <el-form-item :label="t('cccms.profile.avatar')" prop="avatar">
+              <el-input v-model="infoForm.avatar" :placeholder="t('cccms.profile.avatarPlaceholder')" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" :loading="saving" @click="onSaveInfo">{{ t('common.save') }}</el-button>
-              <el-button @click="load">{{ t('common.reset') }}</el-button>
+              <el-button type="primary" :loading="saving" @click="onSaveInfo">{{ t('core.common.save') }}</el-button>
+              <el-button @click="load">{{ t('core.common.reset') }}</el-button>
             </el-form-item>
           </el-form>
         </el-card>
@@ -116,24 +120,24 @@
         <!-- 修改密码 -->
         <el-card shadow="never" class="profile-card">
           <template #header>
-            <span class="profile-card-title">{{ t('profile.changePassword') }}</span>
+            <span class="profile-card-title">{{ t('cccms.profile.changePassword') }}</span>
           </template>
 
           <el-form ref="pwdRef" :model="pwdForm" :rules="pwdRules" label-width="80px">
-            <el-form-item :label="t('profile.oldPassword')" prop="old_password">
+            <el-form-item :label="t('cccms.profile.oldPassword')" prop="old_password">
               <el-input v-model="pwdForm.old_password" type="password" show-password autocomplete="off" />
             </el-form-item>
-            <el-form-item :label="t('profile.newPassword')" prop="new_password">
+            <el-form-item :label="t('cccms.profile.newPassword')" prop="new_password">
               <el-input v-model="pwdForm.new_password" type="password" show-password autocomplete="off" />
             </el-form-item>
-            <el-form-item :label="t('profile.confirmPassword')" prop="confirm">
+            <el-form-item :label="t('cccms.profile.confirmPassword')" prop="confirm">
               <el-input v-model="pwdForm.confirm" type="password" show-password autocomplete="off" />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :loading="changing" @click="onChangePassword">
-                {{ t('profile.changePassword') }}
+                {{ t('cccms.profile.changePassword') }}
               </el-button>
-              <span class="profile-tip">{{ t('profile.passwordRuleTip') }}</span>
+              <span class="profile-tip">{{ t('cccms.profile.passwordRuleTip') }}</span>
             </el-form-item>
           </el-form>
         </el-card>
@@ -176,8 +180,8 @@ const infoForm = reactive({ nickname: '', email: '', phone: '', avatar: '' })
 
 // 校验提示同样走 i18n：用 computed 保证切换语言后规则文案立即更新
 const infoRules = computed<FormRules>(() => ({
-  nickname: [{ required: true, message: t('profile.nicknameRequired'), trigger: 'blur' }],
-  email: [{ type: 'email', message: t('profile.emailInvalid'), trigger: 'blur' }],
+  nickname: [{ required: true, message: t('cccms.profile.nicknameRequired'), trigger: 'blur' }],
+  email: [{ type: 'email', message: t('cccms.profile.emailInvalid'), trigger: 'blur' }],
 }))
 
 async function load(): Promise<void> {
@@ -198,7 +202,7 @@ async function onSaveInfo(): Promise<void> {
   saving.value = true
   try {
     await profileUpdate({ ...infoForm })
-    ElMessage.success(t('profile.saveSuccess'))
+    ElMessage.success(t('cccms.profile.saveSuccess'))
     await load()
     // 顶栏的昵称 / 头像要跟着变
     await userStore.fetchProfile()
@@ -213,9 +217,9 @@ const changing = ref(false)
 const pwdForm = reactive({ old_password: '', new_password: '', confirm: '' })
 
 const pwdRules = computed<FormRules>(() => ({
-  old_password: [{ required: true, message: t('profile.oldPasswordRequired'), trigger: 'blur' }],
+  old_password: [{ required: true, message: t('cccms.profile.oldPasswordRequired'), trigger: 'blur' }],
   new_password: [
-    { required: true, message: t('profile.newPasswordRequired'), trigger: 'blur' },
+    { required: true, message: t('cccms.profile.newPasswordRequired'), trigger: 'blur' },
     {
       validator: passwordValidator(() => ({
         username: userStore.profile?.username,
@@ -225,11 +229,11 @@ const pwdRules = computed<FormRules>(() => ({
     },
   ],
   confirm: [
-    { required: true, message: t('profile.confirmPasswordRequired'), trigger: 'blur' },
+    { required: true, message: t('cccms.profile.confirmPasswordRequired'), trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (value !== pwdForm.new_password) {
-          callback(new Error(t('profile.passwordMismatch')))
+          callback(new Error(t('cccms.profile.passwordMismatch')))
           return
         }
         callback()
@@ -251,7 +255,7 @@ async function onChangePassword(): Promise<void> {
       old_password: pwdForm.old_password,
       new_password: pwdForm.new_password,
     })
-    ElMessage.success(t('profile.passwordChanged'))
+    ElMessage.success(t('cccms.profile.passwordChanged'))
     pwdRef.value?.resetFields()
   } finally {
     changing.value = false
@@ -278,11 +282,11 @@ async function loadSessions(): Promise<void> {
 async function onRevoke(row: MySession): Promise<void> {
   try {
     await ElMessageBox.confirm(
-      t('profile.revokeConfirm', {
-        device: row.device || t('profile.thisDevice'),
-        ip: row.ip || t('profile.unknownIp'),
+      t('cccms.profile.revokeConfirm', {
+        device: row.device || t('cccms.profile.thisDevice'),
+        ip: row.ip || t('cccms.profile.unknownIp'),
       }),
-      t('profile.revokeTitle'),
+      t('cccms.profile.revokeTitle'),
       { type: 'warning' },
     )
   } catch {
@@ -294,7 +298,7 @@ async function onRevoke(row: MySession): Promise<void> {
     // 错误提示由 axios 拦截器统一处理，这里只吞掉 rejection 避免冒泡到 Vue
     return
   }
-  ElMessage.success(t('profile.revoked'))
+  ElMessage.success(t('cccms.profile.revoked'))
   await loadSessions()
 }
 

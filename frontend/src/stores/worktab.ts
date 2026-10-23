@@ -21,7 +21,7 @@ const REFRESH_DELAY = 60
 function createHomeTab(): TabItem {
   // title 存 i18n key 而非成品文案：标签栏渲染时经 translateTitle() 翻译，
   // 这样切换语言无需重建标签页。
-  return { path: HOME_PATH, name: 'dashboard', title: 'route.dashboard', icon: 'icon-home', pinned: true }
+  return { path: HOME_PATH, name: 'dashboard', title: 'core.route.dashboard', icon: 'icon-home', pinned: true }
 }
 
 export const useWorktabStore = defineStore('worktab', () => {

@@ -4,16 +4,31 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
+use plugin\cccms\support\ApiException;
 use plugin\cccms\support\Cipher;
 use plugin\cccms\support\I18n;
 use plugin\cccms\support\PasswordReset;
 use plugin\cccms\support\SessionGuard;
 use plugin\cccms\support\SysConfig;
+use plugin\cccms\support\UserContext;
 use think\facade\Db;
 
 /** 系统配置逻辑。 */
 final class ConfigLogic
 {
+    /**
+     * 只允许**平台超管**改动的配置前缀。
+     *
+     * 这些项决定的是「系统整体的安全姿态」，不是某个业务参数：
+     *   - `security.*` 登录锁定阈值 / 验证码开关 / 令牌有效期 / 限流白名单 / 找回渠道
+     *   - `upload.*`   上传白名单、匿名读取开关、云存储凭证
+     *   - `mail.*` / `sms.*` 找回密码通道的 SMTP / 网关凭据（可被改成攻击者地址，
+     *     把「验证码」这条链路变成凭据收集器）
+     *
+     * 只靠 `cccms:config:save` 一个权限节点覆盖全部配置，等于把「改站点名」和
+     * 「关掉登录防护」放在同一把钥匙下，粒度与风险不匹配。
+     */
+    private const ADMIN_ONLY_PREFIXES = ['security.', 'upload.', 'mail.', 'sms.'];
     /** 配置列表（按分组、排序输出；group 为空则返回全部） */
     public static function list(string $group = ''): array
     {
@@ -134,6 +149,35 @@ final class ConfigLogic
     }
 
     /**
+     * 校验「这次保存有没有碰到敏感分组」。
+     *
+     * 放在控制器而不是 `save()` 里：`save()` 是纯写库函数，CLI / 初始化流程也要用，
+     * 而「谁能改 security.*」是**入口处的授权判断**，属于控制器职责。
+     * 未来如果有第二个写入口，必须同样调一次这里。
+     *
+     * @param array<string,mixed> $values
+     * @throws ApiException 非超管提交了敏感分组
+     */
+    public static function assertGroupsWritable(array $values, ?UserContext $user): void
+    {
+        // 无用户上下文 = CLI / 初始化（平台级操作），放行；HTTP 路径必须传当前用户
+        if ($user === null || $user->isSuperAdmin()) {
+            return;
+        }
+
+        foreach (array_keys($values) as $name) {
+            foreach (self::ADMIN_ONLY_PREFIXES as $prefix) {
+                if (str_starts_with((string)$name, $prefix)) {
+                    throw new ApiException(
+                        I18n::t('config.admin_only', ['group' => rtrim($prefix, '.')]),
+                        403
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * 按 name 批量保存配置值。
      *
      * 只更新**已存在**的配置项：请求体里的未知键一律忽略，
@@ -148,6 +192,8 @@ final class ConfigLogic
             return 0;
         }
 
+
+
         // name => type（type=password 的敏感项需要加密存储）
         $types = Db::name('config')->whereIn('name', array_keys($values))->column('type', 'name');
         if ($types === []) {
@@ -158,6 +204,7 @@ final class ConfigLogic
         $updated = 0;
 
         Db::transaction(static function () use ($values, $types, $now, &$updated): void {
+            $rows = [];
             foreach ($values as $name => $value) {
                 $name = (string)$name;
                 if (!isset($types[$name])) {
@@ -173,12 +220,28 @@ final class ConfigLogic
                     $stored = self::encode($value);
                 }
 
-                Db::name('config')->where('name', $name)->update([
-                    'value'       => $stored,
-                    'update_time' => $now,
-                ]);
-                $updated++;
+                $rows[] = [$name, $stored, $now];
             }
+
+            if ($rows === []) {
+                return;
+            }
+
+            // 一条 upsert 写完：逐条 update 在保存整页配置时会产生几十次往返，
+            // 并把事务持有时间拉长（`name` 有 uk_name，可安全按唯一键覆盖）
+            $holder = implode(', ', array_fill(0, count($rows), '(?, ?, ?)'));
+            $bind   = [];
+            foreach ($rows as $row) {
+                array_push($bind, ...$row);
+            }
+
+            Db::execute(
+                'INSERT INTO `' . Db::name('config')->getTable() . '` (`name`, `value`, `update_time`) VALUES '
+                . $holder
+                . ' ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `update_time` = VALUES(`update_time`)',
+                $bind
+            );
+            $updated = count($rows);
         });
 
         // 让本次及各进程尽快看到新配置（清 Redis 缓存 + 本进程 memo）

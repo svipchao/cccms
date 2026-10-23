@@ -23,4 +23,5 @@ return [
     'unknown_value_type'           => '未知的取值类型：{value_type}',
     'unknown_bind_mode'            => '未知的绑定关系：{mode}（只能是 or / and）',
     'field_not_in_table'           => '字段 {field} 不存在于表 {table}，请重新选择',
+    'duplicate'                    => '已存在完全相同的规则（绑定对象、目标表、字段与动作一致）',
 ];

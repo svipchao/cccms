@@ -89,7 +89,7 @@ const editor = useEditor({
     const textLength = instance.state.doc.textContent.length
     if (props.maxLength !== undefined && textLength > props.maxLength) {
       instance.commands.setContent(lastValidHtml.value, { emitUpdate: false })
-      ElMessage.warning(t('richEditor.maxLengthExceeded', { max: props.maxLength }))
+      ElMessage.warning(t('core.richEditor.maxLengthExceeded', { max: props.maxLength }))
       return
     }
     const html = normalizeHtml(instance.getHTML())
@@ -160,7 +160,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
     [
       {
         key: 'bold',
-        title: t('richEditor.bold'),
+        title: t('core.richEditor.bold'),
         glyph: 'B',
         glyphClass: 'is-bold',
         active: () => isActive('bold'),
@@ -168,7 +168,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
       },
       {
         key: 'italic',
-        title: t('richEditor.italic'),
+        title: t('core.richEditor.italic'),
         glyph: 'I',
         glyphClass: 'is-italic',
         active: () => isActive('italic'),
@@ -176,7 +176,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
       },
       {
         key: 'underline',
-        title: t('richEditor.underline'),
+        title: t('core.richEditor.underline'),
         glyph: 'U',
         glyphClass: 'is-underline',
         active: () => isActive('underline'),
@@ -184,7 +184,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
       },
       {
         key: 'strike',
-        title: t('richEditor.strike'),
+        title: t('core.richEditor.strike'),
         glyph: 'S',
         glyphClass: 'is-strike',
         active: () => isActive('strike'),
@@ -194,7 +194,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
     [
       {
         key: 'heading1',
-        title: t('richEditor.heading1'),
+        title: t('core.richEditor.heading1'),
         glyph: 'H1',
         glyphClass: 'is-heading',
         active: () => isActive('heading', { level: 1 }),
@@ -202,7 +202,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
       },
       {
         key: 'heading2',
-        title: t('richEditor.heading2'),
+        title: t('core.richEditor.heading2'),
         glyph: 'H2',
         glyphClass: 'is-heading',
         active: () => isActive('heading', { level: 2 }),
@@ -210,7 +210,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
       },
       {
         key: 'heading3',
-        title: t('richEditor.heading3'),
+        title: t('core.richEditor.heading3'),
         glyph: 'H3',
         glyphClass: 'is-heading',
         active: () => isActive('heading', { level: 3 }),
@@ -220,21 +220,21 @@ const toolbar = computed<ToolbarItem[][]>(() => {
     [
       {
         key: 'bulletList',
-        title: t('richEditor.bulletList'),
+        title: t('core.richEditor.bulletList'),
         icon: List,
         active: () => isActive('bulletList'),
         run: () => chain()?.toggleBulletList().run(),
       },
       {
         key: 'orderedList',
-        title: t('richEditor.orderedList'),
+        title: t('core.richEditor.orderedList'),
         icon: Sort,
         active: () => isActive('orderedList'),
         run: () => chain()?.toggleOrderedList().run(),
       },
       {
         key: 'blockquote',
-        title: t('richEditor.blockquote'),
+        title: t('core.richEditor.blockquote'),
         icon: ChatLineSquare,
         active: () => isActive('blockquote'),
         run: () => chain()?.toggleBlockquote().run(),
@@ -243,7 +243,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
     [
       {
         key: 'inlineCode',
-        title: t('richEditor.inlineCode'),
+        title: t('core.richEditor.inlineCode'),
         glyph: '<>',
         glyphClass: 'is-mono',
         active: () => isActive('code'),
@@ -251,7 +251,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
       },
       {
         key: 'codeBlock',
-        title: t('richEditor.codeBlock'),
+        title: t('core.richEditor.codeBlock'),
         glyph: '{ }',
         glyphClass: 'is-mono',
         active: () => isActive('codeBlock'),
@@ -259,7 +259,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
       },
       {
         key: 'link',
-        title: t('richEditor.link'),
+        title: t('core.richEditor.link'),
         icon: Link,
         active: () => isActive('link'),
         run: () => void setLink(),
@@ -268,7 +268,7 @@ const toolbar = computed<ToolbarItem[][]>(() => {
     [
       {
         key: 'clear',
-        title: t('richEditor.clearFormat'),
+        title: t('core.richEditor.clearFormat'),
         icon: Brush,
         active: () => false,
         run: () => chain()?.unsetAllMarks().clearNodes().run(),
@@ -277,14 +277,14 @@ const toolbar = computed<ToolbarItem[][]>(() => {
     [
       {
         key: 'undo',
-        title: t('richEditor.undo'),
+        title: t('core.richEditor.undo'),
         icon: RefreshLeft,
         active: () => false,
         run: () => chain()?.undo().run(),
       },
       {
         key: 'redo',
-        title: t('richEditor.redo'),
+        title: t('core.richEditor.redo'),
         icon: RefreshRight,
         active: () => false,
         run: () => chain()?.redo().run(),
@@ -302,18 +302,18 @@ async function setLink(): Promise<void> {
   const previous = (instance.getAttributes('link').href as string | undefined) ?? ''
   let value: string
   try {
-    const result = await ElMessageBox.prompt(t('richEditor.linkPrompt'), t('richEditor.link'), {
+    const result = await ElMessageBox.prompt(t('core.richEditor.linkPrompt'), t('core.richEditor.link'), {
       inputValue: previous,
-      inputPlaceholder: t('richEditor.linkPlaceholder'),
-      confirmButtonText: t('common.confirm'),
-      cancelButtonText: t('common.cancel'),
+      inputPlaceholder: t('core.richEditor.linkPlaceholder'),
+      confirmButtonText: t('core.common.confirm'),
+      cancelButtonText: t('core.common.cancel'),
       inputValidator: (input: string) => {
         const url = (input ?? '').trim()
         if (url === '') {
           return true
         }
         // 只允许站内相对路径与常见协议，挡掉 javascript: 这类注入
-        return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(url) ? true : t('richEditor.linkInvalid')
+        return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(url) ? true : t('core.richEditor.linkInvalid')
       },
     })
     value = (result.value ?? '').trim()

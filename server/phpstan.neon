@@ -44,6 +44,30 @@ parameters:
                 - plugin/cccms/command/DbUpgradeCommand.php
                 # 插件表检查（R3）查 information_schema，判断插件表是否已有 tenant_id 列
                 - plugin/cccms/support/DataScopeChecker.php
+                # 备份 / 通知批量已读 / 配置批量 upsert：同样要绕开模型层直接问库
+                # （导出引擎与还原解析已拆到 support/DbBackup/ 下，路径要一起放行）
+                - plugin/cccms/support/DbBackup.php
+                - plugin/cccms/support/DbBackup/Dumper.php
+                - plugin/cccms/app/logic/NoticeLogic.php
+                - plugin/cccms/app/logic/ConfigLogic.php
+                # 接口文档的字段 / 枚举元数据：读 information_schema.COLUMNS 与 CHECK_CONSTRAINTS，
+                # 与 DbUpgradeCommand / LogChain 同一口径（query 是 __callStatic 转发）
+                - plugin/cccms/support/SchemaMeta.php
+                # F6 服务器资源采集：SHOW GLOBAL STATUS / Redis INFO 取的是真实实例状态，
+                # 与看板同源；`support\Redis` 也是 facade 转发。
+                - plugin/cccms/support/ServerMetrics.php
+                # F9 实时推送事件总线：INCR / LPUSH / LRANGE 全是 Redis facade 转发
+                - plugin/cccms/support/Realtime.php
+                # 结构迁移执行器：Db::execute / Db::name 都是 facade 转发
+                - plugin/cccms/support/Migrator.php
+                # 工作台计数合并成一条聚合 SQL：Db::query 直查（子查询由模型构造器拼好）
+                - plugin/cccms/app/logic/DashboardLogic.php
+
+        # think-orm 的查询构造器由 trait 组合出 `group()` / `distinct()` / `fetchSql()` 等方法，
+        # PHPStan 只看得到 `think\db\BaseQuery` 基类、看不到 trait 注入的方法（与 `withTrashed()` 同类）。
+        -
+            identifier: method.notFound
+            message: '#Call to an undefined method think\\db\\BaseQuery::(group|distinct|fetchSql)\(\)\.$#'
 
         # `Redis::setex()` 同样是 facade 的 `__callStatic` 转发（调度进程心跳）。
         -

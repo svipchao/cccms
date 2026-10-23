@@ -7,37 +7,37 @@
         type="error"
         :closable="false"
         show-icon
-        :title="t('generator.disabledEnvTitle')"
-        :description="t('generator.disabledEnvDesc', { reason: environment?.reason })"
+        :title="t('cccms.generator.disabledEnvTitle')"
+        :description="t('cccms.generator.disabledEnvDesc', { reason: environment?.reason })"
       />
       <el-alert
         v-else-if="blockedBy === 'switch'"
         type="warning"
         :closable="false"
         show-icon
-        :title="t('generator.disabledSwitchTitle')"
-        :description="t('generator.disabledSwitchDesc', { reason: environment?.reason })"
+        :title="t('cccms.generator.disabledSwitchTitle')"
+        :description="t('cccms.generator.disabledSwitchDesc', { reason: environment?.reason })"
       />
 
       <template v-else-if="environment">
         <el-alert type="warning" :closable="false" show-icon class="gen-alert">
-          <template #title>{{ t('generator.alertTitle') }}</template>
-          <i18n-t keypath="generator.alertDesc" scope="global" tag="div">
+          <template #title>{{ t('cccms.generator.alertTitle') }}</template>
+          <i18n-t keypath="cccms.generator.alertDesc" scope="global" tag="div">
             <template #cmd><code>php webman cccms:perm-scan</code></template>
           </i18n-t>
         </el-alert>
 
         <el-card shadow="never">
           <template #header
-            ><span>{{ t('generator.configTitle') }}</span></template
+            ><span>{{ t('cccms.generator.configTitle') }}</span></template
           >
 
           <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" class="gen-form">
-            <el-form-item :label="t('generator.tableLabel')" prop="table">
+            <el-form-item :label="t('cccms.generator.tableLabel')" prop="table">
               <el-select
                 v-model="form.table"
                 filterable
-                :placeholder="t('generator.tablePlaceholder')"
+                :placeholder="t('cccms.generator.tablePlaceholder')"
                 style="width: 100%"
                 @change="onTableChange"
               >
@@ -52,29 +52,29 @@
 
             <el-row :gutter="16">
               <el-col :span="12">
-                <el-form-item :label="t('generator.pluginLabel')" prop="plugin">
-                  <el-input v-model="form.plugin" :placeholder="t('generator.pluginPlaceholder')" />
+                <el-form-item :label="t('cccms.generator.pluginLabel')" prop="plugin">
+                  <el-input v-model="form.plugin" :placeholder="t('cccms.generator.pluginPlaceholder')" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item :label="t('generator.moduleLabel')" prop="module">
-                  <el-input v-model="form.module" :placeholder="t('generator.modulePlaceholder')" />
+                <el-form-item :label="t('cccms.generator.moduleLabel')" prop="module">
+                  <el-input v-model="form.module" :placeholder="t('cccms.generator.modulePlaceholder')" />
                 </el-form-item>
               </el-col>
             </el-row>
 
-            <el-form-item :label="t('generator.titleLabel')" prop="title">
-              <el-input v-model="form.title" :placeholder="t('generator.titlePlaceholder')" />
+            <el-form-item :label="t('cccms.generator.titleLabel')" prop="title">
+              <el-input v-model="form.title" :placeholder="t('cccms.generator.titlePlaceholder')" />
             </el-form-item>
 
-            <el-form-item :label="t('generator.overwriteLabel')">
-              <el-checkbox v-model="form.overwrite">{{ t('generator.overwriteText') }}</el-checkbox>
+            <el-form-item :label="t('cccms.generator.overwriteLabel')">
+              <el-checkbox v-model="form.overwrite">{{ t('cccms.generator.overwriteText') }}</el-checkbox>
             </el-form-item>
 
             <el-form-item>
               <el-button type="primary" :loading="previewing" @click="onPreview"
                 ><template #icon><i class="ri-eye-line" /></template>
-                {{ t('generator.preview') }}
+                {{ t('cccms.generator.preview') }}
               </el-button>
               <el-button
                 v-auth="'cccms:generator:generate'"
@@ -83,7 +83,7 @@
                 :loading="generating"
                 @click="onGenerate"
                 ><template #icon><i class="ri-magic-line" /></template>
-                {{ t('generator.generate') }}
+                {{ t('cccms.generator.generate') }}
               </el-button>
             </el-form-item>
           </el-form>
@@ -91,16 +91,16 @@
 
         <el-card v-if="columns.length" shadow="never" class="gen-block">
           <template #header>
-            <span>{{ t('generator.fieldsTitle', { count: columns.length }) }}</span>
+            <span>{{ t('cccms.generator.fieldsTitle', { count: columns.length }) }}</span>
           </template>
           <el-table :data="columns" stripe border size="small">
-            <el-table-column prop="name" :label="t('generator.colName')" min-width="160" />
-            <el-table-column prop="type" :label="t('generator.colType')" width="140" />
-            <el-table-column prop="comment" :label="t('generator.colComment')" min-width="180" />
-            <el-table-column :label="t('generator.colPrimary')" width="80" align="center">
+            <el-table-column prop="name" :label="t('cccms.generator.colName')" min-width="160" />
+            <el-table-column prop="type" :label="t('cccms.generator.colType')" width="140" />
+            <el-table-column prop="comment" :label="t('cccms.generator.colComment')" min-width="180" />
+            <el-table-column :label="t('cccms.generator.colPrimary')" width="80" align="center">
               <template #default="{ row }">
                 <el-tag v-if="row.primary" type="success" effect="light" size="small">
-                  {{ t('generator.yes') }}
+                  {{ t('cccms.generator.yes') }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -109,7 +109,7 @@
 
         <el-card v-if="files.length" shadow="never" class="gen-block">
           <template #header>
-            <span>{{ t('generator.previewTitle', { count: files.length }) }}</span>
+            <span>{{ t('cccms.generator.previewTitle', { count: files.length }) }}</span>
           </template>
           <el-tabs>
             <el-tab-pane v-for="f in files" :key="f.path" :label="f.path.split('/').pop()">
@@ -121,19 +121,19 @@
 
         <el-card v-if="result" shadow="never" class="gen-block">
           <template #header
-            ><span>{{ t('generator.resultTitle') }}</span></template
+            ><span>{{ t('cccms.generator.resultTitle') }}</span></template
           >
           <div class="result-files">
             <el-tag v-for="f in result.files" :key="f" type="success" effect="light">{{ f }}</el-tag>
           </div>
           <el-alert type="info" :closable="false" class="result-alert">
-            <i18n-t keypath="generator.resultMenu" scope="global" tag="div">
+            <i18n-t keypath="cccms.generator.resultMenu" scope="global" tag="div">
               <template #path
                 ><b>{{ result.menu.path }}</b></template
               >
               <template #slug>{{ result.menu.slug }}</template>
             </i18n-t>
-            <i18n-t keypath="generator.resultSnippet" scope="global" tag="div" class="result-tip">
+            <i18n-t keypath="cccms.generator.resultSnippet" scope="global" tag="div" class="result-tip">
               <template #file
                 ><code>plugin/{{ form.plugin }}/db/menu.php</code></template
               >
@@ -194,9 +194,9 @@ const form = reactive({
 
 // 校验提示同样走 i18n：用 computed 保证切换语言后规则文案立即更新
 const rules = computed<FormRules>(() => ({
-  table: [{ required: true, message: t('generator.tableRequired'), trigger: 'change' }],
-  plugin: [{ required: true, message: t('generator.pluginRequired'), trigger: 'blur' }],
-  title: [{ required: true, message: t('generator.titleRequired'), trigger: 'blur' }],
+  table: [{ required: true, message: t('cccms.generator.tableRequired'), trigger: 'change' }],
+  plugin: [{ required: true, message: t('cccms.generator.pluginRequired'), trigger: 'blur' }],
+  title: [{ required: true, message: t('cccms.generator.titleRequired'), trigger: 'blur' }],
 }))
 
 function config(): Record<string, unknown> {
@@ -248,7 +248,7 @@ async function onGenerate(): Promise<void> {
   try {
     result.value = await generatorGenerate(config())
     files.value = []
-    ElMessage.success(t('generator.generateSuccess'))
+    ElMessage.success(t('cccms.generator.generateSuccess'))
   } catch {
     // 同上：失败原因由拦截器提示
   } finally {

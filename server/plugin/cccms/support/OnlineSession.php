@@ -506,6 +506,28 @@ final class OnlineSession
     }
 
     /**
+     * 当前有在线会话的用户 ID（去重）。
+     *
+     * 实时推送只推给这些人：给全库用户各写一条没人读的 Redis 列表，等于用推送制造垃圾。
+     * 与 `countUsers()` 同口径（顺手摘掉索引里的僵尸成员）。
+     *
+     * @return array<int,int>
+     */
+    public static function onlineUserIds(): array
+    {
+        $users   = [];
+        $orphans = self::scanAll(static function (string $jti, array $row) use (&$users): void {
+            $userId = (int)($row['user_id'] ?? 0);
+            if ($userId > 0) {
+                $users[$userId] = true;
+            }
+        });
+        self::dropOrphans($orphans);
+
+        return array_map('intval', array_keys($users));
+    }
+
+    /**
      * 清理已过期（明细键已消失）的索引成员。
      *
      * @return int 清理条数

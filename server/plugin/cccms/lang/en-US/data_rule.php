@@ -23,4 +23,5 @@ return [
     'unknown_value_type'           => 'Unknown value type: {value_type}',
     'unknown_bind_mode'            => 'Unknown bind mode: {mode} (only or / and are allowed)',
     'field_not_in_table'           => 'Field {field} does not exist in table {table}, please select again',
+    'duplicate'                    => 'An identical rule already exists (same binding targets, table, field and action)',
 ];

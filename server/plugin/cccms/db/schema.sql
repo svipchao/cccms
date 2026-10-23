@@ -234,6 +234,8 @@ CREATE TABLE IF NOT EXISTS `sys_data_rule` (
   KEY `idx_post` (`post_id`),
   KEY `idx_role` (`role_id`),
   KEY `idx_tenant` (`tenant_id`),
+  -- 规则编译 / 列表筛选 / 写入查重都按这两列过滤（存量为 idx_table_field 迁移补的同一索引）
+  KEY `idx_table_field` (`table_name`, `field`),
   CONSTRAINT `ck_rule_bind_mode` CHECK (`bind_mode` IN ('or', 'and')),
   CONSTRAINT `ck_rule_action` CHECK (`action` IN ('row', 'hidden', 'readonly', 'mask', 'encrypt')),
   CONSTRAINT `ck_rule_operator` CHECK (`operator` IN ('=', '!=', '<>', '>', '>=', '<', '<=', 'like', 'in', 'between')),
@@ -469,19 +471,73 @@ CREATE TABLE IF NOT EXISTS `sys_crontab_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='定时任务执行日志';
 
 -- ---------------------------------------------------------------------
--- 定时任务重试队列：与 cron 调度解耦，重试不吃掉正常调度
+-- 数据库备份记录（F3）：文件本体在 runtime/backups（不进 public），这里只存元信息
 -- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sys_crontab_retry` (
+CREATE TABLE IF NOT EXISTS `sys_db_backup` (
   `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
-  `crontab_id`  bigint unsigned NOT NULL COMMENT '任务ID',
-  `attempt`     tinyint        NOT NULL DEFAULT 1 COMMENT '第几次重试(1..retry_times)',
-  `retry_at`    datetime       NOT NULL COMMENT '计划重试时间',
+  `file_name`   varchar(120)  NOT NULL COMMENT '归档文件名（.sql.gz）',
+  `file_path`   varchar(255)  NOT NULL COMMENT '相对 runtime 的路径',
+  `size`        bigint unsigned NOT NULL DEFAULT 0 COMMENT '归档字节数',
+  `checksum`    char(64)      NOT NULL DEFAULT '' COMMENT 'sha256，还原前校验',
+  `engine`      varchar(16)   NOT NULL DEFAULT '' COMMENT 'mysqldump / pdo（pdo 无一致性快照）',
+  `table_count` int unsigned  NOT NULL DEFAULT 0 COMMENT '归档内的表数',
+  `row_count`   bigint unsigned NOT NULL DEFAULT 0 COMMENT '仅 pdo 精确统计；mysqldump 为 0',
+  `kind`        varchar(16)   NOT NULL DEFAULT 'manual' COMMENT 'manual / cron / pre_restore',
+  `status`      tinyint       NOT NULL DEFAULT 0 COMMENT '0 进行中 / 1 完成 / 2 失败',
+  `duration`    int unsigned  NOT NULL DEFAULT 0 COMMENT '耗时(ms)',
+  `error`       varchar(500)  NOT NULL DEFAULT '',
+  `user_id`     bigint unsigned NOT NULL DEFAULT 0 COMMENT '发起人；定时任务为 0',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_kind_status` (`kind`, `status`),
+  KEY `idx_create` (`create_time`),
+  CONSTRAINT `ck_db_backup_status` CHECK (`status` IN (0, 1, 2))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='数据库备份记录';
+
+-- ---------------------------------------------------------------------
+-- 异步作业队列（DB 为事实源，进程只做「取一条 → 执行 → 落结果」）
+--
+-- 与 sys_crontab 的分工：crontab 回答「什么时候跑」（时间维度），job 回答
+-- 「替我做一次」（事件维度）。两者不要互相替代：把一次性任务塞进 crontab 会
+-- 变成「每秒扫表 + 状态位」的伪队列。
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sys_job` (
+  `id`           bigint unsigned NOT NULL AUTO_INCREMENT,
+  `queue`        varchar(32)  NOT NULL DEFAULT 'default' COMMENT '队列名（隔离不同业务）',
+  `target`       varchar(191) NOT NULL COMMENT '实现 JobHandler 的类名',
+  `payload`      json         DEFAULT NULL COMMENT '参数对象',
+  `status`       tinyint      NOT NULL DEFAULT 0 COMMENT '0待执行 1执行中 2成功 3失败待重试 4死信',
+  `attempts`     tinyint      NOT NULL DEFAULT 0 COMMENT '已尝试次数（认领时 +1）',
+  `max_attempts` tinyint      NOT NULL DEFAULT 3 COMMENT '最大尝试次数',
+  `available_at` datetime     NOT NULL COMMENT '最早可执行时间（延迟投递 / 退避重试）',
+  `reserved_at`  datetime     DEFAULT NULL COMMENT '认领时间（进程被 kill 后靠它回收）',
+  `finished_at`  datetime     DEFAULT NULL COMMENT '结束时间（成功或死信）',
+  -- 幂等键：非空时同一键只允许一条**未结束**的作业；结束时置回 NULL 释放槽位。
+  -- MySQL 的唯一索引允许多个 NULL，正好等价于「部分唯一索引」。
+  `unique_key`   varchar(191) DEFAULT NULL COMMENT '幂等键（非空时唯一）',
+  `last_error`   varchar(500) NOT NULL DEFAULT '' COMMENT '最近一次失败原因',
+  `create_time`  datetime     DEFAULT CURRENT_TIMESTAMP,
+  `update_time`  datetime     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_job_unique` (`unique_key`),
+  KEY `idx_status_available` (`status`, `available_at`),
+  KEY `idx_queue_status` (`queue`, `status`),
+  CONSTRAINT `ck_job_status` CHECK (`status` IN (0, 1, 2, 3, 4))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='异步作业队列';
+
+CREATE TABLE IF NOT EXISTS `sys_job_log` (
+  `id`          bigint unsigned NOT NULL AUTO_INCREMENT,
+  `job_id`      bigint unsigned NOT NULL COMMENT '作业ID',
+  `attempt`     tinyint        NOT NULL DEFAULT 1 COMMENT '第几次尝试',
+  `status`      tinyint        NOT NULL DEFAULT 1 COMMENT '1成功 0失败',
+  `cost`        int            NOT NULL DEFAULT 0 COMMENT '耗时(ms)',
+  `output`      text           COMMENT '输出摘要 / 失败原因',
   `create_time` datetime       DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_due` (`retry_at`),
-  KEY `idx_crontab` (`crontab_id`),
-  CONSTRAINT `ck_crontab_retry_attempt` CHECK (`attempt` >= 1)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='定时任务重试队列';
+  KEY `idx_job` (`job_id`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='作业执行日志';
 
 -- ---------------------------------------------------------------------
 -- 异步导出任务（不参与数据权限，按 user_id 归属）
@@ -554,3 +610,17 @@ CREATE TABLE IF NOT EXISTS `sys_notice_read` (
   UNIQUE KEY `uk_notice_user` (`notice_id`, `user_id`),
   KEY `idx_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='通知公告已读';
+
+-- ---------------------------------------------------------------------
+-- 结构迁移记录（由 Migrator 维护，一份迁移只执行一次）
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `sys_schema_migration` (
+  `version`    varchar(64)  NOT NULL COMMENT '迁移版本（文件名去扩展名）',
+  `plugin`     varchar(32)  NOT NULL DEFAULT 'cccms' COMMENT '所属插件',
+  `file`       varchar(191) NOT NULL DEFAULT '' COMMENT '相对路径',
+  `checksum`   char(40)     NOT NULL DEFAULT '' COMMENT '文件 SHA1（发现被改动）',
+  `batch`      int          NOT NULL DEFAULT 1 COMMENT '批次（同一轮执行共用）',
+  `applied_at` datetime     DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`version`),
+  KEY `idx_batch` (`batch`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='结构迁移记录';

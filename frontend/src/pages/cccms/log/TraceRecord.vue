@@ -17,17 +17,17 @@
 
     <!-- 请求 ID 是"单条记录"的定位依据；操作 ID 在外层抽屉标题上 -->
     <div class="trace-request">
-      {{ t('log.requestId') }}: <span class="trace-id">{{ row.trace_id || '—' }}</span>
+      {{ t('cccms.log.requestId') }}: <span class="trace-id">{{ row.trace_id || '—' }}</span>
     </div>
 
     <div v-if="row.message" class="trace-msg">{{ row.message }}</div>
 
     <!-- 参数与结果就地展开：排障时不用再跳回「详情」抽屉 -->
     <el-collapse v-if="row.params || row.result" class="trace-collapse">
-      <el-collapse-item :title="t('log.params')" :name="`params-${row.id}`">
+      <el-collapse-item :title="t('cccms.log.params')" :name="`params-${row.id}`">
         <pre class="log-pre">{{ pretty(row.params) }}</pre>
       </el-collapse-item>
-      <el-collapse-item :title="t('log.response')" :name="`result-${row.id}`">
+      <el-collapse-item :title="t('cccms.log.response')" :name="`result-${row.id}`">
         <pre class="log-pre">{{ pretty(row.result) }}</pre>
       </el-collapse-item>
     </el-collapse>

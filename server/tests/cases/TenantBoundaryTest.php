@@ -23,7 +23,9 @@ use think\facade\Db;
 return static function (): void {
     suite('租户边界（硬边界机制）');
 
-    $modelDir = dirname(__DIR__, 2) . '/plugin/cccms/app/model';
+    // 所有插件的模型目录：业务插件表（cms_* / member_*）同样登记在 TABLES 里，
+    // 只扫主插件会让「名单」与「模型声明」两边口径不一致
+    $modelDirs = glob(dirname(__DIR__, 2) . '/plugin/*/app/model', GLOB_ONLYDIR) ?: [];
 
     /** 清理用例数据（租户行 + 两个同名用户） */
     $cleanup = static function (): void {
@@ -32,15 +34,18 @@ return static function (): void {
         Db::name('tenant')->where('code', 'like', '__itest__%')->delete();
     };
 
-    test('受控表名单与模型 $tenantScope 声明严格一致', function () use ($modelDir): void {
+    test('受控表名单与模型 $tenantScope 声明严格一致', function () use ($modelDirs): void {
         $declared = [];
-        foreach (glob($modelDir . '/*.php') ?: [] as $file) {
-            $src = (string)file_get_contents($file);
-            if (!preg_match('/\$tenantScope\s*=\s*true\s*;/', $src)) {
-                continue;
-            }
-            if (preg_match('/\$name\s*=\s*\'([a-z_]+)\'/', $src, $m)) {
-                $declared[] = $m[1];
+        foreach ($modelDirs as $modelDir) {
+            foreach (glob($modelDir . '/*.php') ?: [] as $file) {
+                $src = (string)file_get_contents($file);
+                if (!preg_match('/\$tenantScope\s*=\s*true\s*;/', $src)) {
+                    continue;
+                }
+                // `$name` 会被拼上连接前缀；插件表必须用 `$table` 写完整表名，两种都要认
+                if (preg_match('/protected\s+\$(?:name|table)\s*=\s*\'([a-z_]+)\'/', $src, $m)) {
+                    $declared[] = $m[1];
+                }
             }
         }
         sort($declared);

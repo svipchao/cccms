@@ -9,7 +9,7 @@
       <!-- 每 N 秒 / 每 N 分钟 / 每 N 小时 -->
       <i18n-t
         v-if="cycle === 'every_n_seconds' || cycle === 'every_n_minutes' || cycle === 'every_n_hours'"
-        keypath="crontab.editor.intervalText"
+        keypath="cccms.crontab.editor.intervalText"
         scope="global"
         tag="span"
         class="cron-sep"
@@ -20,12 +20,12 @@
         <template #unit>{{ intervalUnit }}</template>
       </i18n-t>
 
-      <span v-else-if="cycle === 'every_second'" class="cron-sep">{{ t('crontab.editor.everySecondText') }}</span>
+      <span v-else-if="cycle === 'every_second'" class="cron-sep">{{ t('cccms.crontab.editor.everySecondText') }}</span>
 
       <!-- 每周 -->
       <i18n-t
         v-else-if="cycle === 'weekly'"
-        keypath="crontab.editor.weeklyText"
+        keypath="cccms.crontab.editor.weeklyText"
         scope="global"
         tag="span"
         class="cron-sep"
@@ -49,7 +49,7 @@
       <!-- 每月 -->
       <i18n-t
         v-else-if="cycle === 'monthly'"
-        keypath="crontab.editor.monthlyText"
+        keypath="cccms.crontab.editor.monthlyText"
         scope="global"
         tag="span"
         class="cron-sep"
@@ -71,7 +71,7 @@
       <!-- 每天 -->
       <i18n-t
         v-else-if="cycle === 'daily'"
-        keypath="crontab.editor.dailyText"
+        keypath="cccms.crontab.editor.dailyText"
         scope="global"
         tag="span"
         class="cron-sep"
@@ -88,24 +88,29 @@
       </i18n-t>
 
       <!-- 自定义 -->
-      <el-input v-else v-model="expression" class="cron-custom" :placeholder="t('crontab.editor.customPlaceholder')" />
+      <el-input
+        v-else
+        v-model="expression"
+        class="cron-custom"
+        :placeholder="t('cccms.crontab.editor.customPlaceholder')"
+      />
     </div>
 
     <div class="cron-result">
       <div class="cron-result-row">
-        <span class="cron-result-label">{{ t('crontab.editor.labelExpression') }}</span>
+        <span class="cron-result-label">{{ t('cccms.crontab.editor.labelExpression') }}</span>
         <code class="cron-expr">{{ expression }}</code>
       </div>
       <div class="cron-result-row">
-        <span class="cron-result-label">{{ t('crontab.editor.labelDescription') }}</span>
+        <span class="cron-result-label">{{ t('cccms.crontab.editor.labelDescription') }}</span>
         <span class="cron-desc">{{ description }}</span>
       </div>
       <div class="cron-result-row">
-        <span class="cron-result-label">{{ t('crontab.editor.labelRecentRuns') }}</span>
+        <span class="cron-result-label">{{ t('cccms.crontab.editor.labelRecentRuns') }}</span>
         <span v-if="previews.length" class="cron-previews">
           <span v-for="item in previews" :key="item" class="cron-preview">{{ item }}</span>
         </span>
-        <span v-else class="cron-desc">{{ t('crontab.editor.previewUnavailable') }}</span>
+        <span v-else class="cron-desc">{{ t('cccms.crontab.editor.previewUnavailable') }}</span>
       </div>
     </div>
   </div>
@@ -139,24 +144,24 @@ const { describe } = useCronDescription()
  */
 
 const CYCLES: Array<{ value: CronCycle; labelKey: string }> = [
-  { value: 'every_second', labelKey: 'crontab.editor.cycleEverySecond' },
-  { value: 'every_n_seconds', labelKey: 'crontab.editor.cycleEveryNSeconds' },
-  { value: 'every_n_minutes', labelKey: 'crontab.editor.cycleEveryNMinutes' },
-  { value: 'every_n_hours', labelKey: 'crontab.editor.cycleEveryNHours' },
-  { value: 'daily', labelKey: 'crontab.editor.cycleDaily' },
-  { value: 'weekly', labelKey: 'crontab.editor.cycleWeekly' },
-  { value: 'monthly', labelKey: 'crontab.editor.cycleMonthly' },
-  { value: 'custom', labelKey: 'crontab.editor.cycleCustom' },
+  { value: 'every_second', labelKey: 'cccms.crontab.editor.cycleEverySecond' },
+  { value: 'every_n_seconds', labelKey: 'cccms.crontab.editor.cycleEveryNSeconds' },
+  { value: 'every_n_minutes', labelKey: 'cccms.crontab.editor.cycleEveryNMinutes' },
+  { value: 'every_n_hours', labelKey: 'cccms.crontab.editor.cycleEveryNHours' },
+  { value: 'daily', labelKey: 'cccms.crontab.editor.cycleDaily' },
+  { value: 'weekly', labelKey: 'cccms.crontab.editor.cycleWeekly' },
+  { value: 'monthly', labelKey: 'cccms.crontab.editor.cycleMonthly' },
+  { value: 'custom', labelKey: 'cccms.crontab.editor.cycleCustom' },
 ]
 
 const WEEK_LABELS = computed(() => [
-  t('crontab.editor.weekSunday'),
-  t('crontab.editor.weekMonday'),
-  t('crontab.editor.weekTuesday'),
-  t('crontab.editor.weekWednesday'),
-  t('crontab.editor.weekThursday'),
-  t('crontab.editor.weekFriday'),
-  t('crontab.editor.weekSaturday'),
+  t('cccms.crontab.editor.weekSunday'),
+  t('cccms.crontab.editor.weekMonday'),
+  t('cccms.crontab.editor.weekTuesday'),
+  t('cccms.crontab.editor.weekWednesday'),
+  t('cccms.crontab.editor.weekThursday'),
+  t('cccms.crontab.editor.weekFriday'),
+  t('cccms.crontab.editor.weekSaturday'),
 ])
 
 const expression = defineModel<string>({ required: true })
@@ -173,10 +178,10 @@ const cycle = computed<CronCycle>({
 
 const intervalUnit = computed(() =>
   state.cycle === 'every_n_seconds'
-    ? t('crontab.editor.unitSeconds')
+    ? t('cccms.crontab.editor.unitSeconds')
     : state.cycle === 'every_n_minutes'
-      ? t('crontab.editor.unitMinutes')
-      : t('crontab.editor.unitHours'),
+      ? t('cccms.crontab.editor.unitMinutes')
+      : t('cccms.crontab.editor.unitHours'),
 )
 const nMax = computed(() => (state.cycle === 'every_n_hours' ? 23 : 59))
 

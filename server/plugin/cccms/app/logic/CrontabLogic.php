@@ -13,10 +13,12 @@ use plugin\cccms\support\CrontabRunner;
 use plugin\cccms\support\CrontabTask;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\JobQueue;
 use plugin\cccms\support\SortInput;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use think\facade\Db;
+use support\Log;
+use Throwable;
 
 /**
  * 定时任务逻辑。
@@ -161,8 +163,15 @@ final class CrontabLogic
         self::assertInScope($id);
         // 软删除：进回收站。执行日志是历史记录，刻意保留（调度进程查询已自动排除已删任务）
         Crontab::destroy($id);
-        // 丢弃该任务在独立重试队列里的残留，避免已删任务被重试消费
-        Db::name('crontab_retry')->where('crontab_id', $id)->delete();
+
+        // 撤销该任务排队中的失败重试（已成功 / 死信保留：那是历史记录）。
+        // 作业表缺失（老库未升级）不该让「删除任务」这个动作报错 —— 任务已经删掉了，
+        // 残留的重试消费时会被 findEnabled() 判为停用而跳过。
+        try {
+            JobQueue::discard('crontab-retry:' . $id . ':');
+        } catch (Throwable $e) {
+            Log::error('crontab: discard retry jobs failed: ' . $e->getMessage());
+        }
     }
 
     /**

@@ -19,6 +19,7 @@ export default {
   normalUser: '普通用户',
   profile: '个人中心',
   logout: '退出登录',
+  kickedOffline: '你已被管理员强制下线，请重新登录',
   logoutConfirm: '确定要退出当前账号吗？',
   logoutConfirmBtn: '退出',
   searchPlaceholder: '输入菜单名称或路径，回车跳转',

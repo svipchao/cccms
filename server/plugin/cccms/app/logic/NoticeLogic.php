@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
-use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Dept;
 use plugin\cccms\app\model\Notice;
 use plugin\cccms\app\model\NoticeRead;
@@ -17,11 +16,15 @@ use plugin\cccms\support\ApiException;
 use plugin\cccms\support\AuthService;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\OnlineSession;
+use plugin\cccms\support\PageInput;
+use plugin\cccms\support\Realtime;
 use plugin\cccms\support\SortInput;
 use plugin\cccms\support\Tree;
 use plugin\cccms\support\UserContext;
 use think\db\BaseQuery;
 use think\facade\Db;
+use Throwable;
 
 /**
  * 通知公告。
@@ -170,12 +173,16 @@ final class NoticeLogic
         }
 
         // 公告与投放目标同成败：否则会出现「公告存在但谁都看不到」
-        return (int)Db::transaction(static function () use ($payload, $scope, $targetIds): int {
+        $id = (int)Db::transaction(static function () use ($payload, $scope, $targetIds): int {
             $id = (int)Notice::withoutGlobalScope()->insertGetId($payload);
             self::syncTargets($id, $scope, $targetIds);
 
             return $id;
         });
+
+        self::notifyPublished($id);
+
+        return $id;
     }
 
     public static function update(int $id, array $data): void
@@ -198,6 +205,51 @@ final class NoticeLogic
                 self::syncTargets($id, $scope, $targets);
             }
         });
+
+        // 本次把状态改成「已发布」才推：只改正文不该再响一次
+        if ((int)($payload['status'] ?? 0) === 1) {
+            self::notifyPublished($id);
+        }
+    }
+
+    /**
+     * 新公告推给「当前在线且属于投放范围」的用户（F9）。
+     *
+     * 只推在线：给全库用户逐个写 Redis 列表等于用推送制造垃圾；未在线的人下次打开页面
+     * 靠 `unreadCount` 拉取 —— 公告本身已经落库，推送只负责让角标立刻变。
+     *
+     * 推送失败绝不影响发布（消息已在库里），因此整段包在 try 里。
+     */
+    private static function notifyPublished(int $noticeId): void
+    {
+        try {
+            $notice = Notice::withoutGlobalScope()->where('id', $noticeId)->find();
+            if (!$notice) {
+                return;
+            }
+
+            $notice = $notice->toArray();
+            if ((int)($notice['status'] ?? 0) !== 1) {
+                return;
+            }
+
+            $online = OnlineSession::onlineUserIds();
+            if ($online === []) {
+                return;
+            }
+
+            $targets = array_values(array_intersect($online, array_map('intval', self::targetUserIds($notice))));
+            if ($targets === []) {
+                return;
+            }
+
+            Realtime::publishMany($targets, 'notice', [
+                'id'    => $noticeId,
+                'title' => (string)($notice['title'] ?? ''),
+            ]);
+        } catch (Throwable) {
+            // 静默：推送是加速层，不能反过来让发布失败
+        }
     }
 
     public static function delete(int $id): void
@@ -297,10 +349,8 @@ final class NoticeLogic
     {
         $query = self::visible($userId);
         if (!empty($params['only_unread'])) {
-            $readIds = NoticeRead::where('user_id', $userId)->column('notice_id');
-            if ($readIds) {
-                $query->whereNotIn('id', array_map('intval', $readIds));
-            }
+            // 子查询代替「把已读 id 全拉进 PHP」：用户已读上千条时不再传输/拼接大数组
+            $query->whereNotIn('id', self::readSubQuery($userId));
         }
 
         ['page' => $page, 'limit' => $limit] = PageInput::of($params);
@@ -323,17 +373,24 @@ final class NoticeLogic
     /** 未读数量（顶栏角标） */
     public static function unreadCount(int $userId): int
     {
-        $visibleIds = array_map('intval', self::visible($userId)->column('id'));
-        if ($visibleIds === []) {
-            return 0;
-        }
+        // 一条 COUNT 完成「可见 - 已读」：原来的写法要把全部可见 id 与已读 id 拉进 PHP 求差集，
+        // 公告上千条时每次顶栏刷新都要传输上万个整数
+        return self::visible($userId)
+            ->whereNotIn('id', self::readSubQuery($userId))
+            ->count();
+    }
 
-        // 只统计「当前可见公告」里的已读：已过期 / 已删除公告的已读记录不能把未读数冲成 0
-        $readIds = array_map('intval', NoticeRead::where('user_id', $userId)
-            ->whereIn('notice_id', $visibleIds)
-            ->column('notice_id'));
-
-        return count(array_diff($visibleIds, $readIds));
+    /**
+     * 「该用户已读公告」子查询，供 `whereNotIn` 使用。
+     *
+     * 只约束当前用户，可见性由外层 `visible()` 决定；
+     * 已过期 / 已删除公告的已读记录不会影响外层结果。
+     */
+    private static function readSubQuery(int $userId): callable
+    {
+        return static function ($query) use ($userId): void {
+            $query->name('notice_read')->where('user_id', $userId)->field('notice_id');
+        };
     }
 
     public static function markRead(int $userId, int $noticeId): void
@@ -363,18 +420,30 @@ final class NoticeLogic
             return 0;
         }
 
-        $inserted = [];
+        // 一条多值 INSERT IGNORE 完成整批：逐条插入在 1000 条未读时就是 1000 次往返
+        $now    = date('Y-m-d H:i:s');
+        $holder = [];
+        $bind   = [];
         foreach ($todo as $id) {
-            if (self::insertRead($id, $userId) > 0) {
-                $inserted[] = $id;
-            }
+            $holder[] = '(?, ?, ?)';
+            $bind[]   = $id;
+            $bind[]   = $userId;
+            $bind[]   = $now;
         }
 
-        if ($inserted !== []) {
-            Notice::whereIn('id', $inserted)->inc('read_count')->update();
+        $inserted = (int)Db::execute(
+            'INSERT IGNORE INTO `' . Db::name('notice_read')->getTable() . '` (`notice_id`, `user_id`, `read_time`) VALUES '
+            . implode(', ', $holder),
+            $bind
+        );
+
+        if ($inserted > 0) {
+            // 并发下可能有别的请求同时插入了几条，这里按整批 +1 计数；
+            // 极端情况下 read_count 会略高于实际人数，换来的是「不再 N 次往返」
+            Notice::whereIn('id', $todo)->inc('read_count')->update();
         }
 
-        return count($inserted);
+        return $inserted;
     }
 
     /**

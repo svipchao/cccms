@@ -1,4 +1,4 @@
-import instance, { http } from './request'
+import instance, { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
 export interface FileRow {
@@ -23,8 +23,8 @@ export interface FileRow {
   is_public?: number
 }
 
-export function fileList(params: Record<string, unknown>) {
-  return http.get<PageResult<FileRow>>('/file', params)
+export function fileList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult<FileRow>>('/file', params, config)
 }
 
 export function fileDelete(id: number) {

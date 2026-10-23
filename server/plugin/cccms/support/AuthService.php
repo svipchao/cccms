@@ -43,7 +43,8 @@ final class AuthService
 
         $cached = PermissionCache::load($userId);
         if ($cached === null) {
-            $roleIds = self::effectiveRoleIds($userId, false);
+            // 登录链路还没有 `$request->user`，归属租户只能取刚查出来的用户行
+            $roleIds = self::effectiveRoleIds($userId, false, (int)($user['tenant_id'] ?? TenantContext::PLATFORM_ID));
             $cached  = [
                 'roleIds'     => $roleIds,
                 'roles'       => self::roleCodes($roleIds),
@@ -88,8 +89,18 @@ final class AuthService
      *
      * 优先读 `PermissionCache`（`DataScope` 也会调用它，命中可省一次查库）；
      * `$useCache = false` 用于「正在构建缓存」的路径，避免自我递归。
+     *
+     * `$tenantId` 是**角色归属租户**（`sys_user.tenant_id`，不是超管切换后的生效租户）：
+     * `role` 参与租户隔离（`TenantContext::TABLES`），而这里是直查路径，不自行收敛就与
+     * `Role` 模型的全局作用域成了两套口径 —— 同一张表，模型查询带 `tenant_id`、这里全表扫。
+     * 继承链本身跨不出租户（父角色只能从本租户选），限定后结果不变、扫描量按租户收敛。
+     *
+     * 传 null 时回退到「当前用户的归属租户」：业务层调用点都在请求内，不必自己取；
+     * 登录链路（`buildContext()`）尚未建立身份，必须显式传入刚查出来的 `sys_user.tenant_id`。
+     *
+     * @param int|null $tenantId 角色归属租户；null = 取当前用户的 `homeTenantId`，取不到则不收敛
      */
-    public static function effectiveRoleIds(int $userId, bool $useCache = true): array
+    public static function effectiveRoleIds(int $userId, bool $useCache = true, ?int $tenantId = null): array
     {
         if ($useCache) {
             $cached = PermissionCache::load($userId);
@@ -103,8 +114,21 @@ final class AuthService
             return [];
         }
 
-        // 已进回收站的角色不参与继承解析
-        $roleParent = SoftDelete::apply(Db::name('role'))->column('parent_id', 'id'); // id => parent_id
+        // 已进回收站的角色不参与继承解析。
+        // 租户收敛见方法注释：登录链路显式传值，业务层回退到「当前用户的归属租户」——
+        // 超管切换租户后 `currentTenantId()` 是**生效**租户，拿它过滤角色会一个都查不到。
+        if ($tenantId === null) {
+            $current  = function_exists('request') ? request()?->user : null;
+            $tenantId = $current instanceof UserContext && $current->id === $userId
+                ? $current->homeTenantId
+                : TenantContext::currentTenantId();
+        }
+
+        $roleQuery = SoftDelete::apply(Db::name('role'));
+        if ($tenantId !== null) {
+            $roleQuery->where('tenant_id', $tenantId);
+        }
+        $roleParent = $roleQuery->column('parent_id', 'id'); // id => parent_id
 
         $result = $direct;
         foreach ($direct as $roleId) {

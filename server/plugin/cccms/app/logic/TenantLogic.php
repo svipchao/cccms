@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
-use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Tenant;
 use plugin\cccms\app\model\User;
 use plugin\cccms\support\ApiException;
@@ -12,10 +11,12 @@ use plugin\cccms\support\AuthService;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
 use plugin\cccms\support\OnlineSession;
+use plugin\cccms\support\PageInput;
 use plugin\cccms\support\SortInput;
 use plugin\cccms\support\TenantContext;
 use plugin\cccms\support\TenantDomain;
 use plugin\cccms\support\TokenService;
+use plugin\cccms\support\UniqueGuard;
 use plugin\cccms\support\UserContext;
 
 /**
@@ -364,10 +365,19 @@ final class TenantLogic
             return [];
         }
 
+        // 让数据库做分组计数：原来把全表 tenant_id 拉进 PHP 再自增，
+        // 用户表 10 万行就意味着每次列表都传输 10 万个整数
+        $rows = User::withoutAllScopes('平台侧按租户统计账号数，必须跨租户')
+            ->withTrashed()
+            ->whereIn('tenant_id', $ids)
+            ->field('tenant_id, COUNT(*) AS cnt')
+            ->group('tenant_id')
+            ->select()
+            ->toArray();
+
         $out = [];
-        foreach (User::withoutAllScopes('平台侧按租户统计账号数，必须跨租户')->withTrashed()->whereIn('tenant_id', $ids)->column('tenant_id') as $owner) {
-            $id = (int)$owner;
-            $out[$id] = ($out[$id] ?? 0) + 1;
+        foreach ($rows as $row) {
+            $out[(int)$row['tenant_id']] = (int)$row['cnt'];
         }
 
         return $out;
@@ -462,20 +472,15 @@ final class TenantLogic
             return;
         }
 
-        $q = Tenant::withTrashed()->where('code', $code);
-        if ($excludeId > 0) {
-            $q->where('id', '<>', $excludeId);
-        }
-
-        $exist = $q->find();
-        if ($exist) {
-            throw new ApiException(
-                !empty($exist->delete_time)
-                    ? I18n::t('tenant.code_in_trashed', ['code' => $code])
-                    : I18n::t('tenant.code_exists'),
-                422
-            );
-        }
+        UniqueGuard::assertFree(
+            Tenant::class,
+            'code',
+            $code,
+            $excludeId,
+            'tenant.code_exists',
+            'tenant.code_in_trashed',
+            ['code' => $code]
+        );
     }
 
     /**
@@ -489,20 +494,15 @@ final class TenantLogic
             return;
         }
 
-        $q = Tenant::withTrashed()->where('domain', $domain);
-        if ($excludeId > 0) {
-            $q->where('id', '<>', $excludeId);
-        }
-
-        $exist = $q->find();
-        if ($exist) {
-            throw new ApiException(
-                !empty($exist->delete_time)
-                    ? I18n::t('tenant.domain_in_trashed', ['domain' => $domain])
-                    : I18n::t('tenant.domain_exists', ['domain' => $domain]),
-                422
-            );
-        }
+        UniqueGuard::assertFree(
+            Tenant::class,
+            'domain',
+            $domain,
+            $excludeId,
+            'tenant.domain_exists',
+            'tenant.domain_in_trashed',
+            ['domain' => $domain]
+        );
     }
 
     /**

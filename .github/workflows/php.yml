@@ -95,6 +95,17 @@ jobs:
       - name: Static analysis (PHPStan)
         run: composer analyse
 
+      # baseline 只许减不许增：否则「新增代码有问题」可以用「往 baseline 里追加一条」绕过去，
+      # 冻结清单会慢慢变成垃圾桶。修完某条就从 baseline 删掉并下调上限。
+      - name: Guard PHPStan baseline
+        run: |
+          count=$(grep -c 'message:' phpstan-baseline.neon || true)
+          echo "phpstan-baseline 条目数：$count（上限 32）"
+          if [ "$count" -gt 32 ]; then
+            echo "::error::phpstan-baseline.neon 条目增加了（$count > 32）。请修正代码，而不是追加基线。"
+            exit 1
+          fi
+
       # 代码风格：@PSR12 基线，只校验 plugin/ 与 tests/（本仓库维护的代码）
       - name: Check code style
         run: composer cs:check
@@ -122,5 +133,32 @@ jobs:
       - name: Check write-entry field whitelists
         run: php webman cccms:write-guard-check
 
+      # 读运行时路由表：能发现「有注解、有方法、但没挂路由」的死接口
+      - name: Check route / annotation consistency
+        run: php webman cccms:openapi-check
+
       - name: Unit tests
         run: composer test
+
+  # 镜像构建门禁：Dockerfile 的扩展编译 / 非 root 运行 / vendor_patch 都是「线上才生效」的，
+  # 不构建一次就等于零验证。只 build 不 push。
+  docker:
+    name: Docker 镜像构建
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build runtime image
+        uses: docker/build-push-action@v6
+        with:
+          context: server
+          target: runtime
+          push: false
+          tags: cccms/server:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

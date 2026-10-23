@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\controller;
 
-use plugin\cccms\app\logic\CategoryLogic;
+use plugin\cccms\app\controller\concern\CategoryCrud;
 use plugin\cccms\app\logic\DictLogic;
 use plugin\cccms\basic\BaseController;
 use plugin\cccms\support\attribute\Permission;
@@ -15,6 +15,8 @@ use Webman\Http\Response;
 
 class DictController extends BaseController
 {
+    use CategoryCrud;
+
     #[Permission(slug: 'cccms:dict:index', title: '字典类型列表')]
     public function index(Request $request): Response
     {
@@ -118,33 +120,37 @@ class DictController extends BaseController
     // ---- 字典分类 ----
     // 与附件分类共用 sys_category 表与 CategoryLogic，但 slug 按模块拆开，
     // 这样「只有附件权限」的角色不会因为分类权限挂错菜单而被牵连。
+    // 方法体在 CategoryCrud trait 里（与附件分类逐行同构），这里只保留权限注解。
+
+    protected function categoryModule(): string
+    {
+        return 'dict';
+    }
 
     #[Permission(slug: 'cccms:dict:category', title: '字典分类列表')]
     public function category(Request $request): Response
     {
-        return $this->ok(CategoryLogic::tree('dict', (bool)$request->get('trashed', false)));
+        return $this->categoryTree($request);
     }
 
     #[Permission(slug: 'cccms:dict:category_save', title: '新增字典分类')]
     #[Restrict(methods: ['POST'])]
     public function categorySave(Request $request): Response
     {
-        return $this->ok(['id' => CategoryLogic::create('dict', $request->post())], I18n::t('common.created'));
+        return $this->categoryCreate($request);
     }
 
     #[Permission(slug: 'cccms:dict:category_update', title: '更新字典分类')]
     #[Restrict(methods: ['POST'])]
     public function categoryUpdate(Request $request): Response
     {
-        CategoryLogic::update((int)$request->input('id', 0), $request->post());
-        return $this->ok(null, I18n::t('common.updated'));
+        return $this->categoryModify($request);
     }
 
     #[Permission(slug: 'cccms:dict:category_delete', title: '删除字典分类')]
     #[Restrict(methods: ['POST'])]
     public function categoryDelete(Request $request): Response
     {
-        CategoryLogic::delete((int)$request->input('id', 0));
-        return $this->ok(null, I18n::t('common.deleted'));
+        return $this->categoryRemove($request);
     }
 }

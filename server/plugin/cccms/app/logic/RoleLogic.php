@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
-use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Role;
 use plugin\cccms\app\model\RoleNode;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\PageInput;
 use plugin\cccms\support\PermissionCache;
 use plugin\cccms\support\Tree;
+use plugin\cccms\support\UniqueGuard;
 use think\facade\Db;
 
 /**
@@ -301,10 +302,16 @@ final class RoleLogic
     private static function assignNodes(int $roleId, array $nodes): void
     {
         RoleNode::where('role_id', $roleId)->delete();
+
+        $rows = [];
         foreach (array_unique(array_map('strval', $nodes)) as $node) {
             if ($node !== '') {
-                RoleNode::insert(['role_id' => $roleId, 'node' => $node]);
+                $rows[] = ['role_id' => $roleId, 'node' => $node];
             }
+        }
+        if ($rows !== []) {
+            // 一次批量插入：勾选上百个节点时不再产生上百条 INSERT，缩短事务持锁时间
+            RoleNode::insertAll($rows);
         }
     }
 
@@ -323,20 +330,15 @@ final class RoleLogic
         if ($code === '') {
             throw new ApiException(I18n::t('role.code_required'), 422);
         }
-        // 唯一索引不做软删特例：回收站里的角色仍占用标识（withTrashed 才看得到）；
-        // 且 uk_code 是全局索引，必须绕过租户作用域，否则跨租户重名会漏判。
-        $q = Role::withoutAllScopes('uk_code 是全局唯一键，跨租户查重才不会撞索引')->withTrashed()->where('code', $code);
-        if ($excludeId > 0) {
-            $q->where('id', '<>', $excludeId);
-        }
-        $exist = $q->find();
-        if ($exist) {
-            throw new ApiException(
-                !empty($exist->delete_time)
-                    ? I18n::t('role.code_in_trash', ['code' => $code])
-                    : I18n::t('role.code_exists'),
-                422
-            );
-        }
+
+        UniqueGuard::assertFree(
+            Role::class,
+            'code',
+            $code,
+            $excludeId,
+            'role.code_exists',
+            'role.code_in_trash',
+            ['code' => $code]
+        );
     }
 }

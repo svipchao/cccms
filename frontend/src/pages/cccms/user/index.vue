@@ -20,28 +20,32 @@
       <template #toolbar>
         <el-button v-auth="'cccms:user:save'" type="primary" @click="openCreate"
           ><template #icon><i class="ri-add-line" /></template>
-          {{ t('common.create') }}
+          {{ t('core.common.create') }}
         </el-button>
 
         <!-- 批量操作：只在勾选后可用；越权 / 受保护的行由后端跳过并回报 -->
         <el-dropdown :disabled="selected.length === 0" @command="onBatchCommand">
           <el-button :disabled="selected.length === 0">
-            {{ selected.length ? t('user.batchActionCount', { count: selected.length }) : t('user.batchAction') }}
+            {{
+              selected.length
+                ? t('cccms.user.batchActionCount', { count: selected.length })
+                : t('cccms.user.batchAction')
+            }}
             <el-icon class="el-icon--right"><i class="ri-arrow-down-s-line" /></el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item v-if="hasAuth('cccms:user:batch_status')" command="enable">
-                {{ t('user.batchEnable') }}
+                {{ t('cccms.user.batchEnable') }}
               </el-dropdown-item>
               <el-dropdown-item v-if="hasAuth('cccms:user:batch_status')" command="disable">
-                {{ t('user.batchDisable') }}
+                {{ t('cccms.user.batchDisable') }}
               </el-dropdown-item>
               <el-dropdown-item v-if="hasAuth('cccms:user:batch_assign')" command="assign" divided>
-                {{ t('user.batchAssign') }}
+                {{ t('cccms.user.batchAssign') }}
               </el-dropdown-item>
               <el-dropdown-item v-if="hasAuth('cccms:user:batch_delete')" command="delete" divided>
-                {{ t('user.batchDelete') }}
+                {{ t('cccms.user.batchDelete') }}
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -50,25 +54,25 @@
 
       <!-- 点一下即把表格切到「已删除」，不是另开页面 -->
       <template #toolbar-right>
-        <RecycleToggle :active="recycle" :label="t('user.entityLabel')" @toggle="toggle" />
+        <RecycleToggle :active="recycle" :label="t('cccms.user.entityLabel')" @toggle="toggle" />
       </template>
 
       <template #status="{ row }">
         <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="light" round>
-          {{ row.status === 1 ? t('user.enabled') : t('user.disabled') }}
+          {{ row.status === 1 ? t('cccms.user.enabled') : t('cccms.user.disabled') }}
         </el-tag>
       </template>
 
       <template #action="{ row }">
         <el-button v-auth="'cccms:user:update'" link type="primary" @click="openEdit(row)">
-          {{ t('common.edit') }}
+          {{ t('core.common.edit') }}
         </el-button>
         <el-button v-auth="'cccms:user:reset_password'" link type="primary" @click="openReset(row)">
-          {{ t('user.resetPassword') }}
+          {{ t('cccms.user.resetPassword') }}
         </el-button>
-        <el-popconfirm :title="t('user.confirmDelete')" @confirm="onDelete(row.id)">
+        <el-popconfirm :title="t('cccms.user.confirmDelete')" @confirm="onDelete(row.id)">
           <template #reference>
-            <el-button v-auth="'cccms:user:delete'" link type="danger">{{ t('common.delete') }}</el-button>
+            <el-button v-auth="'cccms:user:delete'" link type="danger">{{ t('core.common.delete') }}</el-button>
           </template>
         </el-popconfirm>
       </template>
@@ -77,37 +81,42 @@
     <!-- 新增 / 编辑 -->
     <el-dialog
       v-model="formVisible"
-      :title="form.id ? t('user.editUser') : t('user.createUser')"
+      :title="form.id ? t('cccms.user.editUser') : t('cccms.user.createUser')"
       width="600px"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="92px">
-        <el-form-item :label="t('user.username')" prop="username">
-          <el-input v-model="form.username" :placeholder="t('user.usernameRequired')" />
+        <el-form-item :label="t('cccms.user.username')" prop="username">
+          <el-input v-model="form.username" :placeholder="t('cccms.user.usernameRequired')" />
         </el-form-item>
-        <el-form-item v-if="!form.id" :label="t('user.password')" prop="password">
+        <el-form-item v-if="!form.id" :label="t('cccms.user.password')" prop="password">
           <el-input
             v-model="form.password"
             type="password"
             show-password
-            :placeholder="t('user.passwordPlaceholder')"
+            :placeholder="t('cccms.user.passwordPlaceholder')"
           />
         </el-form-item>
-        <el-form-item :label="t('user.nickname')" prop="nickname">
-          <el-input v-model="form.nickname" :placeholder="t('user.nicknamePlaceholder')" />
+        <el-form-item :label="t('cccms.user.nickname')" prop="nickname">
+          <el-input v-model="form.nickname" :placeholder="t('cccms.user.nicknamePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('user.phone')" prop="phone">
-          <el-input v-model="form.phone" :placeholder="t('user.phonePlaceholder')" />
+        <el-form-item :label="t('cccms.user.phone')" prop="phone">
+          <el-input v-model="form.phone" :placeholder="t('cccms.user.phonePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('user.email')" prop="email">
-          <el-input v-model="form.email" :placeholder="t('user.emailPlaceholder')" />
+        <el-form-item :label="t('cccms.user.email')" prop="email">
+          <el-input v-model="form.email" :placeholder="t('cccms.user.emailPlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('user.role')" prop="role_ids">
-          <el-select v-model="form.role_ids" multiple :placeholder="t('user.rolePlaceholder')" style="width: 100%">
+        <el-form-item :label="t('cccms.user.role')" prop="role_ids">
+          <el-select
+            v-model="form.role_ids"
+            multiple
+            :placeholder="t('cccms.user.rolePlaceholder')"
+            style="width: 100%"
+          >
             <el-option v-for="r in roleOptions" :key="r.id" :label="r.name" :value="r.id" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('user.dept')" prop="dept_ids">
+        <el-form-item :label="t('cccms.user.dept')" prop="dept_ids">
           <el-tree-select
             v-model="form.dept_ids"
             :data="deptTreeData"
@@ -116,62 +125,67 @@
             multiple
             show-checkbox
             check-strictly
-            :placeholder="t('user.deptPlaceholder')"
+            :placeholder="t('cccms.user.deptPlaceholder')"
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="t('user.post')" prop="post_ids">
-          <el-select v-model="form.post_ids" multiple :placeholder="t('user.postPlaceholder')" style="width: 100%">
+        <el-form-item :label="t('cccms.user.post')" prop="post_ids">
+          <el-select
+            v-model="form.post_ids"
+            multiple
+            :placeholder="t('cccms.user.postPlaceholder')"
+            style="width: 100%"
+          >
             <el-option v-for="p in postOptions" :key="p.id" :label="p.name" :value="p.id" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('user.status')" prop="status">
+        <el-form-item :label="t('cccms.user.status')" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio :value="1">{{ t('user.enabled') }}</el-radio>
-            <el-radio :value="0">{{ t('user.disabled') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.user.enabled') }}</el-radio>
+            <el-radio :value="0">{{ t('cccms.user.disabled') }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="formVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('common.confirm') }}</el-button>
+        <el-button @click="formVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 重置密码 -->
-    <el-dialog v-model="resetVisible" :title="t('user.resetPassword')" width="420px">
+    <el-dialog v-model="resetVisible" :title="t('cccms.user.resetPassword')" width="420px">
       <el-form ref="resetRef" :model="resetForm" :rules="resetRules" label-width="80px">
-        <el-form-item :label="t('user.newPassword')" prop="password">
+        <el-form-item :label="t('cccms.user.newPassword')" prop="password">
           <el-input
             v-model="resetForm.password"
             type="password"
             show-password
-            :placeholder="t('user.passwordPlaceholder')"
+            :placeholder="t('cccms.user.passwordPlaceholder')"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="resetVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitReset">{{ t('common.confirm') }}</el-button>
+        <el-button @click="resetVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitReset">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 批量分配角色 / 部门 / 岗位 -->
-    <el-dialog v-model="assignVisible" :title="t('user.batchAssign')" width="560px">
+    <el-dialog v-model="assignVisible" :title="t('cccms.user.batchAssign')" width="560px">
       <el-alert
         type="info"
         :closable="false"
         show-icon
-        :title="t('user.assignTip', { count: selected.length })"
+        :title="t('cccms.user.assignTip', { count: selected.length })"
         style="margin-bottom: 12px"
       />
       <el-form label-width="60px">
-        <el-form-item :label="t('user.role')">
-          <el-select v-model="assignForm.role_ids" multiple :placeholder="t('user.keepAsIs')" style="width: 100%">
+        <el-form-item :label="t('cccms.user.role')">
+          <el-select v-model="assignForm.role_ids" multiple :placeholder="t('cccms.user.keepAsIs')" style="width: 100%">
             <el-option v-for="r in roleOptions" :key="r.id" :label="r.name" :value="r.id" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('user.dept')">
+        <el-form-item :label="t('cccms.user.dept')">
           <el-tree-select
             v-model="assignForm.dept_ids"
             :data="deptTreeData"
@@ -180,19 +194,19 @@
             multiple
             show-checkbox
             check-strictly
-            :placeholder="t('user.keepAsIs')"
+            :placeholder="t('cccms.user.keepAsIs')"
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="t('user.post')">
-          <el-select v-model="assignForm.post_ids" multiple :placeholder="t('user.keepAsIs')" style="width: 100%">
+        <el-form-item :label="t('cccms.user.post')">
+          <el-select v-model="assignForm.post_ids" multiple :placeholder="t('cccms.user.keepAsIs')" style="width: 100%">
             <el-option v-for="p in postOptions" :key="p.id" :label="p.name" :value="p.id" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="assignVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitAssign">{{ t('common.confirm') }}</el-button>
+        <el-button @click="assignVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitAssign">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -257,26 +271,26 @@ interface Query {
 
 const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
-  { prop: 'username', label: t('user.username'), minWidth: 120, filter: { type: 'text' } },
-  { prop: 'nickname', label: t('user.nickname'), minWidth: 120, filter: { type: 'text' } },
-  { prop: 'phone', label: t('user.phone'), minWidth: 130 },
-  { prop: 'email', label: t('user.email'), minWidth: 180 },
+  { prop: 'username', label: t('cccms.user.username'), minWidth: 120, filter: { type: 'text' } },
+  { prop: 'nickname', label: t('cccms.user.nickname'), minWidth: 120, filter: { type: 'text' } },
+  { prop: 'phone', label: t('cccms.user.phone'), minWidth: 130 },
+  { prop: 'email', label: t('cccms.user.email'), minWidth: 180 },
   {
     prop: 'status',
-    label: t('user.status'),
+    label: t('cccms.user.status'),
     width: 90,
     align: 'center',
     slot: 'status',
     filter: {
       type: 'enum',
       options: [
-        { label: t('user.enabled'), value: 1 },
-        { label: t('user.disabled'), value: 0 },
+        { label: t('cccms.user.enabled'), value: 1 },
+        { label: t('cccms.user.disabled'), value: 0 },
       ],
     },
   },
-  { prop: 'login_time', label: t('user.lastLogin'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
-  { prop: 'action', label: t('table.action'), width: 210, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'login_time', label: t('cccms.user.lastLogin'), width: 170, filter: { type: 'date' }, sortable: 'custom' },
+  { prop: 'action', label: t('core.table.action'), width: 210, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 // 回收站开关：必须声明在 useTable 之前 —— 列表闭包在 setup 阶段就会执行一次
@@ -309,9 +323,9 @@ const emptyForm = {
 const form = reactive({ ...emptyForm })
 
 const rules = computed<FormRules>(() => ({
-  username: [{ required: true, message: t('user.usernameRequired'), trigger: 'blur' }],
+  username: [{ required: true, message: t('cccms.user.usernameRequired'), trigger: 'blur' }],
   password: [
-    { required: true, message: t('user.passwordRequired'), trigger: 'blur' },
+    { required: true, message: t('cccms.user.passwordRequired'), trigger: 'blur' },
     // 身份信息用表单里已填的用户名 / 昵称，提前拦住「密码就是用户名」这类可猜口令
     { validator: passwordValidator(() => ({ username: form.username, nickname: form.nickname })), trigger: 'blur' },
   ],
@@ -341,7 +355,7 @@ async function submitForm(): Promise<void> {
     } else {
       await userSave({ ...form })
     }
-    ElMessage.success(t('user.saveSuccess'))
+    ElMessage.success(t('cccms.user.saveSuccess'))
     formVisible.value = false
     load()
   } finally {
@@ -351,7 +365,7 @@ async function submitForm(): Promise<void> {
 
 async function onDelete(id: number): Promise<void> {
   await userDelete(id)
-  ElMessage.success(t('user.deleteSuccess'))
+  ElMessage.success(t('cccms.user.deleteSuccess'))
   load()
 }
 
@@ -362,7 +376,7 @@ const resetForm = reactive({ id: 0, password: '' })
 const resetUsername = ref('')
 const resetRules = computed<FormRules>(() => ({
   password: [
-    { required: true, message: t('user.newPasswordRequired'), trigger: 'blur' },
+    { required: true, message: t('cccms.user.newPasswordRequired'), trigger: 'blur' },
     // 重置的是既有账号，用列表里那一行的用户名做身份比对
     { validator: passwordValidator(() => ({ username: resetUsername.value })), trigger: 'blur' },
   ],
@@ -383,7 +397,7 @@ async function submitReset(): Promise<void> {
   saving.value = true
   try {
     await userResetPassword({ ...resetForm })
-    ElMessage.success(t('user.resetSuccess'))
+    ElMessage.success(t('cccms.user.resetSuccess'))
     resetVisible.value = false
   } finally {
     saving.value = false
@@ -401,10 +415,10 @@ function onSelectionChange(rows: Row[]): void {
 function reportBatch(result: BatchResult, verb: string): void {
   if (result.skipped.length > 0) {
     ElMessage.warning(
-      t('user.batchSkipped', { action: verb, affected: result.affected, skipped: result.skipped.length }),
+      t('cccms.user.batchSkipped', { action: verb, affected: result.affected, skipped: result.skipped.length }),
     )
   } else {
-    ElMessage.success(t('user.batchDone', { action: verb, affected: result.affected }))
+    ElMessage.success(t('cccms.user.batchDone', { action: verb, affected: result.affected }))
   }
 }
 
@@ -422,12 +436,12 @@ async function onBatchCommand(command: string): Promise<void> {
 
   const isDelete = command === 'delete'
   const confirmMessage = isDelete
-    ? t('user.confirmBatchDelete', { count: ids.length })
+    ? t('cccms.user.confirmBatchDelete', { count: ids.length })
     : command === 'enable'
-      ? t('user.confirmBatchEnable', { count: ids.length })
-      : t('user.confirmBatchDisable', { count: ids.length })
+      ? t('cccms.user.confirmBatchEnable', { count: ids.length })
+      : t('cccms.user.confirmBatchDisable', { count: ids.length })
   try {
-    await ElMessageBox.confirm(confirmMessage, isDelete ? t('user.batchDelete') : t('user.batchToggle'), {
+    await ElMessageBox.confirm(confirmMessage, isDelete ? t('cccms.user.batchDelete') : t('cccms.user.batchToggle'), {
       type: 'warning',
     })
   } catch {
@@ -435,7 +449,7 @@ async function onBatchCommand(command: string): Promise<void> {
   }
 
   const result = isDelete ? await userBatchDelete(ids) : await userBatchStatus(ids, command === 'enable' ? 1 : 0)
-  reportBatch(result, isDelete ? t('user.batchVerbDelete') : t('user.batchVerbUpdate'))
+  reportBatch(result, isDelete ? t('cccms.user.batchVerbDelete') : t('cccms.user.batchVerbUpdate'))
   selected.value = []
   load()
 }
@@ -462,14 +476,14 @@ async function submitAssign(): Promise<void> {
     payload.post_ids = assignForm.post_ids
   }
   if (payload.role_ids === undefined && payload.dept_ids === undefined && payload.post_ids === undefined) {
-    ElMessage.warning(t('user.assignAtLeastOne'))
+    ElMessage.warning(t('cccms.user.assignAtLeastOne'))
     return
   }
 
   saving.value = true
   try {
     const result = await userBatchAssign(payload)
-    reportBatch(result, t('user.batchVerbAssign'))
+    reportBatch(result, t('cccms.user.batchVerbAssign'))
     assignVisible.value = false
     selected.value = []
     load()

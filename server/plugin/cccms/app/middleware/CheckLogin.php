@@ -38,6 +38,13 @@ class CheckLogin implements MiddlewareInterface
             }
             $claims = TokenService::verify($token);
 
+            // 只接受后台令牌：带 `aud` 的令牌来自其他账号体系（历史签发的 `member` 令牌
+            // 在有效期内仍可能被拿来重放）。`member` 与 `sys_user` 是两套自增主键，
+            // 不隔离时 member id 恰好撞上某个 sys_user id，就会被当成那个人登录。
+            if (($claims['aud'] ?? '') === 'member') {
+                throw new ApiException(I18n::t('common.invalid_credentials'), 401);
+            }
+
             // 失效名单：登出写入的单令牌黑名单 + 「强制下线」写入的用户级时间分界线
             if (TokenBlacklist::claimsRevoked($claims)) {
                 throw new ApiException(I18n::t('common.session_expired'), 401);

@@ -1,4 +1,4 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
 /**
@@ -115,8 +115,8 @@ export interface DataScopeTableData {
   available: DataScopeTableAvailable[]
 }
 
-export function dataRuleList(params: Record<string, unknown>) {
-  return http.get<PageResult<DataRuleRow>>('/data_rule', params)
+export function dataRuleList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult<DataRuleRow>>('/data_rule', params, config)
 }
 
 export function dataRuleOptions() {

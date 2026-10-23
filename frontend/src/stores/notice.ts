@@ -30,6 +30,9 @@ export const useNoticeStore = defineStore('notice', () => {
       const res = await myNoticeList(params)
       items.value = (res.list ?? []) as NoticeRow[]
       total.value = res.total ?? 0
+    } catch {
+      // 失败提示由请求拦截器统一处理；这里兜住异常，避免调用方 `void load()`
+      // 产生 unhandled rejection（保留上一次的列表，用户可直接重试）
     } finally {
       loading.value = false
     }

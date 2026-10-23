@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
-use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\DataRule;
 use plugin\cccms\app\model\Dept;
 use plugin\cccms\app\model\Post;
@@ -14,6 +13,7 @@ use plugin\cccms\support\ApiException;
 use plugin\cccms\support\DataScope;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\PageInput;
 use plugin\cccms\support\RuleConflict;
 use think\facade\Db;
 
@@ -110,6 +110,8 @@ final class DataRuleLogic
         $data['bind_mode']   = (string)($data['bind_mode'] ?? 'or');
         $data['create_time'] = date('Y-m-d H:i:s');
 
+        self::assertNoDuplicate($data);
+
         return (int)DataRule::withoutGlobalScope()->insertGetId($data);
     }
 
@@ -131,6 +133,9 @@ final class DataRuleLogic
         if (!$data) {
             return;
         }
+
+        // 局部更新：用「库里的旧值 + 本次提交」拼出完整规则再查重
+        self::assertNoDuplicate(array_merge($current, $data), $id);
 
         $data['update_time'] = date('Y-m-d H:i:s');
         DataRule::where('id', $id)->update($data);
@@ -467,5 +472,81 @@ final class DataRuleLogic
         }
 
         return $row->toArray();
+    }
+
+    /**
+     * 拒绝重复规则。
+     *
+     * 为什么不用数据库唯一索引：规则可以被软删、也可能在回收站里被恢复，
+     * 唯一索引会把「删掉再建一条一样的」也挡住（`uk_type` 已经有这个坑，
+     * 见 `docs/13-数据模型.md` 的唯一键陷阱）。规则表数据量小、写入频率低，
+     * 写入前查重 + 保留回收站恢复能力更划算。
+     *
+     * 判重口径（同租户内、只看未删除行）：
+     *   - 绑定对象：`user_id` / `post_id` / `role_id` / `dept_ids`（按集合比较，忽略顺序）+ `bind_mode`
+     *   - 作用点：`table_name` + `field` + `action`
+     *   - 行级规则额外比较 `operator` + `value` + `value_type`
+     *     （同一字段可以有多个行级条件，例如 `dept_id = 3` 与 `dept_id = 5`）
+     *
+     * @param array<string,mixed> $row      归一化后的完整规则
+     * @param int                 $exceptId 更新时排除自身
+     */
+    private static function assertNoDuplicate(array $row, int $exceptId = 0): void
+    {
+        $action = (string)($row['action'] ?? 'row');
+
+        $query = DataRule::withoutGlobalScope()
+            ->where('user_id', (int)($row['user_id'] ?? 0))
+            ->where('post_id', (int)($row['post_id'] ?? 0))
+            ->where('role_id', (int)($row['role_id'] ?? 0))
+            ->where('bind_mode', (string)($row['bind_mode'] ?? 'or'))
+            ->where('table_name', (string)($row['table_name'] ?? ''))
+            ->where('field', (string)($row['field'] ?? ''))
+            ->where('action', $action);
+
+        if ($action === 'row') {
+            $query->where('operator', (string)($row['operator'] ?? '='))
+                ->where('value', (string)($row['value'] ?? ''))
+                ->where('value_type', (string)($row['value_type'] ?? 'static'));
+        }
+        if ($exceptId > 0) {
+            $query->where('id', '<>', $exceptId);
+        }
+
+        $candidates = $query->field('id, dept_ids')->select()->toArray();
+        if ($candidates === []) {
+            return;
+        }
+
+        $deptKey = self::deptKey($row['dept_ids'] ?? null);
+        foreach ($candidates as $candidate) {
+            if (self::deptKey($candidate['dept_ids'] ?? null) === $deptKey) {
+                throw new ApiException(I18n::t('data_rule.duplicate'), 422);
+            }
+        }
+    }
+
+    /**
+     * 部门绑定的集合键：JSON 数组 → 排序去重后的 `1,3,5`。
+     *
+     * 不能直接比较 JSON 字符串：`[3,1]` 与 `[1,3]` 是同一组绑定，
+     * 字符串比较会把它们当成两条规则，等于查重失效。
+     *
+     * @param mixed $deptIds
+     */
+    private static function deptKey($deptIds): string
+    {
+        if (is_string($deptIds)) {
+            $decoded = json_decode($deptIds, true);
+            $deptIds = is_array($decoded) ? $decoded : [];
+        }
+
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', (array)$deptIds),
+            static fn (int $id): bool => $id > 0
+        )));
+        sort($ids);
+
+        return implode(',', $ids);
     }
 }

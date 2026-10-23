@@ -1,5 +1,8 @@
-import type { App, DirectiveBinding } from 'vue'
+import { effectScope, watchEffect, type App, type DirectiveBinding, type EffectScope } from 'vue'
 import { useUserStore } from '@/stores/user'
+
+/** 每个元素一个 effect 作用域：绑定值或权限变化时重算，卸载时销毁 */
+const scopes = new WeakMap<HTMLElement, EffectScope>()
 
 /**
  * 按钮级权限指令：`v-auth="'cccms:user:save'"`，也支持数组（命中任一即通过）。
@@ -12,14 +15,30 @@ import { useUserStore } from '@/stores/user'
  * Vue 会告警且隐藏失效，这类场景请改用 `v-if="hasAuth('...')"`。
  */
 function authDirective(el: HTMLElement, binding: DirectiveBinding<string | string[] | undefined>): void {
+  // 绑定值可能被改写，重建前先销毁上一次的 effect，避免多个 watchEffect 争抢同一个元素
+  scopes.get(el)?.stop()
+
   const user = useUserStore()
-  const pass = !binding.value || user.hasAuth(binding.value)
-  el.style.display = pass ? '' : 'none'
+  const scope = effectScope()
+  scopes.set(el, scope)
+
+  // 用 watchEffect 而不是一次性求值：权限集合变化（后台改权限后刷新 profile / 切换账号）
+  // 时组件不一定重新渲染，只靠 mounted + updated 会让按钮停留在旧状态
+  scope.run(() => {
+    watchEffect(() => {
+      const pass = !binding.value || user.hasAuth(binding.value)
+      el.style.display = pass ? '' : 'none'
+    })
+  })
 }
 
 export function setupDirectives(app: App): void {
   app.directive('auth', {
     mounted: authDirective,
     updated: authDirective,
+    unmounted(el: HTMLElement) {
+      scopes.get(el)?.stop()
+      scopes.delete(el)
+    },
   })
 }

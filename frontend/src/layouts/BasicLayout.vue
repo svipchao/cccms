@@ -14,20 +14,57 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useMediaQuery } from '@vueuse/core'
+import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import Watermark from '@/components/Watermark.vue'
 import LayoutSidebar from './components/LayoutSidebar.vue'
 import LayoutHeader from './components/LayoutHeader.vue'
 import LayoutTagbar from './components/LayoutTagbar.vue'
 import LayoutContent from './components/LayoutContent.vue'
 import { useAppStore } from '@/stores/app'
+import { useNoticeStore } from '@/stores/notice'
+import { useUserStore } from '@/stores/user'
 import { useWorktabStore } from '@/stores/worktab'
+import { tokenJti, useRealtime } from '@/composables/useRealtime'
 
+const { t } = useI18n({ useScope: 'global' })
 const route = useRoute()
+const router = useRouter()
 const worktab = useWorktabStore()
 const appStore = useAppStore()
+const noticeStore = useNoticeStore()
+const userStore = useUserStore()
+const realtime = useRealtime()
+
+/**
+ * 实时推送（F9）在布局层启动：整个后台只连一条 SSE，与具体页面无关。
+ *
+ * 收不到也不影响可用性 —— 未读数、任务状态本来就有接口拉取，推送只负责「立刻」。
+ */
+onMounted(() => {
+  realtime.connect()
+
+  realtime.on('notice', () => {
+    void noticeStore.refreshUnread()
+  })
+
+  realtime.on('logout', (data) => {
+    const targetJti = String(data.jti ?? '')
+    const mine = tokenJti(userStore.token)
+    // 单会话踢人：只登出被踢的那个令牌，同账号在别的设备上的会话不受影响
+    if (targetJti !== '' && mine !== '' && targetJti !== mine) {
+      return
+    }
+
+    realtime.disconnect()
+    void userStore.logout()
+    ElMessage.warning(t('core.layout.kickedOffline'))
+    void router.replace('/login')
+  })
+})
 
 const isMobile = useMediaQuery('(max-width: 900px)')
 const collapsed = ref(false)

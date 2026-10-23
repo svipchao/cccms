@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\support;
 
+use plugin\cccms\app\job\CrontabRetryJob;
 use support\Log;
 use support\Redis;
 use think\facade\Db;
@@ -210,11 +211,17 @@ final class CrontabRunner
     }
 
     /**
-     * 失败后向「独立重试队列」投递一次重试（与 cron 调度解耦）。
+     * 失败后投递一次**延迟作业**作为重试（与 cron 调度解耦）。
      *
      * 语义：`retry_times = N` 表示「失败后再试 N 次」，所以总执行次数最多 N + 1。
      * `attempt` 是本次重试的序号（cron 首次失败 = 1，重试再失败 = 上一次 + 1），
      * 超过 `retry_times` 就不再投递。
+     *
+     * 为什么用作业而不是「表 + 轮询」：延迟由作业表的 `available_at` 表达，
+     * 消费进程 1 秒 tick 到期即取，不需要调度进程再扫一张表；失败还有死信可看、可重试。
+     *
+     * 幂等键 `crontab-retry:{任务}:{第几次}`：每秒触发的任务若连续失败，
+     * 旧实现会往重试表里插一堆同一轮的重试行（同一时刻连环重试）；现在同一轮只留一条。
      *
      * @param array<string,mixed> $task
      */
@@ -232,14 +239,36 @@ final class CrontabRunner
 
         try {
             $interval = max(1, (int)($task['retry_interval'] ?? 60));
-            Db::name('crontab_retry')->insert([
-                'crontab_id' => $id,
-                'attempt'    => $attempt,
-                'retry_at'   => date('Y-m-d H:i:s', $now + $interval),
-            ]);
+            JobQueue::push(
+                CrontabRetryJob::class,
+                ['crontab_id' => $id, 'attempt' => $attempt],
+                [
+                    'queue'        => 'crontab',
+                    'delay'        => $interval,
+                    // 进程被 kill 时让作业框架重跑「同一轮重试」（attempt 固定在 payload 里，
+                    // 不会多消耗任务的 retry_times）；任务本身返回失败时不抛异常，不占这三次。
+                    'max_attempts' => 3,
+                    'unique'       => 'crontab-retry:' . $id . ':' . $attempt,
+                ]
+            );
         } catch (Throwable $e) {
             Log::error('crontab: enqueue retry failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * 取一个启用且未删除的任务（重试作业消费用）。
+     *
+     * 放在这里而不是调度进程里：作业消费进程也要用**同一份**判定 ——
+     * 任务被停用 / 删进回收站后，排队的重试应当直接作废，而不是继续跑。
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function findEnabled(int $id): ?array
+    {
+        $task = SoftDelete::apply(Db::name('crontab'))->where('id', $id)->where('status', 1)->find();
+
+        return $task ?: null;
     }
 
     /**

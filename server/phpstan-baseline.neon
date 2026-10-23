@@ -67,12 +67,6 @@ parameters:
 			path: plugin/cccms/app/logic/RoleLogic.php
 
 		-
-			message: '#^Method plugin\\cccms\\app\\logic\\UserLogic\:\:batchDelete\(\) should return array\{affected\: int, skipped\: array\<int\>\} but returns array\{affected\: bool, skipped\: list\}\.$#'
-			identifier: return.type
-			count: 1
-			path: plugin/cccms/app/logic/UserLogic.php
-
-		-
 			message: '#^Static call to instance method plugin\\cccms\\app\\model\\BaseModel\:\:onlyTrashed\(\)\.$#'
 			identifier: method.staticCall
 			count: 1

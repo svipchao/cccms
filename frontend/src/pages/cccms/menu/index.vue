@@ -14,15 +14,15 @@
       <template #toolbar>
         <el-button v-auth="'cccms:menu:save'" type="primary" @click="openCreate(0)"
           ><template #icon><i class="ri-add-line" /></template>
-          {{ t('common.create') }}
+          {{ t('core.common.create') }}
         </el-button>
         <span class="toolbar-tip">
-          {{ t('menu.permTip') }}
+          {{ t('cccms.menu.permTip') }}
         </span>
       </template>
 
       <template #toolbar-right>
-        <RecycleToggle :active="recycle" :label="t('menu.menuLabel')" @toggle="toggle" />
+        <RecycleToggle :active="recycle" :label="t('cccms.menu.menuLabel')" @toggle="toggle" />
       </template>
 
       <template #type="{ row }">
@@ -35,20 +35,20 @@
 
       <template #status="{ row }">
         <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="light" round>
-          {{ row.status === 1 ? t('menu.shown') : t('menu.hidden') }}
+          {{ row.status === 1 ? t('cccms.menu.shown') : t('cccms.menu.hidden') }}
         </el-tag>
       </template>
 
       <template #action="{ row }">
         <el-button v-if="row.type !== 3" v-auth="'cccms:menu:save'" link type="primary" @click="openCreate(row.id)">
-          {{ t('menu.addChild') }}
+          {{ t('cccms.menu.addChild') }}
         </el-button>
         <el-button v-auth="'cccms:menu:update'" link type="primary" @click="openEdit(row)">
-          {{ t('common.edit') }}
+          {{ t('core.common.edit') }}
         </el-button>
-        <el-popconfirm :title="t('menu.deleteConfirm')" @confirm="onDelete(row.id)">
+        <el-popconfirm :title="t('cccms.menu.deleteConfirm')" @confirm="onDelete(row.id)">
           <template #reference>
-            <el-button v-auth="'cccms:menu:delete'" link type="danger">{{ t('common.delete') }}</el-button>
+            <el-button v-auth="'cccms:menu:delete'" link type="danger">{{ t('core.common.delete') }}</el-button>
           </template>
         </el-popconfirm>
       </template>
@@ -56,46 +56,46 @@
 
     <el-dialog
       v-model="formVisible"
-      :title="form.id ? t('menu.editTitle') : t('menu.createTitle')"
+      :title="form.id ? t('cccms.menu.editTitle') : t('cccms.menu.createTitle')"
       width="600px"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-        <el-form-item :label="t('menu.parentNode')" prop="parent_id">
+        <el-form-item :label="t('cccms.menu.parentNode')" prop="parent_id">
           <el-tree-select
             v-model="form.parent_id"
             :data="parentOptions"
             :props="{ label: 'title', children: 'children' }"
             node-key="id"
             check-strictly
-            :placeholder="t('menu.top')"
+            :placeholder="t('cccms.menu.top')"
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="t('menu.typeLabel')" prop="type">
+        <el-form-item :label="t('cccms.menu.typeLabel')" prop="type">
           <el-radio-group v-model="form.type">
-            <el-radio :value="1">{{ t('menu.typeDir') }}</el-radio>
-            <el-radio :value="2">{{ t('menu.typeMenu') }}</el-radio>
-            <el-radio :value="3">{{ t('menu.typeButton') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.menu.typeDir') }}</el-radio>
+            <el-radio :value="2">{{ t('cccms.menu.typeMenu') }}</el-radio>
+            <el-radio :value="3">{{ t('cccms.menu.typeButton') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item :label="t('menu.name')" prop="title">
-          <el-input v-model="form.title" :placeholder="t('menu.namePlaceholder')" />
+        <el-form-item :label="t('cccms.menu.name')" prop="title">
+          <el-input v-model="form.title" :placeholder="t('cccms.menu.namePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('menu.node')" prop="node">
-          <el-input v-model="form.node" :placeholder="t('menu.nodePlaceholder')" />
-          <div class="form-tip">{{ t('menu.nodeTip') }}</div>
+        <el-form-item :label="t('cccms.menu.node')" prop="node">
+          <el-input v-model="form.node" :placeholder="t('cccms.menu.nodePlaceholder')" />
+          <div class="form-tip">{{ t('cccms.menu.nodeTip') }}</div>
         </el-form-item>
-        <el-form-item v-if="form.type !== 3" :label="t('menu.path')" prop="path">
-          <el-input v-model="form.path" :placeholder="t('menu.pathPlaceholder')" />
+        <el-form-item v-if="form.type !== 3" :label="t('cccms.menu.path')" prop="path">
+          <el-input v-model="form.path" :placeholder="t('cccms.menu.pathPlaceholder')" />
         </el-form-item>
-        <el-form-item v-if="form.type === 2" :label="t('menu.component')" prop="component">
-          <el-input v-model="form.component" :placeholder="t('menu.componentPlaceholder')" />
+        <el-form-item v-if="form.type === 2" :label="t('cccms.menu.component')" prop="component">
+          <el-input v-model="form.component" :placeholder="t('cccms.menu.componentPlaceholder')" />
         </el-form-item>
-        <el-form-item v-if="form.type !== 3" :label="t('menu.icon')" prop="icon">
+        <el-form-item v-if="form.type !== 3" :label="t('cccms.menu.icon')" prop="icon">
           <el-popover trigger="click" :width="372" placement="bottom-start">
             <template #reference>
-              <el-input v-model="form.icon" readonly :placeholder="t('menu.iconPlaceholder')" style="width: 100%">
+              <el-input v-model="form.icon" readonly :placeholder="t('cccms.menu.iconPlaceholder')" style="width: 100%">
                 <template #prefix>
                   <el-icon><ArtIcon :name="form.icon" /></el-icon>
                 </template>
@@ -116,19 +116,19 @@
             </div>
           </el-popover>
         </el-form-item>
-        <el-form-item :label="t('menu.sort')" prop="sort">
+        <el-form-item :label="t('cccms.menu.sort')" prop="sort">
           <el-input-number v-model="form.sort" :min="0" />
         </el-form-item>
-        <el-form-item :label="t('menu.status')" prop="status">
+        <el-form-item :label="t('cccms.menu.status')" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio :value="1">{{ t('menu.shown') }}</el-radio>
-            <el-radio :value="0">{{ t('menu.hidden') }}</el-radio>
+            <el-radio :value="1">{{ t('cccms.menu.shown') }}</el-radio>
+            <el-radio :value="0">{{ t('cccms.menu.hidden') }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="formVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('common.confirm') }}</el-button>
+        <el-button @click="formVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitForm">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -155,9 +155,9 @@ const { t } = useI18n({ useScope: 'global' })
 
 /** 类型枚举：值是 i18n key，渲染处翻译 */
 const typeTextMap: Record<number, string> = {
-  1: 'menu.typeDir',
-  2: 'menu.typeMenu',
-  3: 'menu.typeButton',
+  1: 'cccms.menu.typeDir',
+  2: 'cccms.menu.typeMenu',
+  3: 'cccms.menu.typeButton',
 }
 const typeTagMap: Record<number, 'primary' | 'success' | 'warning'> = {
   1: 'primary',
@@ -166,41 +166,41 @@ const typeTagMap: Record<number, 'primary' | 'success' | 'warning'> = {
 }
 
 const columns = computed<ArtTableColumn[]>(() => [
-  { prop: 'title', label: t('menu.name'), minWidth: 200, filter: { type: 'text' } },
+  { prop: 'title', label: t('cccms.menu.name'), minWidth: 200, filter: { type: 'text' } },
   {
     prop: 'type',
-    label: t('menu.typeLabel'),
+    label: t('cccms.menu.typeLabel'),
     width: 90,
     align: 'center',
     slot: 'type',
     filter: {
       type: 'enum',
       options: [
-        { label: t('menu.typeDir'), value: 1 },
-        { label: t('menu.typeMenu'), value: 2 },
-        { label: t('menu.typeButton'), value: 3 },
+        { label: t('cccms.menu.typeDir'), value: 1 },
+        { label: t('cccms.menu.typeMenu'), value: 2 },
+        { label: t('cccms.menu.typeButton'), value: 3 },
       ],
     },
   },
-  { prop: 'node', label: t('menu.node'), minWidth: 190, slot: 'node', filter: { type: 'text' } },
-  { prop: 'path', label: t('menu.path'), width: 160 },
-  { prop: 'component', label: t('menu.component'), width: 190 },
-  { prop: 'sort', label: t('menu.sort'), width: 80, align: 'center' },
+  { prop: 'node', label: t('cccms.menu.node'), minWidth: 190, slot: 'node', filter: { type: 'text' } },
+  { prop: 'path', label: t('cccms.menu.path'), width: 160 },
+  { prop: 'component', label: t('cccms.menu.component'), width: 190 },
+  { prop: 'sort', label: t('cccms.menu.sort'), width: 80, align: 'center' },
   {
     prop: 'status',
-    label: t('menu.status'),
+    label: t('cccms.menu.status'),
     width: 90,
     align: 'center',
     slot: 'status',
     filter: {
       type: 'enum',
       options: [
-        { label: t('menu.shown'), value: 1 },
-        { label: t('menu.hidden'), value: 0 },
+        { label: t('cccms.menu.shown'), value: 1 },
+        { label: t('cccms.menu.hidden'), value: 0 },
       ],
     },
   },
-  { prop: 'action', label: t('table.action'), width: 210, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'action', label: t('core.table.action'), width: 210, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 const loading = ref(false)
@@ -252,7 +252,7 @@ async function load(): Promise<void> {
         id: 0,
         parent_id: 0,
         type: 1,
-        title: t('menu.top'),
+        title: t('cccms.menu.top'),
         path: '',
         component: '',
         icon: '',
@@ -286,8 +286,8 @@ const emptyForm = {
 const form = reactive({ ...emptyForm })
 
 const rules = computed<FormRules>(() => ({
-  title: [{ required: true, message: t('menu.nameRequired'), trigger: 'blur' }],
-  node: [{ required: true, message: t('menu.nodeRequired'), trigger: 'blur' }],
+  title: [{ required: true, message: t('cccms.menu.nameRequired'), trigger: 'blur' }],
+  node: [{ required: true, message: t('cccms.menu.nodeRequired'), trigger: 'blur' }],
 }))
 
 function openCreate(parentId: number): void {
@@ -312,7 +312,7 @@ async function submitForm(): Promise<void> {
     } else {
       await menuSave({ ...form })
     }
-    ElMessage.success(t('menu.saveSuccess'))
+    ElMessage.success(t('cccms.menu.saveSuccess'))
     formVisible.value = false
     await load()
   } finally {
@@ -322,7 +322,7 @@ async function submitForm(): Promise<void> {
 
 async function onDelete(id: number): Promise<void> {
   await menuDelete(id)
-  ElMessage.success(t('menu.deleteSuccess'))
+  ElMessage.success(t('cccms.menu.deleteSuccess'))
   await load()
 }
 

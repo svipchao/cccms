@@ -176,7 +176,7 @@ docker compose exec webman php webman cccms:perm-scan
 | [10-前端组件参考](docs/10-前端组件参考.md) | `ArtTable` / `useTable` 等组件与 Hooks API |
 | [11-常用命令与运维](docs/11-常用命令与运维.md) | CLI 命令、Redis 键、配置项、备份、监控、安全加固 |
 | [12-常见问题与排错](docs/12-常见问题与排错.md) | 按现象检索的 FAQ |
-| [13-数据模型](docs/13-数据模型.md) | 27 张表的分组、字段语义、索引与软删除约定 |
+| [13-数据模型](docs/13-数据模型.md) | 表的分组、字段语义、索引与软删除约定 |
 | [更新日志](docs/更新日志.md) | 已交付的版本变更 + 已决策不做的事项 |
 | [开发计划](docs/开发计划.md) | 待办清单（要做但尚未做的功能与质量项） |
 
@@ -187,12 +187,16 @@ docker compose exec webman php webman cccms:perm-scan
 ```bash
 php webman cccms:perm-scan            # 扫描注解 → 校验 + 同步按钮节点（--check 只校验）
 php webman cccms:menu-sync            # 同步 db/menu.php 的目录 / 菜单
-php webman cccms:db-upgrade           # 已有库补新增表 / 列 / 索引（幂等）
+php webman cccms:db-upgrade           # 建表 + 结构迁移 + 种子数据（幂等，可重复执行）
 php webman cccms:plugin-create shop   # 生成业务插件骨架并自动登记菜单
 php webman cccms:update               # 从上游仓库同步框架更新（安全覆盖 + 自动备份）
 php webman cccms:data-scope-check     # 校验数据权限接入
 php webman cccms:data-rule-check      # 体检数据权限规则（有冲突时退出码 1）
 php webman cccms:write-guard-check    # 校验写入口是否声明字段白名单
+php webman cccms:openapi-check        # 校验路由与权限注解是否一致（接口文档门禁）
+php webman cccms:orphan-check         # 体检孤儿数据（关联表残留，只报告）
+php webman cccms:log-archive          # 按配置归档 / 清理操作日志
+php webman cccms:log-verify           # 校验审计日志链（防篡改）
 composer test                         # 后端测试（库不可用时相关用例自动跳过）
 ```
 

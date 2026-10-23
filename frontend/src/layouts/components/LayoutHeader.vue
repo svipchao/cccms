@@ -1,7 +1,7 @@
 <template>
   <header class="header">
     <div class="header-left">
-      <el-tooltip :content="collapsed ? t('layout.expandMenu') : t('layout.collapseMenu')" placement="bottom">
+      <el-tooltip :content="collapsed ? t('core.layout.expandMenu') : t('core.layout.collapseMenu')" placement="bottom">
         <el-button text circle @click="toggleCollapse">
           <el-icon :size="18">
             <i v-if="!collapsed" class="ri-menu-fold-line" />
@@ -11,7 +11,7 @@
       </el-tooltip>
 
       <el-breadcrumb class="header-breadcrumb" separator="/">
-        <el-breadcrumb-item :to="{ path: HOME_PATH }">{{ t('layout.home') }}</el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: HOME_PATH }">{{ t('core.layout.home') }}</el-breadcrumb-item>
         <!-- 中间层级可点击跳转（最后一级是当前页，不给链接） -->
         <el-breadcrumb-item
           v-for="(c, index) in crumbs"
@@ -25,21 +25,21 @@
 
     <div class="header-right">
       <!-- 1. 快捷导航：搜索菜单并跳转（Ctrl/⌘ + K） -->
-      <el-tooltip :content="t('layout.quickNavHotkey')" placement="bottom">
+      <el-tooltip :content="t('core.layout.quickNavHotkey')" placement="bottom">
         <el-button text circle @click="openSearch">
           <el-icon :size="17"><i class="ri-search-line" /></el-icon>
         </el-button>
       </el-tooltip>
 
       <!-- 2. 全屏 -->
-      <el-tooltip :content="t('layout.fullscreen')" placement="bottom">
+      <el-tooltip :content="t('core.layout.fullscreen')" placement="bottom">
         <el-button text circle @click="toggleFullscreen">
           <el-icon :size="17"><i class="ri-fullscreen-line" /></el-icon>
         </el-button>
       </el-tooltip>
 
       <!-- 3. 消息 + 导出任务（合并入口，抽屉内用 tabs 区分） -->
-      <el-tooltip :content="t('layout.notice')" placement="bottom">
+      <el-tooltip :content="t('core.layout.notice')" placement="bottom">
         <el-badge :value="messageBadge" :max="99" :hidden="messageBadge === 0">
           <el-button text circle @click="exportTaskStore.open('notice')">
             <el-icon :size="17"><i class="ri-notification-line" /></el-icon>
@@ -48,7 +48,7 @@
       </el-tooltip>
 
       <!-- 4. 设置 -->
-      <el-tooltip :content="t('layout.themeSetting')" placement="bottom">
+      <el-tooltip :content="t('core.layout.themeSetting')" placement="bottom">
         <el-button text circle @click="settingsVisible = true">
           <el-icon :size="17"><i class="ri-settings-3-line" /></el-icon>
         </el-button>
@@ -63,7 +63,7 @@
     <!-- 快捷导航 -->
     <el-dialog
       v-model="searchVisible"
-      :title="t('layout.quickNav')"
+      :title="t('core.layout.quickNav')"
       width="560px"
       class="header-search-dialog"
       append-to-body
@@ -71,7 +71,7 @@
       <el-input
         ref="searchInputRef"
         v-model="keyword"
-        :placeholder="t('layout.searchPlaceholder')"
+        :placeholder="t('core.layout.searchPlaceholder')"
         clearable
         @keydown.enter="gotoFirst"
       >
@@ -81,14 +81,14 @@
       <!-- 收藏：置顶展示，可用箭头调整顺序（顺序存在本机，按用户 + 租户隔离） -->
       <div class="header-search-section">
         <div class="header-search-section-title">
-          {{ t('layout.favoriteTitle') }}
+          {{ t('core.layout.favoriteTitle') }}
           <span v-if="menuStore.favoriteMenus.length" class="header-search-section-count">
             {{ menuStore.favoriteMenus.length }}
           </span>
         </div>
         <el-empty
           v-if="menuStore.favoriteMenus.length === 0"
-          :description="t('layout.favoriteEmpty')"
+          :description="t('core.layout.favoriteEmpty')"
           :image-size="46"
         />
         <div
@@ -102,7 +102,7 @@
           <span class="header-search-title">{{ item.title }}</span>
           <span class="header-search-path">{{ item.path }}</span>
           <span class="header-search-actions">
-            <el-tooltip :content="t('layout.favoriteMoveUp')" placement="top">
+            <el-tooltip :content="t('core.layout.favoriteMoveUp')" placement="top">
               <el-button
                 text
                 circle
@@ -113,7 +113,7 @@
                 <el-icon :size="14"><i class="ri-arrow-up-double-line" /></el-icon>
               </el-button>
             </el-tooltip>
-            <el-tooltip :content="t('layout.favoriteMoveDown')" placement="top">
+            <el-tooltip :content="t('core.layout.favoriteMoveDown')" placement="top">
               <el-button
                 text
                 circle
@@ -124,7 +124,7 @@
                 <el-icon :size="14"><i class="ri-arrow-down-double-line" /></el-icon>
               </el-button>
             </el-tooltip>
-            <el-tooltip :content="t('layout.favoriteRemove')" placement="top">
+            <el-tooltip :content="t('core.layout.favoriteRemove')" placement="top">
               <el-button text circle size="small" @click.stop="menuStore.toggleFavorite(item.path)">
                 <el-icon :size="14" class="header-search-star"><i class="ri-star-fill" /></el-icon>
               </el-button>
@@ -136,10 +136,10 @@
       <!-- 全部菜单 / 搜索结果 -->
       <div class="header-search-section">
         <div class="header-search-section-title">
-          {{ keyword.trim() ? t('layout.searchResult') : t('layout.allMenus') }}
+          {{ keyword.trim() ? t('core.layout.searchResult') : t('core.layout.allMenus') }}
         </div>
         <div class="header-search-list">
-          <el-empty v-if="searchResult.length === 0" :description="t('layout.searchEmpty')" :image-size="60" />
+          <el-empty v-if="searchResult.length === 0" :description="t('core.layout.searchEmpty')" :image-size="60" />
           <div
             v-for="item in searchResult"
             :key="item.path"
@@ -152,7 +152,9 @@
             <span class="header-search-path">{{ item.path }}</span>
             <span class="header-search-actions">
               <el-tooltip
-                :content="menuStore.isFavorite(item.path) ? t('layout.favoriteRemove') : t('layout.favoriteAdd')"
+                :content="
+                  menuStore.isFavorite(item.path) ? t('core.layout.favoriteRemove') : t('core.layout.favoriteAdd')
+                "
                 placement="top"
               >
                 <el-button text circle size="small" @click.stop="menuStore.toggleFavorite(item.path)">

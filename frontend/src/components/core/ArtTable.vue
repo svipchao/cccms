@@ -29,7 +29,7 @@
               collapse-tags
               collapse-tags-tooltip
               clearable
-              :placeholder="t('table.filterAll')"
+              :placeholder="t('core.table.filterAll')"
             >
               <el-option
                 v-for="opt in col.filter?.options ?? []"
@@ -51,7 +51,7 @@
               type="textarea"
               :rows="col.filter?.rows ?? 3"
               class="art-table-search-textarea"
-              :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
+              :placeholder="col.filter?.placeholder || t('core.table.filterTextPlaceholder')"
               @keydown.ctrl.enter="submitSearch"
             />
             <!-- 文本：模糊查询 -->
@@ -59,16 +59,16 @@
               v-else
               v-model="searchText[col.prop]"
               clearable
-              :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
+              :placeholder="col.filter?.placeholder || t('core.table.filterTextPlaceholder')"
               @keyup.enter="submitSearch"
             />
           </el-form-item>
         </el-form>
         <div v-if="searchColumns.length" class="art-table-search-actions">
           <el-button type="primary" :icon="Search" @click="submitSearch">
-            {{ t('common.search') }}
+            {{ t('core.common.search') }}
           </el-button>
-          <el-button :icon="RefreshLeft" @click="resetSearch">{{ t('table.reset') }}</el-button>
+          <el-button :icon="RefreshLeft" @click="resetSearch">{{ t('core.table.reset') }}</el-button>
           <!-- 搜索条件超过折叠阈值时才给展开入口 -->
           <el-button
             v-if="searchColumns.length > SEARCH_COLLAPSE_LIMIT"
@@ -76,7 +76,7 @@
             type="primary"
             @click="searchExpanded = !searchExpanded"
           >
-            {{ searchExpanded ? t('table.searchCollapse') : t('table.searchExpand') }}
+            {{ searchExpanded ? t('core.table.searchCollapse') : t('core.table.searchExpand') }}
             <el-icon class="art-table-search-arrow">
               <ArrowUp v-if="searchExpanded" />
               <ArrowDown v-else />
@@ -101,7 +101,7 @@
             （在回收站里做这些操作没有意义）。
           -->
             <template v-if="recycle">
-              <el-tag type="warning" effect="dark" round>{{ t('table.recycleMode') }}</el-tag>
+              <el-tag type="warning" effect="dark" round>{{ t('core.table.recycleMode') }}</el-tag>
               <template v-if="selection">
                 <el-button
                   v-auth="'cccms:recycle:restore'"
@@ -110,7 +110,7 @@
                   :disabled="selected.length === 0"
                   @click="emit('restore')"
                 >
-                  {{ t('table.restoreSelected') }}{{ selected.length ? `（${selected.length}）` : '' }}
+                  {{ t('core.table.restoreSelected') }}{{ selected.length ? `（${selected.length}）` : '' }}
                 </el-button>
                 <el-button
                   v-auth="'cccms:recycle:delete'"
@@ -120,7 +120,7 @@
                   :disabled="selected.length === 0"
                   @click="emit('force-delete')"
                 >
-                  {{ t('table.forceDeleteSelected') }}{{ selected.length ? `（${selected.length}）` : '' }}
+                  {{ t('core.table.forceDeleteSelected') }}{{ selected.length ? `（${selected.length}）` : '' }}
                 </el-button>
               </template>
             </template>
@@ -141,36 +141,38 @@
             >
               <template #reference>
                 <!-- 这里同样不能套 el-tooltip：popover 与 tooltip 都是 popper trigger，会互抢 click -->
-                <el-button text circle :icon="Filter" :title="t('table.filterScheme')" />
+                <el-button text circle :icon="Filter" :title="t('core.table.filterScheme')" />
               </template>
               <div class="art-table-filter">
                 <div class="art-table-filter-head">
-                  <span>{{ t('table.filterScheme') }}</span>
+                  <span>{{ t('core.table.filterScheme') }}</span>
                   <el-button link type="primary" size="small" :disabled="!filterHasSaved" @click="clearFilterSaved">
-                    {{ t('table.clearMemory') }}
+                    {{ t('core.table.clearMemory') }}
                   </el-button>
                 </div>
                 <div v-if="filterSchemes.length" class="art-table-filter-list">
                   <div v-for="name in filterSchemes" :key="name" class="art-table-filter-item">
                     <el-button link type="primary" @click="applyFilterScheme(name)">{{ name }}</el-button>
-                    <el-button link type="danger" @click="removeFilterScheme(name)">{{ t('table.delete') }}</el-button>
+                    <el-button link type="danger" @click="removeFilterScheme(name)">{{
+                      t('core.table.delete')
+                    }}</el-button>
                   </div>
                 </div>
-                <div v-else class="art-table-filter-empty">{{ t('table.noSavedScheme') }}</div>
+                <div v-else class="art-table-filter-empty">{{ t('core.table.noSavedScheme') }}</div>
                 <div class="art-table-filter-save">
                   <el-input
                     v-model="filterName"
                     size="small"
-                    :placeholder="t('table.schemeName')"
+                    :placeholder="t('core.table.schemeName')"
                     @keyup.enter="saveFilterScheme"
                   />
                   <el-button size="small" type="primary" :disabled="!filterName.trim()" @click="saveFilterScheme">
-                    {{ t('table.save') }}
+                    {{ t('core.table.save') }}
                   </el-button>
                 </div>
               </div>
             </el-popover>
-            <el-tooltip :content="t('table.refresh')" placement="top">
+            <el-tooltip :content="t('core.table.refresh')" placement="top">
               <el-button text circle :icon="Refresh" :loading="loading" @click="emit('refresh')" />
             </el-tooltip>
             <!--
@@ -179,25 +181,25 @@
             而且调密度比调列频繁得多，值得一个一级入口。
           -->
             <el-dropdown trigger="click" placement="bottom-end" @command="onDensityChange">
-              <el-button text circle :title="t('table.density')">
+              <el-button text circle :title="t('core.table.density')">
                 <i class="ri-line-height" />
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="small" :class="{ 'art-table-density-on': effectiveSize === 'small' }">
-                    {{ t('table.sizeCompact') }}
+                    {{ t('core.table.sizeCompact') }}
                   </el-dropdown-item>
                   <el-dropdown-item command="default" :class="{ 'art-table-density-on': effectiveSize === 'default' }">
-                    {{ t('table.sizeDefault') }}
+                    {{ t('core.table.sizeDefault') }}
                   </el-dropdown-item>
                   <el-dropdown-item command="large" :class="{ 'art-table-density-on': effectiveSize === 'large' }">
-                    {{ t('table.sizeLoose') }}
+                    {{ t('core.table.sizeLoose') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
             <!-- 列设置改为弹窗：列多时弹窗比 popover 能放得下，且支持拖拽排序 -->
-            <el-tooltip :content="t('table.columnSetting')" placement="top">
+            <el-tooltip :content="t('core.table.columnSetting')" placement="top">
               <el-button text circle :icon="Setting" @click="openColumnDialog" />
             </el-tooltip>
           </div>
@@ -210,29 +212,7 @@
       -->
       <el-config-provider :size="effectiveButtonSize">
         <div class="art-table-wrap" :class="{ 'is-compact': effectiveSize === 'small' }">
-          <!-- 虚拟滚动模式：仅当开启 virtual 且非树形/非回收站时生效，用 el-table-v2 + el-auto-resizer -->
-          <el-auto-resizer v-if="useVirtual">
-            <template #default="{ height, width }">
-              <el-table-v2
-                v-loading="loading"
-                :columns="virtualColumns"
-                :data="data"
-                :width="width"
-                :height="height"
-                :row-key="rowKey"
-                :header-height="44"
-                :row-height="48"
-                :row-class="virtualRowClass"
-              >
-                <template #empty>
-                  <el-empty :description="t('table.empty')" :image-size="80" />
-                </template>
-              </el-table-v2>
-            </template>
-          </el-auto-resizer>
-
           <el-table
-            v-else
             ref="tableRef"
             :key="columnKey"
             v-loading="loading"
@@ -245,7 +225,7 @@
             :default-sort="effectiveDefaultSort"
             :show-summary="showSummary"
             :summary-method="resolvedSummaryMethod"
-            :sum-text="summaryText || t('table.summary')"
+            :sum-text="summaryText || t('core.table.summary')"
             stripe
             border
             highlight-current-row
@@ -275,88 +255,90 @@
                 <slot v-if="col.headerSlot" :name="col.headerSlot" :column="col" :label="col.label" />
                 <template v-else>
                   <span class="art-table-head-label" :style="{ textAlign: headAlignOf(col) }">{{ col.label }}</span>
-                <!--
+                  <!--
                   日期范围的日历面板是双月并排 + 时间列，弹层要放宽才放得下，
                   其余类型（枚举 / 文本）保持窄面板。
                 -->
-                <el-popover
-                  :width="col.filter?.type === 'date' ? 760 : 230"
-                  trigger="click"
-                  placement="bottom-start"
-                  @show="syncFilterDraft(col)"
-                >
-                  <template #reference>
-                    <el-icon
-                      class="art-table-head-filter"
-                      :class="{ 'is-active': isFilterActive(col) }"
-                      :title="t('table.columnFilter')"
-                      @click.stop
-                    >
-                      <Filter />
-                    </el-icon>
-                  </template>
-                  <template #default="{ hide }">
-                    <div class="art-table-head-panel">
-                      <!--
+                  <el-popover
+                    :width="col.filter?.type === 'date' ? 760 : 230"
+                    trigger="click"
+                    placement="bottom-start"
+                    @show="syncFilterDraft(col)"
+                  >
+                    <template #reference>
+                      <el-icon
+                        class="art-table-head-filter"
+                        :class="{ 'is-active': isFilterActive(col) }"
+                        :title="t('core.table.columnFilter')"
+                        @click.stop
+                      >
+                        <Filter />
+                      </el-icon>
+                    </template>
+                    <template #default="{ hide }">
+                      <div class="art-table-head-panel">
+                        <!--
                         枚举：复选下拉框。这里必须 teleported=false ——
                         下拉面板默认挂到 body，会被 el-popover 的「点击外部即关闭」判成外部点击，
                         勾第一个选项弹层就没了；留在弹层内部才能连续多选。
                       -->
-                      <el-select
-                        v-if="col.filter?.type === 'enum'"
-                        v-model="enumDraft[col.prop]"
-                        size="small"
-                        multiple
-                        collapse-tags
-                        collapse-tags-tooltip
-                        clearable
-                        :teleported="false"
-                        :placeholder="t('table.filterAll')"
-                      >
-                        <el-option
-                          v-for="opt in col.filter?.options ?? []"
-                          :key="opt.value"
-                          :label="opt.label"
-                          :value="opt.value"
-                        />
-                      </el-select>
-                      <!-- 日期：范围选择（起止写 start/end 两个字段） -->
-                      <div v-else-if="col.filter?.type === 'date'" class="art-table-date-picker">
-                        <!--
+                        <el-select
+                          v-if="col.filter?.type === 'enum'"
+                          v-model="enumDraft[col.prop]"
+                          size="small"
+                          multiple
+                          collapse-tags
+                          collapse-tags-tooltip
+                          clearable
+                          :teleported="false"
+                          :placeholder="t('core.table.filterAll')"
+                        >
+                          <el-option
+                            v-for="opt in col.filter?.options ?? []"
+                            :key="opt.value"
+                            :label="opt.label"
+                            :value="opt.value"
+                          />
+                        </el-select>
+                        <!-- 日期：范围选择（起止写 start/end 两个字段） -->
+                        <div v-else-if="col.filter?.type === 'date'" class="art-table-date-picker">
+                          <!--
                           同样必须 teleported=false：日历面板默认挂到 body，
                           点面板会被 el-popover 判成「点击外部」而直接关掉弹层。
                         -->
-                        <el-date-picker v-model="dateDraft[col.prop]" v-bind="datePickerProps" :teleported="false" />
+                          <el-date-picker v-model="dateDraft[col.prop]" v-bind="datePickerProps" :teleported="false" />
+                        </div>
+                        <!-- 长文本（JSON 片段）：多行输入，Ctrl+Enter 应用筛选 -->
+                        <el-input
+                          v-else-if="col.filter?.type === 'textarea'"
+                          v-model="textDraft[col.prop]"
+                          type="textarea"
+                          size="small"
+                          :rows="col.filter?.rows ?? 3"
+                          :placeholder="col.filter?.placeholder || t('core.table.filterTextPlaceholder')"
+                          @keydown.ctrl.enter="applyFilter(col, hide)"
+                        />
+                        <!-- 文本：模糊查询输入框 -->
+                        <el-input
+                          v-else
+                          v-model="textDraft[col.prop]"
+                          size="small"
+                          clearable
+                          :placeholder="col.filter?.placeholder || t('core.table.filterTextPlaceholder')"
+                          @keyup.enter="applyFilter(col, hide)"
+                        />
+                        <!-- 规范：重置在左、筛选在右，均为按钮形式（筛选为主题色 primary） -->
+                        <div class="art-table-head-actions">
+                          <el-button size="small" @click="resetFilter(col, hide)">{{
+                            t('core.table.reset')
+                          }}</el-button>
+                          <el-button size="small" type="primary" @click="applyFilter(col, hide)">
+                            {{ t('core.table.filterConfirm') }}
+                          </el-button>
+                        </div>
                       </div>
-                      <!-- 长文本（JSON 片段）：多行输入，Ctrl+Enter 应用筛选 -->
-                      <el-input
-                        v-else-if="col.filter?.type === 'textarea'"
-                        v-model="textDraft[col.prop]"
-                        type="textarea"
-                        size="small"
-                        :rows="col.filter?.rows ?? 3"
-                        :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
-                        @keydown.ctrl.enter="applyFilter(col, hide)"
-                      />
-                      <!-- 文本：模糊查询输入框 -->
-                      <el-input
-                        v-else
-                        v-model="textDraft[col.prop]"
-                        size="small"
-                        clearable
-                        :placeholder="col.filter?.placeholder || t('table.filterTextPlaceholder')"
-                        @keyup.enter="applyFilter(col, hide)"
-                      />
-                      <!-- 规范：重置在左、筛选在右，均为按钮形式（筛选为主题色 primary） -->
-                      <div class="art-table-head-actions">
-                        <el-button size="small" @click="resetFilter(col, hide)">{{ t('table.reset') }}</el-button>
-                        <el-button size="small" type="primary" @click="applyFilter(col, hide)">
-                          {{ t('table.filterConfirm') }}
-                        </el-button>
-                      </div>
-                    </div>
-                  </template>
-                </el-popover>
+                    </template>
+                  </el-popover>
                 </template>
               </template>
 
@@ -371,19 +353,19 @@
             </el-table-column>
 
             <!-- 回收站模式：操作列由表格统一渲染，页面的「操作」列（slot=action）被换掉 -->
-            <el-table-column v-if="recycle" :label="t('table.action')" width="170" fixed="right">
+            <el-table-column v-if="recycle" :label="t('core.table.action')" width="170" fixed="right">
               <template #default="{ row }">
                 <el-button v-auth="'cccms:recycle:restore'" link type="primary" @click="emit('restore', row)">
-                  {{ t('table.restore') }}
+                  {{ t('core.table.restore') }}
                 </el-button>
                 <el-button v-auth="'cccms:recycle:delete'" link type="danger" @click="emit('force-delete', row)">
-                  {{ t('table.forceDelete') }}
+                  {{ t('core.table.forceDelete') }}
                 </el-button>
               </template>
             </el-table-column>
 
             <template #empty>
-              <el-empty :description="t('table.empty')" :image-size="80" />
+              <el-empty :description="t('core.table.empty')" :image-size="80" />
             </template>
           </el-table>
         </div>
@@ -413,7 +395,7 @@
     -->
     <el-dialog
       v-model="columnDialogVisible"
-      :title="t('table.columnSetting')"
+      :title="t('core.table.columnSetting')"
       width="720px"
       append-to-body
       class="art-column-dialog"
@@ -421,21 +403,21 @@
       <div class="art-column-panel">
         <div class="art-column-row art-column-row--head">
           <span class="art-column-drag" />
-          <span class="art-column-name">{{ t('table.columnName') }}</span>
-          <span class="art-column-cell">{{ t('table.columnVisible') }}</span>
-          <span class="art-column-cell">{{ t('table.columnSort') }}</span>
-          <span class="art-column-cell">{{ t('table.columnPrivacy') }}</span>
+          <span class="art-column-name">{{ t('core.table.columnName') }}</span>
+          <span class="art-column-cell">{{ t('core.table.columnVisible') }}</span>
+          <span class="art-column-cell">{{ t('core.table.columnSort') }}</span>
+          <span class="art-column-cell">{{ t('core.table.columnPrivacy') }}</span>
           <span class="art-column-cell">
-            {{ t('table.columnSummary') }}（{{ summaryDraftCount }}/{{ dialogColumns.length }}）
+            {{ t('core.table.columnSummary') }}（{{ summaryDraftCount }}/{{ dialogColumns.length }}）
           </span>
           <button
             type="button"
             class="art-column-clear-all"
             :disabled="summaryDraftCount === 0"
-            :title="t('table.clearAllSummary')"
+            :title="t('core.table.clearAllSummary')"
             @click="clearAllDraftSummary"
           >
-            {{ t('table.columnClear') }}
+            {{ t('core.table.columnClear') }}
           </button>
         </div>
         <div class="art-column-list">
@@ -458,7 +440,7 @@
             <i
               class="art-column-drag"
               :class="col.lockVisible ? 'ri-lock-2-line' : 'ri-draggable'"
-              :title="col.lockVisible ? t('table.columnLocked') : t('table.columnDragHint')"
+              :title="col.lockVisible ? t('core.table.columnLocked') : t('core.table.columnDragHint')"
             />
             <span class="art-column-name" :title="col.label">{{ col.label }}</span>
             <span class="art-column-cell">
@@ -472,7 +454,7 @@
               <el-checkbox
                 :model-value="col.sortable === 'custom' && !draftSortDisabled.includes(col.prop)"
                 :disabled="col.sortable !== 'custom'"
-                :title="col.sortable === 'custom' ? '' : t('table.sortUnavailable')"
+                :title="col.sortable === 'custom' ? '' : t('core.table.sortUnavailable')"
                 @change="(checked: string | number | boolean) => toggleDraftSort(col.prop, Boolean(checked))"
               />
             </span>
@@ -480,7 +462,7 @@
               <el-checkbox
                 :model-value="draftPrivacy.includes(col.prop)"
                 :disabled="col.lockVisible"
-                :title="col.lockVisible ? t('table.privacyLocked') : t('table.privacyHint')"
+                :title="col.lockVisible ? t('core.table.privacyLocked') : t('core.table.privacyHint')"
                 @change="(checked: string | number | boolean) => toggleDraftPrivacy(col.prop, Boolean(checked))"
               />
             </span>
@@ -488,7 +470,7 @@
               <el-checkbox
                 :model-value="summaryEnabled && !draftSummaryHidden.includes(col.prop)"
                 :disabled="!summaryEnabled"
-                :title="summaryEnabled ? '' : t('table.summaryUnavailable')"
+                :title="summaryEnabled ? '' : t('core.table.summaryUnavailable')"
                 @change="(checked: string | number | boolean) => toggleDraftSummary(col.prop, Boolean(checked))"
               />
             </span>
@@ -496,7 +478,7 @@
               type="button"
               class="art-column-clear"
               :disabled="!summaryEnabled || draftSummaryHidden.includes(col.prop)"
-              :title="t('table.clearSummary')"
+              :title="t('core.table.clearSummary')"
               @click="clearDraftSummary(col.prop)"
             >
               <el-icon><Close /></el-icon>
@@ -507,15 +489,15 @@
       <template #footer>
         <div class="art-column-footer">
           <div class="art-column-footer-resets">
-            <el-button link type="primary" @click="resetDraftWidths">{{ t('table.resetWidth') }}</el-button>
-            <el-button link type="primary" @click="resetColumnDraft">{{ t('table.resetColumns') }}</el-button>
-            <el-button link type="primary" @click="resetAllDraft">{{ t('table.resetAll') }}</el-button>
+            <el-button link type="primary" @click="resetDraftWidths">{{ t('core.table.resetWidth') }}</el-button>
+            <el-button link type="primary" @click="resetColumnDraft">{{ t('core.table.resetColumns') }}</el-button>
+            <el-button link type="primary" @click="resetAllDraft">{{ t('core.table.resetAll') }}</el-button>
             <!-- 列宽在弹窗里看不到，用一行小字说明这次重置会在「确定」后生效 -->
-            <span v-if="draftResetWidths" class="art-column-reset-hint">{{ t('table.resetWidthPending') }}</span>
+            <span v-if="draftResetWidths" class="art-column-reset-hint">{{ t('core.table.resetWidthPending') }}</span>
           </div>
           <div class="art-column-footer-actions">
-            <el-button @click="columnDialogVisible = false">{{ t('common.cancel') }}</el-button>
-            <el-button type="primary" @click="applyColumnSetting">{{ t('common.confirm') }}</el-button>
+            <el-button @click="columnDialogVisible = false">{{ t('core.common.cancel') }}</el-button>
+            <el-button type="primary" @click="applyColumnSetting">{{ t('core.common.confirm') }}</el-button>
           </div>
         </div>
       </template>
@@ -524,12 +506,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, inject, reactive, ref, useSlots, watch } from 'vue'
-import type { VNode } from 'vue'
+import { computed, inject, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import { ElCheckbox, ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
   ArrowDown,
   ArrowUp,
@@ -573,7 +554,6 @@ const props = withDefaults(
      *
      * 显式声明这个 prop 是必要的：未声明的属性只会 fallthrough 到根 div，
      * 传 `size` 会静默失效（内部 el-table 收不到）。
-     * 注意：`virtual`（虚拟滚动）走的是 `el-table-v2`，它本身没有 `size` 属性，那种模式下不生效。
      */
     size?: 'large' | 'default' | 'small'
     /**
@@ -601,12 +581,6 @@ const props = withDefaults(
      * 操作列统一换成「还原 / 彻底删除」，页面自带的 `slot: 'action'` 列与工具栏按钮不渲染。
      */
     recycle?: boolean
-    /**
-     * 大表格虚拟滚动：切换为 `el-table-v2`，只渲染可视区域内的行。
-     * 仅对「非树形、非回收站」的普通列表生效，其余场景自动回退普通 `el-table`（行为完全不变）。
-     * 适合单页行数达到数千以上的列表；普通分页列表无需开启。
-     */
-    virtual?: boolean
     /**
      * 初始排序（配合列的 `sortable: 'custom'` 做服务端排序）。
      *
@@ -654,7 +628,6 @@ const props = withDefaults(
     tree: false,
     storageKey: '',
     recycle: false,
-    virtual: false,
     summaryMethod: undefined,
     summaryData: undefined,
     summaryText: '',
@@ -717,7 +690,6 @@ const emit = defineEmits<{
 const page = defineModel<number>('page', { default: 1 })
 const limit = defineModel<number>('limit', { default: 15 })
 
-const slots = useSlots()
 const route = useRoute()
 
 /** 当前勾选行（仅用于回收站模式的批量按钮） */
@@ -752,7 +724,7 @@ function saveFilterScheme(): void {
   tableFilter.saveScheme(name)
   filterName.value = ''
   refreshFilterPanel()
-  ElMessage.success(t('table.savedScheme', { name }))
+  ElMessage.success(t('core.table.savedScheme', { name }))
 }
 
 function applyFilterScheme(name: string): void {
@@ -768,7 +740,7 @@ function removeFilterScheme(name: string): void {
 function clearFilterSaved(): void {
   tableFilter?.clearSaved()
   refreshFilterPanel()
-  ElMessage.success(t('table.clearedMemory'))
+  ElMessage.success(t('core.table.clearedMemory'))
 }
 
 const isNarrow = useMediaQuery('(max-width: 768px)')
@@ -802,23 +774,26 @@ const dateShortcuts = computed(() => {
   const now = new Date()
 
   return [
-    { text: t('table.timeToday'), value: (): [Date, Date] => [startOfDay(now), endOfDay(now)] },
+    { text: t('core.table.timeToday'), value: (): [Date, Date] => [startOfDay(now), endOfDay(now)] },
     {
-      text: t('table.timeYesterday'),
+      text: t('core.table.timeYesterday'),
       value: (): [Date, Date] => {
         const day = shiftDays(now, -1)
         return [startOfDay(day), endOfDay(day)]
       },
     },
-    { text: t('table.timeLast3Days'), value: (): [Date, Date] => [startOfDay(shiftDays(now, -2)), endOfDay(now)] },
-    { text: t('table.timeLast7Days'), value: (): [Date, Date] => [startOfDay(shiftDays(now, -6)), endOfDay(now)] },
-    { text: t('table.timeLast30Days'), value: (): [Date, Date] => [startOfDay(shiftDays(now, -29)), endOfDay(now)] },
+    { text: t('core.table.timeLast3Days'), value: (): [Date, Date] => [startOfDay(shiftDays(now, -2)), endOfDay(now)] },
+    { text: t('core.table.timeLast7Days'), value: (): [Date, Date] => [startOfDay(shiftDays(now, -6)), endOfDay(now)] },
     {
-      text: t('table.timeThisMonth'),
+      text: t('core.table.timeLast30Days'),
+      value: (): [Date, Date] => [startOfDay(shiftDays(now, -29)), endOfDay(now)],
+    },
+    {
+      text: t('core.table.timeThisMonth'),
       value: (): [Date, Date] => [new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0), endOfDay(now)],
     },
     {
-      text: t('table.timeLastMonth'),
+      text: t('core.table.timeLastMonth'),
       value: (): [Date, Date] => [
         new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0),
         // 上月最后一天：下月第 0 天即本月 1 号前一天
@@ -835,8 +810,8 @@ const dateShortcuts = computed(() => {
 const datePickerProps = computed(() => ({
   type: 'datetimerange' as const,
   rangeSeparator: '~',
-  startPlaceholder: t('table.filterStart'),
-  endPlaceholder: t('table.filterEnd'),
+  startPlaceholder: t('core.table.filterStart'),
+  endPlaceholder: t('core.table.filterEnd'),
   valueFormat: 'YYYY-MM-DD HH:mm:ss',
   defaultTime: [new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 1, 1, 23, 59, 59)] as [Date, Date],
   shortcuts: dateShortcuts.value,
@@ -1122,11 +1097,6 @@ const defaultPrivacyColumns = computed(() =>
 )
 /** 开启隐私遮罩的列：页面声明的 `defaultPrivacy` 为默认值，用户动过隐私开关后以本地记录为准 */
 const privacyColumns = ref<string[]>(readStoredList(PRIVACY_PREFIX) ?? [...defaultPrivacyColumns.value])
-
-/** 表格默认开斑马纹：虚拟滚动没有 `stripe` 属性，按奇数行加类名模拟同样的效果 */
-function virtualRowClass({ rowIndex }: { rowIndex: number }): string {
-  return rowIndex % 2 === 1 ? 'art-table-stripe' : ''
-}
 
 watch(
   () => props.columns,
@@ -1552,7 +1522,7 @@ function resolvedSummaryMethod(param: { columns: any[]; data: any[] }): string[]
   return param.columns.map((column, index) => {
     if (index === 0) {
       // 传了自定义 summaryMethod 时 el-table **不会**再用 sum-text，标签得由这里给
-      return base[0] || props.summaryText || t('table.summary')
+      return base[0] || props.summaryText || t('core.table.summary')
     }
     const prop = String(column?.property ?? '')
     if (!prop || summaryHiddenColumns.value.includes(prop)) {
@@ -1611,132 +1581,6 @@ function columnProps(col: ArtTableColumn): Record<string, unknown> {
   }
   return out
 }
-
-/* ---- 虚拟滚动（P2-15） ---- */
-
-/** 树形 / 回收站场景不支持 el-table-v2，自动回退普通表格 */
-const useVirtual = computed(() => props.virtual && !props.tree && !props.recycle)
-
-const VIRTUAL_DEFAULT_WIDTH = 150
-
-/** 虚拟模式下被勾选的行主键集合 */
-const virtualSelectedKeys = ref<(string | number)[]>([])
-
-function virtualRowKey(row: any): string | number {
-  return row?.[props.rowKey] ?? row?.id
-}
-
-const virtualAllChecked = computed(
-  () => props.data.length > 0 && virtualSelectedKeys.value.length === props.data.length,
-)
-const virtualIndeterminate = computed(
-  () => virtualSelectedKeys.value.length > 0 && virtualSelectedKeys.value.length < props.data.length,
-)
-
-function syncVirtualSelection(): void {
-  const rows = props.data.filter((row) => virtualSelectedKeys.value.includes(virtualRowKey(row)))
-  // 复用普通模式的勾选状态与 selection-change 事件，页面无需区分实现
-  selected.value = rows
-  emit('selection-change', rows)
-}
-
-function toggleVirtualAll(checked: string | number | boolean | undefined): void {
-  virtualSelectedKeys.value = checked ? props.data.map((row) => virtualRowKey(row)) : []
-  syncVirtualSelection()
-}
-
-function toggleVirtualRow(row: any): void {
-  const key = virtualRowKey(row)
-  const idx = virtualSelectedKeys.value.indexOf(key)
-  if (idx >= 0) {
-    virtualSelectedKeys.value = virtualSelectedKeys.value.filter((k) => k !== key)
-  } else {
-    virtualSelectedKeys.value = [...virtualSelectedKeys.value, key]
-  }
-  syncVirtualSelection()
-}
-
-/** 把 ArtTable 的列契约映射成 el-table-v2 的 Column（width 必填，插槽用 cellRenderer 自绘） */
-const virtualColumns = computed<Record<string, any>[]>(() => {
-  const cols: Record<string, any>[] = []
-  if (props.selection) {
-    cols.push({
-      key: '__selection',
-      width: 46,
-      align: 'center',
-      headerCellRenderer: () =>
-        h(ElCheckbox, {
-          modelValue: virtualAllChecked.value,
-          indeterminate: virtualIndeterminate.value,
-          onChange: toggleVirtualAll,
-        }),
-      cellRenderer: ({ rowData }: { rowData: any }) =>
-        h(ElCheckbox, {
-          modelValue: virtualSelectedKeys.value.includes(virtualRowKey(rowData)),
-          onChange: () => toggleVirtualRow(rowData),
-        }),
-    })
-  }
-  for (const col of visibleColumns.value) {
-    let width = columnWidths.value[col.prop]
-    if (!width && typeof col.width === 'number') {
-      width = col.width
-    }
-    if (!width && typeof col.minWidth === 'number') {
-      width = col.minWidth
-    }
-    if (!width) {
-      width = VIRTUAL_DEFAULT_WIDTH
-    }
-    const item: Record<string, any> = {
-      key: col.prop,
-      dataKey: col.prop,
-      title: col.label,
-      width,
-    }
-    if (col.align) {
-      item.align = col.align
-    }
-    if (col.fixed === true || col.fixed === 'left') {
-      item.fixed = 'left'
-    } else if (col.fixed === 'right') {
-      item.fixed = 'right'
-    }
-    if (col.slot && slots[col.slot]) {
-      const slotFn = slots[col.slot]!
-      item.cellRenderer = ({
-        rowData,
-        rowIndex,
-        cellData,
-      }: {
-        rowData: any
-        rowIndex: number
-        cellData: unknown
-      }): VNode => h('div', slotFn({ row: rowData, index: rowIndex, value: cellData }))
-    }
-    cols.push(item)
-  }
-  return cols
-})
-
-/**
- * 翻页 / 刷新后剔除已不在当前数据里的勾选，避免批量操作误伤看不见的行
- * （与普通表格不开 reserve-selection 的语义保持一致）。
- */
-watch(
-  () => props.data,
-  () => {
-    if (!useVirtual.value || virtualSelectedKeys.value.length === 0) {
-      return
-    }
-    const keys = props.data.map((row) => virtualRowKey(row))
-    const next = virtualSelectedKeys.value.filter((key) => keys.includes(key))
-    if (next.length !== virtualSelectedKeys.value.length) {
-      virtualSelectedKeys.value = next
-      syncVirtualSelection()
-    }
-  },
-)
 
 function onCurrentChange(value: number): void {
   page.value = value
@@ -1856,17 +1700,6 @@ watch(
  */
 .art-table-wrap.is-compact {
   --el-font-size-base: var(--el-font-size-extra-small);
-}
-
-/* 虚拟滚动没有 stripe 属性：按奇数行类名补底色，颜色与普通表格的斑马纹一致 */
-.art-table-wrap :deep(.el-table-v2__row.art-table-stripe) {
-  background-color: var(--el-fill-color-lighter);
-}
-
-/* 斑马纹行的悬停要显式写回：上面那条选择器权重高于 el-table-v2 自带的 :hover */
-.art-table-wrap :deep(.el-table-v2__row.art-table-stripe:hover),
-.art-table-wrap :deep(.el-table-v2__row.art-table-stripe.is-hovered) {
-  background-color: var(--art-hover-bg);
 }
 
 /* ---- 搜索卡片（表格上方独立一张卡，折叠项用 v-show 隐藏，展开后换行铺开） ---- */

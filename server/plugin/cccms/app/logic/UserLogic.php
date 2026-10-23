@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
-use plugin\cccms\support\PageInput;
 use plugin\cccms\app\model\Dept;
 use plugin\cccms\app\model\Post;
 use plugin\cccms\app\model\Role;
@@ -15,10 +14,12 @@ use plugin\cccms\app\model\UserRole;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\PageInput;
 use plugin\cccms\support\PasswordPolicy;
 use plugin\cccms\support\PermissionCache;
 use plugin\cccms\support\SortInput;
 use plugin\cccms\support\Tree;
+use plugin\cccms\support\UniqueGuard;
 use plugin\cccms\support\UserContext;
 use think\facade\Db;
 use Throwable;
@@ -26,14 +27,17 @@ use Throwable;
 /**
  * 用户管理逻辑。
  *
- * 数据权限**全部由模型层承担**，这里不再出现任何手写判定：
- *   - 行级范围：「仅本人」= id、「本部门」走 sys_user_dept → `BaseModel::scopeDataScope()`；
- *   - 出参字段规则（hidden / mask / encrypt）→ `BaseModel::toArray()`；
- *   - 入参字段剔除（不可见 / 不可改）→ `ScopedQuery` 在写库前统一处理。
+ * 数据权限分两层：
+ *   - **读取范围由模型层承担**：「仅本人」= id、「本部门」走 sys_user_dept →
+ *     `BaseModel::scopeDataScope()`；出参字段规则（hidden / mask / encrypt）→ `BaseModel::toArray()`；
+ *     入参字段剔除（不可见 / 不可改）→ `ScopedQuery` 在写库前统一处理。
+ *   - **写侧的越权判定在此显式完成**：`scopedIds()` / `protectedIds()` / `assertInScope()`
+ *     是模型作用域表达不了的语义 —— 「哪些 id 真的落在范围内」「超管与自己不允许被批量禁用 / 删除」。
+ *     这类判定必须显式写出来，不能依赖「作用域会兜住」。
  *
  * 需要看到**全量**数据的地方（存在性判断）显式用 `User::withoutGlobalScope()`
  * —— 它保留租户边界、只跳出数据权限；而 `username` 是**全局唯一索引**，
- * 这类唯一性校验必须用 `User::withoutAllScopes()` 连租户一起绕过，否则会漏判并写出脏索引。
+ * 这类唯一性校验必须用 `User::withoutAllScopes()`（见 `UniqueGuard`）连租户一起绕过。
  */
 final class UserLogic
 {
@@ -232,7 +236,7 @@ final class UserLogic
      */
     public static function batchStatus(array $ids, int $status, UserContext $operator): array
     {
-        $ids = self::batchIds($ids);
+        $ids = Tree::batchIds($ids);
         $inScope = self::scopedIds($ids);
 
         // 自己与超管账号不参与批量禁用：与单条删除同一套保护，避免误操作把自己锁在门外
@@ -256,7 +260,7 @@ final class UserLogic
      */
     public static function batchDelete(array $ids, UserContext $operator): array
     {
-        $ids = self::batchIds($ids);
+        $ids = Tree::batchIds($ids);
         $inScope = array_values(array_diff(self::scopedIds($ids), self::protectedIds($ids, $operator)));
         $skipped = array_values(array_diff($ids, $inScope));
 
@@ -264,8 +268,9 @@ final class UserLogic
             return ['affected' => 0, 'skipped' => $skipped];
         }
 
-        // 作用域仍然生效（越权 id 匹配不到行）；关联表刻意保留，恢复后角色/部门/岗位原样回来
-        $affected = User::destroy($inScope);
+        // 作用域仍然生效（越权 id 匹配不到行）；关联表刻意保留，恢复后角色/部门/岗位原样回来。
+        // destroy() 只返回「是否执行成功」，`affected` 按实际提交的 id 数计（返回值声明为 int）
+        $affected = User::destroy($inScope) ? count($inScope) : 0;
         PermissionCache::bump();
 
         return ['affected' => $affected, 'skipped' => $skipped];
@@ -281,7 +286,7 @@ final class UserLogic
      */
     public static function batchAssign(array $ids, array $data): array
     {
-        $ids = self::batchIds($ids);
+        $ids = Tree::batchIds($ids);
         $inScope = self::scopedIds($ids);
         $skipped = array_values(array_diff($ids, $inScope));
 
@@ -307,17 +312,19 @@ final class UserLogic
             self::assertOwnedInTenant(Post::class, $postIds, 'user.label_post');
         }
 
-        foreach ($inScope as $id) {
+        // 整批一个事务 + 每个维度一次 DELETE + 一次 insertAll：
+        // 逐个用户循环会产生「每人 3 条 DELETE + N 条 INSERT」的量级，且中途失败留下部分生效的中间态
+        Db::transaction(static function () use ($inScope, $roleIds, $deptIds, $postIds): void {
             if ($roleIds !== null) {
-                self::syncRoles($id, $roleIds);
+                self::bulkSyncRoles($inScope, $roleIds);
             }
             if ($deptIds !== null) {
-                self::syncDepts($id, $deptIds);
+                self::bulkSyncDepts($inScope, $deptIds);
             }
             if ($postIds !== null) {
-                self::syncPosts($id, $postIds);
+                self::bulkSyncPosts($inScope, $postIds);
             }
-        }
+        });
 
         // 角色 / 部门 / 岗位关系变化会影响数据范围与权限缓存
         PermissionCache::bump();
@@ -359,12 +366,6 @@ final class UserLogic
         }
 
         return array_values(array_unique($protected));
-    }
-
-    /** 规范化批量 id：去重、去非正整数 */
-    private static function batchIds(array $ids): array
-    {
-        return Tree::batchIds($ids);
     }
 
     /**
@@ -467,6 +468,65 @@ final class UserLogic
         self::syncPosts($userId, $postIds);
     }
 
+    /**
+     * 批量分配的写入：一次 DELETE 覆盖整批用户 + 一次 insertAll。
+     *
+     * 与 `syncRoles()` 等单用户版本的语义一致（先清空再写入），只是把往返次数从
+     * 「用户数 × 维度」降到「维度数」。
+     *
+     * @param int[] $userIds
+     * @param int[] $roleIds
+     */
+    private static function bulkSyncRoles(array $userIds, array $roleIds): void
+    {
+        UserRole::whereIn('user_id', $userIds)->delete();
+
+        $ids  = self::positiveIds($roleIds);
+        $rows = [];
+        foreach ($userIds as $uid) {
+            foreach ($ids as $rid) {
+                $rows[] = ['user_id' => (int)$uid, 'role_id' => $rid];
+            }
+        }
+        if ($rows !== []) {
+            UserRole::insertAll($rows);
+        }
+    }
+
+    /** @param int[] $userIds @param int[] $deptIds */
+    private static function bulkSyncDepts(array $userIds, array $deptIds): void
+    {
+        UserDept::whereIn('user_id', $userIds)->delete();
+
+        $ids  = self::positiveIds($deptIds);
+        $rows = [];
+        foreach ($userIds as $uid) {
+            foreach ($ids as $did) {
+                $rows[] = ['user_id' => (int)$uid, 'dept_id' => $did];
+            }
+        }
+        if ($rows !== []) {
+            UserDept::insertAll($rows);
+        }
+    }
+
+    /** @param int[] $userIds @param int[] $postIds */
+    private static function bulkSyncPosts(array $userIds, array $postIds): void
+    {
+        UserPost::whereIn('user_id', $userIds)->delete();
+
+        $ids  = self::positiveIds($postIds);
+        $rows = [];
+        foreach ($userIds as $uid) {
+            foreach ($ids as $pid) {
+                $rows[] = ['user_id' => (int)$uid, 'post_id' => $pid];
+            }
+        }
+        if ($rows !== []) {
+            UserPost::insertAll($rows);
+        }
+    }
+
     /** 纯写入：删除旧关联 + 批量插入（归属校验由调用方负责，避免批量分配时 N+1） */
     private static function syncRoles(int $userId, array $roleIds): void
     {
@@ -547,25 +607,15 @@ final class UserLogic
             throw new ApiException(I18n::t('user.username_required'), 422);
         }
 
-        // 唯一索引不做软删特例：回收站里的用户仍占用用户名，这里给出可读提示。
-        // uk_username 是**全局唯一索引**（用户名不随租户重复），必须完全绕过租户作用域，
-        // 否则「别的租户已占用」会被漏判，插入时撞唯一键；
-        // withTrashed() 才能把回收站里的账号也算进来。
-        $q = User::withoutAllScopes('uk_username 是全局唯一键，跨租户查重才不会写出撞索引的账号')
-            ->withTrashed()
-            ->where('username', $username);
-        if ($excludeId > 0) {
-            $q->where('id', '<>', $excludeId);
-        }
-        $exist = $q->find();
-        if ($exist) {
-            throw new ApiException(
-                !empty($exist->delete_time)
-                    ? I18n::t('user.username_in_trash', ['username' => $username])
-                    : I18n::t('user.username_exists'),
-                422
-            );
-        }
+        UniqueGuard::assertFree(
+            User::class,
+            'username',
+            $username,
+            $excludeId,
+            'user.username_exists',
+            'user.username_in_trash',
+            ['username' => $username]
+        );
     }
 
     /**

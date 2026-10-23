@@ -40,11 +40,20 @@ class ConfigController extends BaseController
         ]);
     }
 
+    /**
+     * 保存配置。
+     *
+     * `cccms:config:save` 只覆盖「普通分组」；`security.*` / `upload.*` / `mail.*` / `sms.*`
+     * 影响系统整体安全姿态（登录防护、上传白名单、找回密码凭据），仅平台超管可改。
+     */
     #[Permission(slug: 'cccms:config:save', title: '保存配置')]
     #[Restrict(methods: ['POST'])]
     public function save(Request $request): Response
     {
-        $updated = ConfigLogic::save((array)$request->post());
+        $values = (array)$request->post();
+        ConfigLogic::assertGroupsWritable($values, $request->user);
+
+        $updated = ConfigLogic::save($values);
         return $this->ok(['updated' => $updated], I18n::t('common.saved'));
     }
 }

@@ -106,7 +106,8 @@ final class Csv
 
         try {
             while (($cells = fgetcsv($handle)) !== false) {
-                if ($cells === [null] || $cells === []) {
+                // fgetcsv 对空行返回 [null]（永远不会返回 []），只判前者即可
+                if ($cells === [null]) {
                     continue;   // 跳过空行
                 }
 

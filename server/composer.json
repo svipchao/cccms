@@ -1,28 +1,14 @@
 {
-  "name": "workerman/webman",
+  "name": "cccms/cccms",
   "type": "project",
-  "keywords": [
-    "high performance",
-    "http service"
-  ],
-  "homepage": "https://www.workerman.net",
   "license": "MIT",
-  "description": "High performance HTTP Service Framework.",
-  "authors": [
-    {
-      "name": "walkor",
-      "email": "walkor@workerman.net",
-      "homepage": "https://www.workerman.net",
-      "role": "Developer"
-    }
+  "description": "CCCMS 后台管理系统：Webman 服务端（插件化架构 + RBAC + 数据权限 + 审计链）。",
+  "keywords": [
+    "cccms",
+    "admin",
+    "webman",
+    "rbac"
   ],
-  "support": {
-    "email": "walkor@workerman.net",
-    "issues": "https://github.com/walkor/webman/issues",
-    "forum": "https://wenda.workerman.net/",
-    "wiki": "https://workerman.net/doc/webman",
-    "source": "https://github.com/walkor/webman"
-  },
   "require": {
     "php": ">=8.1",
     "workerman/webman-framework": "^2.1",
@@ -40,30 +26,18 @@
   },
   "suggest": {
     "ext-event": "For better performance. ",
-    "aliyuncs/oss-sdk-php": "阿里云 OSS 存储驱动（后台配置管理 → 上传，驱动选 oss）",
-    "qcloud/cos-sdk-v5": "腾讯云 COS 存储驱动（后台配置管理 → 上传，驱动选 cos）",
-    "qiniu/php-sdk": "七牛云 Kodo 存储驱动（后台配置管理 → 上传，驱动选 qiniu）"
+    "ext-redis": "phpredis 扩展（未安装时自动回退 predis）"
   },
   "autoload": {
     "psr-4": {
       "": "./",
       "app\\": "./app",
-      "App\\": "./app",
       "app\\View\\Components\\": "./app/view/components"
     }
   },
   "scripts": {
     "post-autoload-dump": [
       "@php support/vendor_patch.php"
-    ],
-    "post-package-install": [
-      "support\\Plugin::install"
-    ],
-    "post-package-update": [
-      "support\\Plugin::install"
-    ],
-    "pre-package-uninstall": [
-      "support\\Plugin::uninstall"
     ],
     "test": [
       "php tests/run.php"
@@ -76,15 +50,9 @@
     ],
     "cs:fix": [
       "php-cs-fixer fix"
-    ],
-    "post-create-project-cmd": [
-      "support\\Setup::run"
-    ],
-    "setup-webman": [
-      "support\\Setup::run"
     ]
   },
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "prefer-stable": true,
   "require-dev": {
     "phpstan/phpstan": "^2.2",

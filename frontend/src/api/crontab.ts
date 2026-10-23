@@ -1,4 +1,4 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
 export interface CrontabRow {
@@ -45,8 +45,8 @@ export interface RunResult {
   cost: number
 }
 
-export function crontabList(params: Record<string, unknown>) {
-  return http.get<PageResult<CrontabRow>>('/crontab', params)
+export function crontabList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult<CrontabRow>>('/crontab', params, config)
 }
 
 export function crontabTargets() {
@@ -69,6 +69,6 @@ export function crontabRun(id: number) {
   return http.post<RunResult>('/crontab/run', { id })
 }
 
-export function crontabLogs(params: Record<string, unknown>) {
-  return http.get<PageResult<CrontabLogRow>>('/crontab/logs', params)
+export function crontabLogs(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult<CrontabLogRow>>('/crontab/logs', params, config)
 }

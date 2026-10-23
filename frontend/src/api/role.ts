@@ -1,8 +1,8 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
-export function roleList(params: Record<string, unknown>) {
-  return http.get<PageResult>('/role', params)
+export function roleList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult>('/role', params, config)
 }
 
 export interface RoleTreeNode {

@@ -220,7 +220,15 @@ final class I18n
         }
 
         $file = dirname(__DIR__) . '/lang/' . $locale . '/' . $namespace . '.php';
+
+        // 业务插件的语言包：插件共享同一个 `I18n`，但各自维护 `plugin/{插件}/lang/{locale}/{ns}.php`。
+        // 只在主插件目录里没有该命名空间时才回退扫描，避免与 cccms 自身的命名空间抢优先级。
         if (!is_file($file)) {
+            $candidates = glob(dirname(__DIR__, 2) . '/*/lang/' . $locale . '/' . $namespace . '.php') ?: [];
+            $file       = $candidates === [] ? '' : (string)$candidates[0];
+        }
+
+        if ($file === '' || !is_file($file)) {
             return self::$messages[$locale][$namespace] = [];
         }
 

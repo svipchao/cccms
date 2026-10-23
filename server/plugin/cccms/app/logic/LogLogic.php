@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\logic;
 
-use plugin\cccms\support\PageInput;
+use plugin\cccms\app\job\ExportJob;
 use plugin\cccms\app\model\OperationLog;
 use plugin\cccms\support\ApiException;
 use plugin\cccms\support\ClientIp;
@@ -12,7 +12,9 @@ use plugin\cccms\support\Csv;
 use plugin\cccms\support\ExportTask;
 use plugin\cccms\support\FilterInput;
 use plugin\cccms\support\I18n;
+use plugin\cccms\support\JobQueue;
 use plugin\cccms\support\LogChain;
+use plugin\cccms\support\PageInput;
 use plugin\cccms\support\SortInput;
 use support\Log;
 use Throwable;
@@ -150,12 +152,12 @@ final class LogLogic
     public static function detail(int $id): array
     {
         if ($id <= 0) {
-            throw new ApiException('日志 ID 无效', 422);
+            throw new ApiException(I18n::t('log.id_invalid'), 422);
         }
 
         $row = OperationLog::newScopedQuery()->where('id', $id)->find();
         if ($row === null) {
-            throw new ApiException('日志不存在或无权查看', 404);
+            throw new ApiException(I18n::t('log.not_found'), 404);
         }
 
         return $row->toArray();
@@ -164,17 +166,32 @@ final class LogLogic
     /**
      * 导出 CSV（按当前筛选与数据范围）。
      *
-     * **一律异步**：不区分数据量，只落一条 `sys_export_task` 就返回，实际生成由
-     * `ExportTaskConsumer` 定时任务消费（不阻塞在线请求）。前端在**全局**「导出任务」面板
+     * **一律异步**：不区分数据量，只落一条 `sys_export_task` + 投递一条作业就返回，
+     * 实际生成由作业队列进程消费（不阻塞在线请求）。前端在**全局**「导出任务」面板
      * 里查看状态并下载归档文件 —— 同步下载的体验差异由「小数据量秒级完成」抵消。
+     *
+     * 作业投递失败**不影响导出请求成功**：任务行已落库，`ExportTaskConsumer`（cron）
+     * 与「下载时补生成」两条兜底路径仍然有效，只是会慢一点。
      *
      * @return array{async:true,task_id:int,total:int}
      */
     public static function export(array $params, int $userId): array
     {
         $total = (int)self::filtered($params)->count();
+        $taskId = ExportTask::create('log', $params, $userId);
 
-        return ['async' => true, 'task_id' => ExportTask::create('log', $params, $userId), 'total' => $total];
+        try {
+            JobQueue::push(
+                ExportJob::class,
+                ['task_id' => $taskId],
+                // 幂等键同步任务 ID：同一条导出被重复投递（重试、手工补跑）也只会生成一次
+                ['queue' => 'export', 'unique' => 'export:' . $taskId, 'max_attempts' => 3]
+            );
+        } catch (Throwable $e) {
+            Log::error('export: enqueue job failed: ' . $e->getMessage());
+        }
+
+        return ['async' => true, 'task_id' => $taskId, 'total' => $total];
     }
 
     /**
@@ -187,7 +204,7 @@ final class LogLogic
     {
         $handle = fopen($target, 'wb');
         if ($handle === false) {
-            throw new ApiException('无法创建导出文件', 500);
+            throw new ApiException(I18n::t('log.export_file_failed'), 500);
         }
 
         try {

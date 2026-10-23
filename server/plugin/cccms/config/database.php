@@ -13,7 +13,8 @@ return [
             'hostport' => getenv('DB_PORT') ?: '3306',
             'charset'  => 'utf8mb4',
             'prefix'   => 'sys_',
-            'debug'    => (bool)(getenv('DB_DEBUG') ?: false),
+            // 必须用 filter_var：`(bool)'false'` 为 true，会让按示例配置的部署意外开启 SQL 调试
+            'debug'    => (bool)filter_var(getenv('DB_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN),
             'deploy'   => 0,
             'rw_separate' => false,
             'fields_strict' => true,

@@ -3,13 +3,13 @@
     <ArtSplitView aside-width="248px">
       <template #aside>
         <ArtTreePanel
-          :title="t('dict.categoryTreeTitle')"
+          :title="t('cccms.dict.categoryTreeTitle')"
           :data="treeData"
           :current-key="currentId"
           @node-click="onNodeClick"
         >
           <template #header>
-            <el-tooltip :content="t('dict.addTopCategory')" placement="top">
+            <el-tooltip :content="t('cccms.dict.addTopCategory')" placement="top">
               <el-button v-auth="'cccms:dict:category_save'" text circle @click="openCategoryCreate(0)"
                 ><i class="ri-add-line"
               /></el-button>
@@ -17,7 +17,7 @@
             <!-- 只显示本模块的分类，避免看到附件模块的分类 -->
             <RecycleToggle
               :active="categoryRecycle"
-              :label="t('dict.categoryTreeTitle')"
+              :label="t('cccms.dict.categoryTreeTitle')"
               @toggle="toggleCategoryRecycle"
             />
           </template>
@@ -29,21 +29,21 @@
               <span v-if="data.id > 0" class="cat-node-actions">
                 <!-- 分类回收站：节点操作换成还原 / 彻底删除 -->
                 <template v-if="categoryRecycle">
-                  <el-icon :title="t('table.restore')" @click.stop="onCategoryRestore(data)"
+                  <el-icon :title="t('core.table.restore')" @click.stop="onCategoryRestore(data)"
                     ><i class="ri-restart-line"
                   /></el-icon>
-                  <el-icon :title="t('table.forceDelete')" @click.stop="onCategoryForceDelete(data)">
+                  <el-icon :title="t('core.table.forceDelete')" @click.stop="onCategoryForceDelete(data)">
                     <i class="ri-delete-bin-line" />
                   </el-icon>
                 </template>
                 <template v-else>
-                  <el-icon :title="t('dict.addSubCategory')" @click.stop="openCategoryCreate(data.id)"
+                  <el-icon :title="t('cccms.dict.addSubCategory')" @click.stop="openCategoryCreate(data.id)"
                     ><i class="ri-add-line"
                   /></el-icon>
-                  <el-icon :title="t('dict.renameCategory')" @click.stop="openCategoryEdit(data)"
+                  <el-icon :title="t('cccms.dict.renameCategory')" @click.stop="openCategoryEdit(data)"
                     ><i class="ri-edit-line"
                   /></el-icon>
-                  <el-icon :title="t('common.delete')" @click.stop="onCategoryDelete(data)"
+                  <el-icon :title="t('core.common.delete')" @click.stop="onCategoryDelete(data)"
                     ><i class="ri-delete-bin-line"
                   /></el-icon>
                 </template>
@@ -73,47 +73,51 @@
         <template #toolbar>
           <el-button v-auth="'cccms:dict:save'" type="primary" @click="openTypeCreate"
             ><template #icon><i class="ri-add-line" /></template>
-            {{ t('dict.createType') }}
+            {{ t('cccms.dict.createType') }}
           </el-button>
           <!-- 批量操作：只作用于可见行，越权 / 已删除的 id 由后端跳过并回报 -->
           <el-dropdown :disabled="selected.length === 0" @command="onBatchCommand">
             <el-button :disabled="selected.length === 0">
-              {{ selected.length ? t('dict.batchActionCount', { count: selected.length }) : t('dict.batchAction') }}
+              {{
+                selected.length
+                  ? t('cccms.dict.batchActionCount', { count: selected.length })
+                  : t('cccms.dict.batchAction')
+              }}
               <el-icon class="el-icon--right"><i class="ri-arrow-down-s-line" /></el-icon>
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item v-if="hasAuth('cccms:dict:batch_status')" command="enable">
-                  {{ t('dict.batchEnable') }}
+                  {{ t('cccms.dict.batchEnable') }}
                 </el-dropdown-item>
                 <el-dropdown-item v-if="hasAuth('cccms:dict:batch_status')" command="disable">
-                  {{ t('dict.batchDisable') }}
+                  {{ t('cccms.dict.batchDisable') }}
                 </el-dropdown-item>
                 <el-dropdown-item v-if="hasAuth('cccms:dict:batch_delete')" command="delete" divided>
-                  {{ t('dict.batchDelete') }}
+                  {{ t('cccms.dict.batchDelete') }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
           <el-tag v-if="currentId" type="info" closable @close="clearNode">
-            {{ t('dict.onlyView', { name: currentNodeName }) }}
+            {{ t('cccms.dict.onlyView', { name: currentNodeName }) }}
           </el-tag>
         </template>
 
         <template #toolbar-right>
-          <RecycleToggle :active="recycle" :label="t('dict.typeName')" @toggle="toggle" />
+          <RecycleToggle :active="recycle" :label="t('cccms.dict.typeName')" @toggle="toggle" />
         </template>
 
         <template #action="{ row }">
           <el-button v-auth="'cccms:dict:data'" link type="primary" @click="openData(row)">
-            {{ t('dict.data') }}
+            {{ t('cccms.dict.data') }}
           </el-button>
           <el-button v-auth="'cccms:dict:update'" link type="primary" @click="openTypeEdit(row)">
-            {{ t('common.edit') }}
+            {{ t('core.common.edit') }}
           </el-button>
-          <el-popconfirm :title="t('dict.typeDeleteConfirm')" @confirm="onTypeDelete(row.id)">
+          <el-popconfirm :title="t('cccms.dict.typeDeleteConfirm')" @confirm="onTypeDelete(row.id)">
             <template #reference>
-              <el-button v-auth="'cccms:dict:delete'" link type="danger">{{ t('common.delete') }}</el-button>
+              <el-button v-auth="'cccms:dict:delete'" link type="danger">{{ t('core.common.delete') }}</el-button>
             </template>
           </el-popconfirm>
         </template>
@@ -123,12 +127,12 @@
     <!-- 分类表单 -->
     <el-dialog
       v-model="categoryVisible"
-      :title="categoryForm.id ? t('dict.editCategory') : t('dict.createCategory')"
+      :title="categoryForm.id ? t('cccms.dict.editCategory') : t('cccms.dict.createCategory')"
       width="460px"
       :close-on-click-modal="false"
     >
       <el-form ref="categoryFormRef" :model="categoryForm" :rules="categoryRules" label-width="92px">
-        <el-form-item :label="t('dict.parentCategory')" prop="parent_id">
+        <el-form-item :label="t('cccms.dict.parentCategory')" prop="parent_id">
           <el-tree-select
             v-model="categoryForm.parent_id"
             :data="categoryOptions"
@@ -138,31 +142,31 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="t('dict.categoryName')" prop="name">
-          <el-input v-model="categoryForm.name" :placeholder="t('dict.categoryNamePlaceholder')" />
+        <el-form-item :label="t('cccms.dict.categoryName')" prop="name">
+          <el-input v-model="categoryForm.name" :placeholder="t('cccms.dict.categoryNamePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('dict.sort')" prop="sort">
+        <el-form-item :label="t('cccms.dict.sort')" prop="sort">
           <el-input-number v-model="categoryForm.sort" :min="0" />
         </el-form-item>
-        <el-form-item :label="t('dict.remark')" prop="remark">
-          <el-input v-model="categoryForm.remark" :placeholder="t('dict.remarkPlaceholder')" />
+        <el-form-item :label="t('cccms.dict.remark')" prop="remark">
+          <el-input v-model="categoryForm.remark" :placeholder="t('cccms.dict.remarkPlaceholder')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="categoryVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitCategory">{{ t('common.confirm') }}</el-button>
+        <el-button @click="categoryVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitCategory">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 字典类型表单 -->
     <el-dialog
       v-model="typeVisible"
-      :title="typeForm.id ? t('dict.editType') : t('dict.createType')"
+      :title="typeForm.id ? t('cccms.dict.editType') : t('cccms.dict.createType')"
       width="480px"
       :close-on-click-modal="false"
     >
       <el-form ref="typeFormRef" :model="typeForm" :rules="typeRules" label-width="92px">
-        <el-form-item :label="t('dict.category')" prop="category_id">
+        <el-form-item :label="t('cccms.dict.category')" prop="category_id">
           <el-tree-select
             v-model="typeForm.category_id"
             :data="categorySelectOptions"
@@ -172,52 +176,54 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="t('dict.name')" prop="name">
-          <el-input v-model="typeForm.name" :placeholder="t('dict.namePlaceholder')" />
+        <el-form-item :label="t('cccms.dict.name')" prop="name">
+          <el-input v-model="typeForm.name" :placeholder="t('cccms.dict.namePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('dict.typeName')" prop="type">
-          <el-input v-model="typeForm.type" :placeholder="t('dict.typePlaceholder')" />
+        <el-form-item :label="t('cccms.dict.typeName')" prop="type">
+          <el-input v-model="typeForm.type" :placeholder="t('cccms.dict.typePlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('dict.remark')" prop="remark">
-          <el-input v-model="typeForm.remark" :placeholder="t('dict.remarkPlaceholder')" />
+        <el-form-item :label="t('cccms.dict.remark')" prop="remark">
+          <el-input v-model="typeForm.remark" :placeholder="t('cccms.dict.remarkPlaceholder')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="typeVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="saving" @click="submitType">{{ t('common.confirm') }}</el-button>
+        <el-button @click="typeVisible = false">{{ t('core.common.cancel') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="submitType">{{ t('core.common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 字典数据抽屉 -->
-    <el-drawer v-model="dataVisible" :title="t('dict.dataTitle', { name: currentType.name })" size="680px">
+    <el-drawer v-model="dataVisible" :title="t('cccms.dict.dataTitle', { name: currentType.name })" size="680px">
       <div class="drawer-toolbar">
         <el-button v-if="!dataRecycle" v-auth="'cccms:dict:save_data'" type="primary" @click="openDataCreate"
           ><template #icon><i class="ri-add-line" /></template>
-          {{ t('dict.createData') }}
+          {{ t('cccms.dict.createData') }}
         </el-button>
         <!-- 批量操作（字典数据） -->
         <el-dropdown v-if="!dataRecycle" :disabled="selectedData.length === 0" @command="onBatchDataCommand">
           <el-button :disabled="selectedData.length === 0">
             {{
-              selectedData.length ? t('dict.batchActionCount', { count: selectedData.length }) : t('dict.batchAction')
+              selectedData.length
+                ? t('cccms.dict.batchActionCount', { count: selectedData.length })
+                : t('cccms.dict.batchAction')
             }}
             <el-icon class="el-icon--right"><i class="ri-arrow-down-s-line" /></el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item v-if="hasAuth('cccms:dict:batch_status_data')" command="enable">
-                {{ t('dict.batchEnable') }}
+                {{ t('cccms.dict.batchEnable') }}
               </el-dropdown-item>
               <el-dropdown-item v-if="hasAuth('cccms:dict:batch_status_data')" command="disable">
-                {{ t('dict.batchDisable') }}
+                {{ t('cccms.dict.batchDisable') }}
               </el-dropdown-item>
               <el-dropdown-item v-if="hasAuth('cccms:dict:batch_delete_data')" command="delete" divided>
-                {{ t('dict.batchDelete') }}
+                {{ t('cccms.dict.batchDelete') }}
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <RecycleToggle :active="dataRecycle" :label="t('dict.data')" @toggle="toggleDataRecycle" />
+        <RecycleToggle :active="dataRecycle" :label="t('cccms.dict.data')" @toggle="toggleDataRecycle" />
       </div>
       <el-table
         v-loading="dataLoading"
@@ -228,33 +234,35 @@
         @selection-change="onDataSelectionChange"
       >
         <el-table-column type="selection" :selectable="() => !dataRecycle" width="46" />
-        <el-table-column prop="label" :label="t('dict.label')" min-width="140" />
-        <el-table-column prop="value" :label="t('dict.value')" min-width="120" />
-        <el-table-column prop="sort" :label="t('dict.sort')" width="80" align="center" />
-        <el-table-column :label="t('dict.status')" width="80" align="center">
+        <el-table-column prop="label" :label="t('cccms.dict.label')" min-width="140" />
+        <el-table-column prop="value" :label="t('cccms.dict.value')" min-width="120" />
+        <el-table-column prop="sort" :label="t('cccms.dict.sort')" width="80" align="center" />
+        <el-table-column :label="t('cccms.dict.status')" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="light" round>
-              {{ row.status === 1 ? t('dict.enable') : t('dict.disable') }}
+              {{ row.status === 1 ? t('cccms.dict.enable') : t('cccms.dict.disable') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column :label="t('table.action')" width="130" fixed="right">
+        <el-table-column :label="t('core.table.action')" width="130" fixed="right">
           <template #default="{ row }">
             <template v-if="dataRecycle">
               <el-button v-auth="'cccms:recycle:restore'" link type="primary" @click="onDataRestore(row)">
-                {{ t('table.restore') }}
+                {{ t('core.table.restore') }}
               </el-button>
               <el-button v-auth="'cccms:recycle:delete'" link type="danger" @click="onDataForceDelete(row)">
-                {{ t('table.forceDelete') }}
+                {{ t('core.table.forceDelete') }}
               </el-button>
             </template>
             <template v-else>
               <el-button v-auth="'cccms:dict:update_data'" link type="primary" @click="openDataEdit(row)">
-                {{ t('common.edit') }}
+                {{ t('core.common.edit') }}
               </el-button>
-              <el-popconfirm :title="t('dict.dataDeleteConfirm')" @confirm="onDataDelete(row.id)">
+              <el-popconfirm :title="t('cccms.dict.dataDeleteConfirm')" @confirm="onDataDelete(row.id)">
                 <template #reference>
-                  <el-button v-auth="'cccms:dict:delete_data'" link type="danger">{{ t('common.delete') }}</el-button>
+                  <el-button v-auth="'cccms:dict:delete_data'" link type="danger">{{
+                    t('core.common.delete')
+                  }}</el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -273,24 +281,24 @@
 
       <el-dialog
         v-model="dataFormVisible"
-        :title="dataForm.id ? t('dict.editData') : t('dict.createData')"
+        :title="dataForm.id ? t('cccms.dict.editData') : t('cccms.dict.createData')"
         width="440px"
         append-to-body
       >
         <el-form ref="dataFormRef" :model="dataForm" :rules="dataRules" label-width="80px">
-          <el-form-item :label="t('dict.label')" prop="label">
+          <el-form-item :label="t('cccms.dict.label')" prop="label">
             <el-input v-model="dataForm.label" />
           </el-form-item>
-          <el-form-item :label="t('dict.value')" prop="value">
+          <el-form-item :label="t('cccms.dict.value')" prop="value">
             <el-input v-model="dataForm.value" />
           </el-form-item>
-          <el-form-item :label="t('dict.sort')" prop="sort">
+          <el-form-item :label="t('cccms.dict.sort')" prop="sort">
             <el-input-number v-model="dataForm.sort" :min="0" />
           </el-form-item>
         </el-form>
         <template #footer>
-          <el-button @click="dataFormVisible = false">{{ t('common.cancel') }}</el-button>
-          <el-button type="primary" :loading="saving" @click="submitData">{{ t('common.confirm') }}</el-button>
+          <el-button @click="dataFormVisible = false">{{ t('core.common.cancel') }}</el-button>
+          <el-button type="primary" :loading="saving" @click="submitData">{{ t('core.common.confirm') }}</el-button>
         </template>
       </el-dialog>
     </el-drawer>
@@ -358,12 +366,12 @@ interface Query {
 
 const columns = computed<ArtTableColumn[]>(() => [
   { prop: 'id', label: 'ID', width: 76 },
-  { prop: 'name', label: t('dict.name'), minWidth: 150, filter: { type: 'text' } },
-  { prop: 'type', label: t('dict.typeName'), minWidth: 150, filter: { type: 'text' } },
+  { prop: 'name', label: t('cccms.dict.name'), minWidth: 150, filter: { type: 'text' } },
+  { prop: 'type', label: t('cccms.dict.typeName'), minWidth: 150, filter: { type: 'text' } },
   // category_name 是后端逐行补的分类名，没有对应库列
-  { prop: 'category_name', label: t('dict.category'), width: 140 },
-  { prop: 'remark', label: t('dict.remark'), minWidth: 160 },
-  { prop: 'action', label: t('table.action'), width: 230, fixed: 'right', slot: 'action', lockVisible: true },
+  { prop: 'category_name', label: t('cccms.dict.category'), width: 140 },
+  { prop: 'remark', label: t('cccms.dict.remark'), minWidth: 160 },
+  { prop: 'action', label: t('core.table.action'), width: 230, fixed: 'right', slot: 'action', lockVisible: true },
 ])
 
 /* ---- 左侧分类树 ---- */
@@ -389,7 +397,7 @@ const {
   openCategoryEdit,
   submitCategory,
   onCategoryDelete,
-} = useCategoryTree(MODULE, { prefix: 'dict', onListReload: () => search() })
+} = useCategoryTree(MODULE, { prefix: 'cccms.dict', onListReload: () => search() })
 
 /* ---- 回收站：本页两个入口（字典类型 / 字典数据）各一个开关；分类入口由 useCategoryTree 管理 ---- */
 // 声明在 useTable 之前：列表闭包在 setup 阶段就会执行一次
@@ -409,16 +417,14 @@ const { list, loading, total, page, limit, load, search, onPageChange, onLimitCh
   initialQuery: { name: '', type: '' },
 })
 
-
-
 /* ---- 字典类型 ---- */
 const typeFormRef = ref<FormInstance>()
 const typeVisible = ref(false)
 const emptyTypeForm = { id: 0, category_id: 0, name: '', type: '', remark: '' }
 const typeForm = reactive({ ...emptyTypeForm })
 const typeRules = computed<FormRules>(() => ({
-  name: [{ required: true, message: t('dict.nameRequired'), trigger: 'blur' }],
-  type: [{ required: true, message: t('dict.typeRequired'), trigger: 'blur' }],
+  name: [{ required: true, message: t('cccms.dict.nameRequired'), trigger: 'blur' }],
+  type: [{ required: true, message: t('cccms.dict.typeRequired'), trigger: 'blur' }],
 }))
 
 function openTypeCreate(): void {
@@ -445,7 +451,7 @@ async function submitType(): Promise<void> {
     } else {
       await dictTypeSave({ ...typeForm })
     }
-    ElMessage.success(t('dict.saveSuccess'))
+    ElMessage.success(t('cccms.dict.saveSuccess'))
     typeVisible.value = false
     load()
   } finally {
@@ -455,7 +461,7 @@ async function submitType(): Promise<void> {
 
 async function onTypeDelete(id: number): Promise<void> {
   await dictTypeDelete(id)
-  ElMessage.success(t('dict.deleteSuccess'))
+  ElMessage.success(t('cccms.dict.deleteSuccess'))
   load()
 }
 
@@ -470,9 +476,9 @@ type BatchAction = 'enable' | 'disable' | 'delete'
 
 /** 批量结果提示：整句走 i18n key，避免用 t() 拼字符串 */
 const batchMessageKeys: Record<BatchAction, { done: string; skipped: string }> = {
-  enable: { done: 'dict.batchEnableDone', skipped: 'dict.batchEnableSkipped' },
-  disable: { done: 'dict.batchDisableDone', skipped: 'dict.batchDisableSkipped' },
-  delete: { done: 'dict.batchDeleteDone', skipped: 'dict.batchDeleteSkipped' },
+  enable: { done: 'cccms.dict.batchEnableDone', skipped: 'cccms.dict.batchEnableSkipped' },
+  disable: { done: 'cccms.dict.batchDisableDone', skipped: 'cccms.dict.batchDisableSkipped' },
+  delete: { done: 'cccms.dict.batchDeleteDone', skipped: 'cccms.dict.batchDeleteSkipped' },
 }
 
 /** 越权 / 已删除的 id 由后端跳过，这里统一回报 */
@@ -498,9 +504,13 @@ async function onBatchCommand(command: string): Promise<void> {
   }
   if (command === 'delete') {
     try {
-      await ElMessageBox.confirm(t('dict.batchTypeDeleteConfirm', { count: ids.length }), t('dict.batchDelete'), {
-        type: 'warning',
-      })
+      await ElMessageBox.confirm(
+        t('cccms.dict.batchTypeDeleteConfirm', { count: ids.length }),
+        t('cccms.dict.batchDelete'),
+        {
+          type: 'warning',
+        },
+      )
     } catch {
       return
     }
@@ -546,8 +556,8 @@ const dataFormVisible = ref(false)
 const emptyDataForm = { id: 0, type_id: 0, label: '', value: '', sort: 0 }
 const dataForm = reactive({ ...emptyDataForm })
 const dataRules = computed<FormRules>(() => ({
-  label: [{ required: true, message: t('dict.labelRequired'), trigger: 'blur' }],
-  value: [{ required: true, message: t('dict.valueRequired'), trigger: 'blur' }],
+  label: [{ required: true, message: t('cccms.dict.labelRequired'), trigger: 'blur' }],
+  value: [{ required: true, message: t('cccms.dict.valueRequired'), trigger: 'blur' }],
 }))
 
 function openDataCreate(): void {
@@ -572,7 +582,7 @@ async function submitData(): Promise<void> {
     } else {
       await dictDataSave({ ...dataForm })
     }
-    ElMessage.success(t('dict.saveSuccess'))
+    ElMessage.success(t('cccms.dict.saveSuccess'))
     dataFormVisible.value = false
     await loadData()
   } finally {
@@ -582,7 +592,7 @@ async function submitData(): Promise<void> {
 
 async function onDataDelete(id: number): Promise<void> {
   await dictDataDelete(id)
-  ElMessage.success(t('dict.deleteSuccess'))
+  ElMessage.success(t('cccms.dict.deleteSuccess'))
   await loadData()
 }
 
@@ -606,9 +616,13 @@ async function onBatchDataCommand(command: string): Promise<void> {
   }
   if (command === 'delete') {
     try {
-      await ElMessageBox.confirm(t('dict.batchDataDeleteConfirm', { count: ids.length }), t('dict.batchDelete'), {
-        type: 'warning',
-      })
+      await ElMessageBox.confirm(
+        t('cccms.dict.batchDataDeleteConfirm', { count: ids.length }),
+        t('cccms.dict.batchDelete'),
+        {
+          type: 'warning',
+        },
+      )
     } catch {
       return
     }

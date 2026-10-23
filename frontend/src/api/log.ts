@@ -1,4 +1,4 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
 export interface LogRow {
@@ -28,8 +28,8 @@ export interface LogRow {
   create_time: string
 }
 
-export function logList(params: Record<string, unknown>) {
-  return http.get<PageResult<LogRow>>('/log', params)
+export function logList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult<LogRow>>('/log', params, config)
 }
 
 /** 导出 CSV（按当前筛选与数据范围；一律异步，结果到全局「导出任务」面板下载） */

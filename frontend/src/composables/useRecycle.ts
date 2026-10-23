@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { recycleDelete, recycleRestore } from '@/api/recycle'
+import { t } from '@/locales'
 
 /** 表格行：回收站只需要它的 id，其余字段不管 */
 type RecycleRow = Record<string, any>
@@ -63,12 +64,14 @@ export function useRecycle(type: string, options: RecycleOptions) {
       return
     }
     try {
-      await ElMessageBox.confirm(`确定还原选中的 ${ids.length} 条数据？`, '还原', { type: 'warning' })
+      await ElMessageBox.confirm(t('core.table.restoreConfirm', { count: ids.length }), t('core.table.restore'), {
+        type: 'warning',
+      })
     } catch {
       return
     }
     const res = await recycleRestore({ type, ids })
-    ElMessage.success(`已还原 ${res?.restored ?? ids.length} 条`)
+    ElMessage.success(t('core.table.restoreDone', { count: res?.restored ?? ids.length }))
     options.clear?.()
     options.reload()
   }
@@ -80,15 +83,15 @@ export function useRecycle(type: string, options: RecycleOptions) {
     }
     try {
       await ElMessageBox.confirm(
-        `彻底删除后不可恢复（附件会连物理文件一起删除），确定删除选中的 ${ids.length} 条？`,
-        '彻底删除',
-        { type: 'warning', confirmButtonText: '彻底删除' },
+        t('core.table.forceDeleteConfirm', { count: ids.length }),
+        t('core.table.forceDelete'),
+        { type: 'warning', confirmButtonText: t('core.table.forceDelete') },
       )
     } catch {
       return
     }
     const res = await recycleDelete({ type, ids })
-    ElMessage.success(`已彻底删除 ${res?.deleted ?? ids.length} 条`)
+    ElMessage.success(t('core.table.forceDeleteDone', { count: res?.deleted ?? ids.length }))
     options.clear?.()
     options.reload()
   }

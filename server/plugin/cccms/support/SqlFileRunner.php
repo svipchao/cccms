@@ -23,9 +23,12 @@ final class SqlFileRunner
     /**
      * 执行一个 SQL 文件，返回实际执行的语句数。
      *
+     * @param bool $tolerateExisting 容忍「重复列 / 重复索引」：迁移文件用。
+     *                               同一份结构在 schema.sql 也有一份，新装环境先建全，
+     *                               迁移再跑一次必然撞名 —— 这不是错误，已生效即可。
      * @throws ApiException 文件不存在或某条语句执行失败
      */
-    public static function run(string $file): int
+    public static function run(string $file, bool $tolerateExisting = false): int
     {
         if (!is_file($file)) {
             throw new ApiException('SQL 文件不存在：' . $file, 500);
@@ -43,6 +46,10 @@ final class SqlFileRunner
             try {
                 Db::execute($statement);
             } catch (Throwable $e) {
+                if ($tolerateExisting && preg_match('/Duplicate (column|key) name/i', $e->getMessage()) === 1) {
+                    $count++;
+                    continue; // 结构已存在（schema.sql 已建），按已生效处理
+                }
                 /*
                  * 报错必须带上「哪个文件、什么时候改的、第几条语句」。
                  * 线上踩过：代码改了但服务器上还是旧文件，报错只给一段 SQL，

@@ -1,5 +1,5 @@
 <template>
-  <ErrorPage :code="403" title-key="error.forbiddenTitle" desc-key="error.forbiddenDesc" />
+  <ErrorPage :code="403" title-key="core.error.forbiddenTitle" desc-key="core.error.forbiddenDesc" />
 </template>
 
 <script setup lang="ts">

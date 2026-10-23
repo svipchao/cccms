@@ -1,4 +1,4 @@
-import { http } from './request'
+import { http, type ListRequestConfig } from './request'
 import type { PageResult } from './types'
 
 export interface OnlineSession {
@@ -21,8 +21,8 @@ export interface OnlineSession {
   expire_at: string
 }
 
-export function onlineList(params: Record<string, unknown>) {
-  return http.get<PageResult<OnlineSession>>('/online', params)
+export function onlineList(params: Record<string, unknown>, config?: ListRequestConfig) {
+  return http.get<PageResult<OnlineSession>>('/online', params, config)
 }
 
 /** 强制下线单个会话 */

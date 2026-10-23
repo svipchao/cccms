@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\app\controller;
 
-use plugin\cccms\app\logic\CategoryLogic;
+use plugin\cccms\app\controller\concern\CategoryCrud;
 use plugin\cccms\app\logic\FileLogic;
 use plugin\cccms\basic\BaseController;
 use plugin\cccms\support\ApiException;
@@ -20,6 +20,8 @@ use Webman\Http\Response;
 
 class FileController extends BaseController
 {
+    use CategoryCrud;
+
     /** 允许内联渲染（预览）的类型；与 `StorageGuard::INLINE_SAFE` 同一口径 */
     private const INLINE_MIME = [
         'jpg'  => 'image/jpeg',
@@ -172,33 +174,37 @@ class FileController extends BaseController
 
     // ---- 附件分类 ----
     // 与字典分类共用 sys_category 表与 CategoryLogic，slug 按模块拆开以便独立授权。
+    // 方法体在 CategoryCrud trait 里（与字典分类逐行同构），这里只保留权限注解。
+
+    protected function categoryModule(): string
+    {
+        return 'file';
+    }
 
     #[Permission(slug: 'cccms:file:category', title: '附件分类列表')]
     public function category(Request $request): Response
     {
-        return $this->ok(CategoryLogic::tree('file', (bool)$request->get('trashed', false)));
+        return $this->categoryTree($request);
     }
 
     #[Permission(slug: 'cccms:file:category_save', title: '新增附件分类')]
     #[Restrict(methods: ['POST'])]
     public function categorySave(Request $request): Response
     {
-        return $this->ok(['id' => CategoryLogic::create('file', $request->post())], I18n::t('common.created'));
+        return $this->categoryCreate($request);
     }
 
     #[Permission(slug: 'cccms:file:category_update', title: '更新附件分类')]
     #[Restrict(methods: ['POST'])]
     public function categoryUpdate(Request $request): Response
     {
-        CategoryLogic::update((int)$request->input('id', 0), $request->post());
-        return $this->ok(null, I18n::t('common.updated'));
+        return $this->categoryModify($request);
     }
 
     #[Permission(slug: 'cccms:file:category_delete', title: '删除附件分类')]
     #[Restrict(methods: ['POST'])]
     public function categoryDelete(Request $request): Response
     {
-        CategoryLogic::delete((int)$request->input('id', 0));
-        return $this->ok(null, I18n::t('common.deleted'));
+        return $this->categoryRemove($request);
     }
 }

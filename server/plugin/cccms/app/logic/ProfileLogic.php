@@ -94,7 +94,14 @@ final class ProfileLogic
         User::withoutGlobalScope()->where('id', $user->id)->update($data);
     }
 
-    public static function changePassword(UserContext $user, string $old, string $new): void
+    /**
+     * 修改自己的密码。
+     *
+     * 改密成功后**作废其它设备上的令牌**：密码泄露场景下，攻击者手里的旧令牌
+     * 若继续有效到自然过期，改密就等于没改。当前设备（`$currentJti`）保留，
+     * 避免用户改完密码立刻被踢下线；`$currentJti` 为空时无法区分当前设备，跳过清理。
+     */
+    public static function changePassword(UserContext $user, string $old, string $new, string $currentJti = ''): void
     {
         if ($old === '' || $new === '') {
             throw new ApiException(I18n::t('profile.password_required'), 422);
@@ -116,6 +123,31 @@ final class ProfileLogic
         User::withoutGlobalScope()->where('id', $user->id)->update([
             'password' => password_hash($new, PASSWORD_BCRYPT),
         ]);
+
+        self::revokeOtherSessions($user->id, $currentJti);
+    }
+
+    /**
+     * 改密后作废该用户除当前设备外的全部令牌（单令牌黑名单 + 在线列表同步移除）。
+     *
+     * 不用用户级分界线（`revokeUser()`）：分界线会把**当前**令牌一并作废。
+     */
+    private static function revokeOtherSessions(int $userId, string $currentJti): void
+    {
+        if ($currentJti === '') {
+            // 拿不到当前 jti 时无法区分「自己」，宁可保留全部会话也不误踢用户
+            return;
+        }
+
+        foreach (OnlineSession::listOfUser($userId) as $row) {
+            $jti = (string)($row['jti'] ?? '');
+            if ($jti === '' || $jti === $currentJti) {
+                continue;
+            }
+
+            TokenBlacklist::revoke($jti, OnlineSession::expiryOf($jti));
+            OnlineSession::remove($jti);
+        }
     }
 
     /**

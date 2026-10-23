@@ -82,6 +82,16 @@ return [
             ['slug' => 'cccms:generator', 'title' => '代码生成', 'type' => 2, 'path' => '/cccms/generator', 'component' => 'cccms/generator/index', 'icon' => 'icon-code',   'sort' => 7],
             ['slug' => 'cccms:upgrade',   'title' => '在线升级', 'type' => 2, 'path' => '/cccms/upgrade',   'component' => 'cccms/upgrade/index',   'icon' => 'icon-refresh',  'sort' => 8],
             ['slug' => 'cccms:log',       'title' => '操作日志', 'type' => 2, 'path' => '/cccms/log',       'component' => 'cccms/log/index',       'icon' => 'icon-file',   'sort' => 9],
+            // 接口监控与接口文档都属于「运维视角」：前者看运行时，后者看契约
+            ['slug' => 'cccms:monitor',   'title' => '接口监控', 'type' => 2, 'path' => '/cccms/monitor',   'component' => 'cccms/monitor/index',   'icon' => 'icon-monitor', 'sort' => 10],
+            // 接口文档**仅本地开发环境可见**：`MenuLogic::DEV_ONLY_PREFIXES` 在非开发布局下
+            // 把它和它的按钮节点一并从 userTree 里过滤掉（线上不注册前端路由）。节点本身仍同步进库，
+            // 菜单管理里看得到，便于排查。
+            ['slug' => 'cccms:apidoc',    'title' => '接口文档', 'type' => 2, 'path' => '/cccms/apidoc',    'component' => 'cccms/apidoc/index',    'icon' => 'icon-book',   'sort' => 11],
+            // 备份是**破坏性**的运维动作（还原会覆盖整库），授权时只给平台超管
+            ['slug' => 'cccms:backup',    'title' => '数据备份', 'type' => 2, 'path' => '/cccms/backup',  'component' => 'cccms/backup/index',    'icon' => 'icon-safe',   'sort' => 12],
+            // 在线终端只执行 config/terminal.php 里登记的命令，**不提供自由 shell**
+            ['slug' => 'cccms:terminal',  'title' => '在线终端', 'type' => 2, 'path' => '/cccms/terminal', 'component' => 'cccms/terminal/index', 'icon' => 'icon-code',   'sort' => 13],
         ],
     ],
 ];

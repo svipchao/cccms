@@ -10,12 +10,12 @@
             <p class="hello-sub">
               <span>{{ todayText }}</span>
               <span class="hello-divider" />
-              <span>{{ t('dashboard.roleLabel') }}</span>
+              <span>{{ t('cccms.dashboard.roleLabel') }}</span>
               <el-tag v-for="r in userStore.profile?.roles || []" :key="r" size="small" effect="light">
                 {{ r }}
               </el-tag>
               <el-tag v-if="userStore.superAdmin" size="small" type="danger" effect="light">
-                {{ t('dashboard.superAdmin') }}
+                {{ t('cccms.dashboard.superAdmin') }}
               </el-tag>
             </p>
           </div>
@@ -42,7 +42,7 @@
         <el-col v-if="hasTrend" :xs="24" :lg="hasPie ? 15 : 24">
           <el-card shadow="never" class="chart-card">
             <template #header
-              ><span>{{ t('dashboard.trendTitle') }}</span></template
+              ><span>{{ t('cccms.dashboard.trendTitle') }}</span></template
             >
             <div ref="trendRef" class="chart" />
           </el-card>
@@ -50,7 +50,7 @@
         <el-col v-if="hasPie" :xs="24" :lg="hasTrend ? 9 : 24">
           <el-card shadow="never" class="chart-card">
             <template #header
-              ><span>{{ t('dashboard.pieTitle') }}</span></template
+              ><span>{{ t('cccms.dashboard.pieTitle') }}</span></template
             >
             <div ref="pieRef" class="chart" />
           </el-card>
@@ -61,9 +61,9 @@
            数据源是当前账号可见菜单，天然不含无权限的入口。 -->
       <el-card shadow="never" class="chart-card shortcut-card">
         <template #header
-          ><span>{{ t('dashboard.favoriteTitle') }}</span></template
+          ><span>{{ t('cccms.dashboard.favoriteTitle') }}</span></template
         >
-        <el-empty v-if="shortcuts.length === 0" :description="t('dashboard.favoriteEmpty')" :image-size="70" />
+        <el-empty v-if="shortcuts.length === 0" :description="t('cccms.dashboard.favoriteEmpty')" :image-size="70" />
         <div v-else class="shortcuts">
           <div
             v-for="(item, index) in shortcuts"
@@ -93,17 +93,12 @@ defineOptions({ name: 'dashboard' })
 import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import * as echarts from 'echarts/core'
-import { LineChart, PieChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
+import { echarts } from '@/utils/echarts'
 import ArtIcon from '@/components/core/ArtIcon.vue'
 import { dashboardStats, type DashboardStats } from '@/api/dashboard'
 import { useMenuStore } from '@/stores/menu'
 import { useSettingStore } from '@/stores/setting'
 import { useUserStore } from '@/stores/user'
-
-echarts.use([LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const { t, locale } = useI18n({ useScope: 'global' })
 
@@ -124,26 +119,26 @@ const avatarText = computed(() => (userStore.nickname || 'U').charAt(0).toUpperC
 const greeting = computed(() => {
   const hour = new Date().getHours()
   if (hour < 6) {
-    return t('dashboard.greetingNight')
+    return t('cccms.dashboard.greetingNight')
   }
   if (hour < 12) {
-    return t('dashboard.greetingMorning')
+    return t('cccms.dashboard.greetingMorning')
   }
   if (hour < 18) {
-    return t('dashboard.greetingAfternoon')
+    return t('cccms.dashboard.greetingAfternoon')
   }
-  return t('dashboard.greetingEvening')
+  return t('cccms.dashboard.greetingEvening')
 })
 
 // 称谓与问候语拼成整句交给语言包（不同语言的标点与语序不同）
 const helloText = computed(() =>
-  t('dashboard.helloTitle', { greeting: greeting.value, name: userStore.nickname || t('dashboard.admin') }),
+  t('cccms.dashboard.helloTitle', { greeting: greeting.value, name: userStore.nickname || t('cccms.dashboard.admin') }),
 )
 
 const todayText = computed(() => {
   const now = new Date()
   const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-  return t('dashboard.dateText', { date, week: t(`dashboard.weekday${now.getDay()}`) })
+  return t('cccms.dashboard.dateText', { date, week: t(`cccms.dashboard.weekday${now.getDay()}`) })
 })
 
 interface StatCard {
@@ -164,7 +159,7 @@ const cards = computed<StatCard[]>(() => {
   const all: StatCard[] = [
     {
       key: 'user',
-      label: t('dashboard.statUser'),
+      label: t('cccms.dashboard.statUser'),
       value: c?.user,
       icon: 'icon-user',
       color: '#2b6cff',
@@ -172,7 +167,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'role',
-      label: t('dashboard.statRole'),
+      label: t('cccms.dashboard.statRole'),
       value: c?.role,
       icon: 'icon-safe',
       color: '#722ed1',
@@ -180,7 +175,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'dept',
-      label: t('dashboard.statDept'),
+      label: t('cccms.dashboard.statDept'),
       value: c?.dept,
       icon: 'icon-tree',
       color: '#13c2c2',
@@ -188,7 +183,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'post',
-      label: t('dashboard.statPost'),
+      label: t('cccms.dashboard.statPost'),
       value: c?.post,
       icon: 'icon-badge',
       color: '#fa8c16',
@@ -196,7 +191,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'file',
-      label: t('dashboard.statFile'),
+      label: t('cccms.dashboard.statFile'),
       value: c?.file,
       icon: 'icon-upload',
       color: '#21c26b',
@@ -204,7 +199,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'today_log',
-      label: t('dashboard.statTodayLog'),
+      label: t('cccms.dashboard.statTodayLog'),
       value: c?.today_log,
       icon: 'icon-file',
       color: '#f4524d',
@@ -212,7 +207,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'online',
-      label: t('dashboard.statOnline'),
+      label: t('cccms.dashboard.statOnline'),
       value: c?.online,
       icon: 'icon-monitor',
       color: '#13c2c2',
@@ -220,7 +215,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'notice_unread',
-      label: t('dashboard.statNoticeUnread'),
+      label: t('cccms.dashboard.statNoticeUnread'),
       value: c?.notice_unread,
       icon: 'icon-tickets',
       color: '#f4524d',
@@ -228,7 +223,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'dict',
-      label: t('dashboard.statDict'),
+      label: t('cccms.dashboard.statDict'),
       value: c?.dict,
       icon: 'icon-book',
       color: '#722ed1',
@@ -236,7 +231,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'crontab',
-      label: t('dashboard.statCrontab'),
+      label: t('cccms.dashboard.statCrontab'),
       value: c?.crontab,
       icon: 'icon-clock',
       color: '#fa8c16',
@@ -244,7 +239,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'data_rule',
-      label: t('dashboard.statDataRule'),
+      label: t('cccms.dashboard.statDataRule'),
       value: c?.data_rule,
       icon: 'icon-key',
       color: '#2b6cff',
@@ -252,7 +247,7 @@ const cards = computed<StatCard[]>(() => {
     },
     {
       key: 'tenant',
-      label: t('dashboard.statTenant'),
+      label: t('cccms.dashboard.statTenant'),
       value: c?.tenant,
       icon: 'icon-management',
       color: '#21c26b',
@@ -331,7 +326,7 @@ function renderTrend(): void {
     },
     series: [
       {
-        name: t('dashboard.trendSeries'),
+        name: t('cccms.dashboard.trendSeries'),
         type: 'line',
         smooth: true,
         symbol: 'circle',
@@ -378,7 +373,7 @@ function renderPie(): void {
         avoidLabelOverlap: true,
         itemStyle: { borderColor: cardBg, borderWidth: 2 },
         label: { show: false },
-        data: types.length ? types : [{ name: t('table.empty'), value: 1 }],
+        data: types.length ? types : [{ name: t('core.table.empty'), value: 1 }],
       },
     ],
   })
