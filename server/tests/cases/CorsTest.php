@@ -145,6 +145,16 @@ return static function () use ($loadCorsConfig, $originRequest): void {
         same('', $seen['session'], '超长会话 ID 必须丢弃（否则会被库截断成两个 ID）');
     });
 
+    test('SSE 推送进程复用同一份白名单（裸 TCP 也要放行，否则浏览器报 ERR_FAILED 200）', function () use (
+        $loadCorsConfig
+    ): void {
+        $loadCorsConfig('https://ok.example.com');
+
+        same('https://ok.example.com', Cors::matchOrigin('https://ok.example.com'), '命中白名单应回显来源');
+        same('', Cors::matchOrigin('https://evil.example.com'), '未命中返回空串，SSE 据此不下发放行头');
+        same('', Cors::matchOrigin(''), '同源请求（无 Origin）本就不需要放行头');
+    });
+
     // 还原环境变量，避免影响后续用例
     putenv('CORS_ORIGIN');
 };

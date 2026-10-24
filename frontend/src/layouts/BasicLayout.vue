@@ -29,6 +29,7 @@ import { useNoticeStore } from '@/stores/notice'
 import { useUserStore } from '@/stores/user'
 import { useWorktabStore } from '@/stores/worktab'
 import { tokenJti, useRealtime } from '@/composables/useRealtime'
+import { resetAfterLogout } from '@/router'
 
 const { t } = useI18n({ useScope: 'global' })
 const route = useRoute()
@@ -59,7 +60,9 @@ onMounted(() => {
       return
     }
 
-    realtime.disconnect()
+    // 与手动登出走同一套清理：断连接（含退避定时器）、清标签页 / 动态路由 /
+    // 未读角标 / 导出轮询。少做其中任何一步，登录页上都会留着上一个账号的残留。
+    resetAfterLogout()
     void userStore.logout()
     ElMessage.warning(t('core.layout.kickedOffline'))
     void router.replace('/login')

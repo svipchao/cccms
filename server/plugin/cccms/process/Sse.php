@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace plugin\cccms\process;
 
+use plugin\cccms\app\middleware\Cors;
 use plugin\cccms\support\Realtime;
 use plugin\cccms\support\TokenBlacklist;
 use plugin\cccms\support\TokenService;
@@ -31,6 +32,13 @@ use Workerman\Worker;
  *
  * 除了验签，还要查 `TokenBlacklist`：登出 / 被踢的令牌签名仍然有效，不查黑名单会让
  * 「强制下线」在实时通道上失效 —— 被踢的人还能继续收推送。
+ *
+ * ## 跨域
+ *
+ * `EventSource` 与普通 XHR 一样受 CORS 约束。开发时前端跑在 Vite 的 5173、推送在 8788，
+ * 是**跨域**请求 —— 响应里没有 `Access-Control-Allow-Origin` 时，浏览器给出的是
+ * `net::ERR_FAILED 200 (OK)`（拿到了 200 却不让读），用 curl 完全复现不出来。
+ * 白名单复用 HTTP 侧的 `Cors::matchOrigin()`，即 `.env` 的 `CORS_ORIGIN`，只有一份配置。
  *
  * ## 连接管理
  *
@@ -71,14 +79,15 @@ class Sse
             return;
         }
 
-        $line = strtok((string)$buffer, "\r\n");
+        $raw  = (string)$buffer;
+        $line = strtok($raw, "\r\n");
         if (!is_string($line) || preg_match('#^GET\s+(\S+)\s+HTTP/1\.[01]$#', $line, $matches) !== 1) {
             $this->reject($connection, '400 Bad Request', 'only GET is supported');
 
             return;
         }
 
-        $this->handshake($connection, $matches[1]);
+        $this->handshake($connection, $matches[1], self::originOf($raw));
     }
 
     public function onClose(TcpConnection $connection): void
@@ -86,7 +95,7 @@ class Sse
         unset($this->clients[spl_object_id($connection)]);
     }
 
-    private function handshake(TcpConnection $connection, string $target): void
+    private function handshake(TcpConnection $connection, string $target, string $origin = ''): void
     {
         $parts = parse_url($target);
         if (($parts['path'] ?? '') !== '/stream') {
@@ -126,7 +135,7 @@ class Sse
             return;
         }
 
-        $this->respond($connection);
+        $this->respond($connection, $origin);
 
         $this->clients[spl_object_id($connection)] = [
             'connection' => $connection,
@@ -137,18 +146,46 @@ class Sse
     }
 
     /** 写一次响应头，之后这条连接就是纯事件流 */
-    private function respond(TcpConnection $connection): void
+    private function respond(TcpConnection $connection, string $origin = ''): void
     {
-        $connection->send(
-            "HTTP/1.1 200 OK\r\n"
+        $allowed = Cors::matchOrigin($origin);
+
+        $headers = "HTTP/1.1 200 OK\r\n"
             . "Content-Type: text/event-stream; charset=utf-8\r\n"
             . "Cache-Control: no-cache, no-transform\r\n"
             . "Connection: keep-alive\r\n"
             // 关键：告诉 Nginx 不要缓冲，否则事件会攒到连接结束才吐出来
-            . "X-Accel-Buffering: no\r\n"
-            . "\r\n"
-        );
+            . "X-Accel-Buffering: no\r\n";
+
+        // 跨域：EventSource 一样受 CORS 约束。开发时前端在 5173、推送在 8788，
+        // 少了 Allow-Origin 浏览器直接报 `net::ERR_FAILED 200 (OK)`（curl 看不出来）。
+        // 白名单取 `.env` 的 CORS_ORIGIN，与 HTTP 接口的 Cors 中间件共用一份。
+        if ($origin !== '') {
+            $headers .= "Vary: Origin\r\n";
+        }
+        if ($allowed !== '') {
+            $headers .= "Access-Control-Allow-Origin: {$allowed}\r\n";
+        }
+
+        $connection->send($headers . "\r\n");
         $connection->send("retry: 3000\n: connected\n\n");
+    }
+
+    /**
+     * 从原始请求头里取 `Origin`（跨域才带，同源请求没有）。
+     *
+     * 裸 TCP 拿不到 `Request` 对象，这里自己按行找；值不可能含 CRLF —— 有的话
+     * 早就被行分隔切成两条头了，所以写进响应头不存在头注入。
+     */
+    private static function originOf(string $raw): string
+    {
+        foreach (explode("\r\n", $raw) as $header) {
+            if (stripos($header, 'Origin:') === 0) {
+                return trim(substr($header, 7));
+            }
+        }
+
+        return '';
     }
 
     private function reject(TcpConnection $connection, string $status, string $message): void

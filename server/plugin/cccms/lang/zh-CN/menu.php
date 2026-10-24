@@ -43,6 +43,7 @@ return [
     'cccms:dept:save' => '新增部门',
     'cccms:dept:tree' => '部门树',
     'cccms:dept:update' => '更新部门',
+    'cccms:devops' => '开发运维',
     'cccms:dict' => '字典管理',
     'cccms:dict:batch_delete' => '批量删除字典类型',
     'cccms:dict:batch_delete_data' => '批量删除字典数据',

@@ -43,6 +43,7 @@ return [
     'cccms:dept:save' => 'Create department',
     'cccms:dept:tree' => 'Department tree',
     'cccms:dept:update' => 'Update department',
+    'cccms:devops' => 'DevOps',
     'cccms:dict' => 'Dictionaries',
     'cccms:dict:batch_delete' => 'Batch delete dictionary types',
     'cccms:dict:batch_delete_data' => 'Batch delete dictionary items',

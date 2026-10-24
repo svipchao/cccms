@@ -9,6 +9,7 @@ import { useMenuStore } from '@/stores/menu'
 import { useNoticeStore } from '@/stores/notice'
 import { useExportTaskStore } from '@/stores/exportTask'
 import { useWorktabStore } from '@/stores/worktab'
+import { disconnectRealtime } from '@/composables/useRealtime'
 import type { MenuNode } from '@/api/types'
 
 // 进度条配置与并发计数统一在 @/utils/progress（与 HTTP 请求、附件上传共用一条进度条）
@@ -211,8 +212,12 @@ router.onError(() => {
   progressDone(ROUTE_PROGRESS)
 })
 
-/** 退出登录后统一清理（路由 + 标签页 + 链路上下文 + 账号级 store） */
+/** 退出登录后统一清理（实时连接 + 路由 + 标签页 + 链路上下文 + 账号级 store） */
 export function resetAfterLogout(): void {
+  // 推送连接绑定的是**上一个令牌**的 userId（`connectRealtime()` 是单例，已有连接时直接
+  // 返回）。不断开的话：换账号登录后仍连在旧账号的频道上，收不到自己的角标；旧账号被
+  // 「整用户踢下线」时（不带 jti）还会把新登录的会话一起登出。
+  disconnectRealtime()
   resetDynamicRoutes()
   useWorktabStore().reset()
   // 角标与导出轮询属于上一个账号：401 强制登出与手动登出必须走同一套清理
